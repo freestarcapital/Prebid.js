@@ -212,3 +212,11 @@ Prebid.js is supported on IE10+ and modern browsers.
 
 ### Governance
 Review our governance model [here](https://github.com/prebid/Prebid.js/tree/master/governance.md).
+
+
+### Freestar build specific
+In order to build and place directly into Google Cloud follow these steps: 
+
++ Install gsutil https://cloud.google.com/storage/docs/gsutil_install.
++ Build and name new file via command line in the root `gulp build --modules=modules.json && ./publish.sh <NAMEOFNEWFILE>`
++ note naming convention is `prebid-analytics-<prebid version>.js`. Example `prebid-analytics-1.21.0.js` 
