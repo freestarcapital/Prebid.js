@@ -578,6 +578,7 @@ function setKeys(keyValues, bidderSettings, custBidObj) {
 }
 
 export function adjustBids(bid) {
+  bid.originalCpm = bid.cpm;
   let code = bid.bidderCode;
   let bidPriceAdjusted = bid.cpm;
   let bidCpmAdjustment;
