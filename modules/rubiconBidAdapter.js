@@ -153,11 +153,9 @@ export const spec = {
 
       data.slots.push(slotData);
 
-      if (bidderRequest.gdprConsent) {
+      if (bidderRequest.gdprConsent && typeof bidderRequest.gdprConsent.gdprApplies === 'boolean' && bidderRequest.gdprConsent.gdprApplies === true) {
         // add 'gdpr' only if 'gdprApplies' is defined
-        if (typeof bidderRequest.gdprConsent.gdprApplies === 'boolean') {
-          data.gdpr = Number(bidderRequest.gdprConsent.gdprApplies);
-        }
+        data.gdpr = Number(bidderRequest.gdprConsent.gdprApplies);
         data.gdpr_consent = bidderRequest.gdprConsent.consentString;
       }
 
