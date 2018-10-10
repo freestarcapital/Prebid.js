@@ -325,12 +325,10 @@ export const spec = {
       'rf': _getPageUrl(bidRequest)
     };
 
-    if (bidderRequest.gdprConsent) {
+    if (bidderRequest.gdprConsent && typeof bidderRequest.gdprConsent.gdprApplies === 'boolean' && bidderRequest.gdprConsent.gdprApplies === true) {
       // add 'gdpr' only if 'gdprApplies' is defined
-      if (typeof bidderRequest.gdprConsent.gdprApplies === 'boolean') {
         data['gdpr'] = Number(bidderRequest.gdprConsent.gdprApplies);
-      }
-      data['gdpr_consent'] = bidderRequest.gdprConsent.consentString;
+        data['gdpr_consent'] = bidderRequest.gdprConsent.consentString;
     }
 
     // visitor properties
