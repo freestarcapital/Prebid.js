@@ -21,6 +21,7 @@ import { newAuction, getStandardBidderSettings, AUCTION_COMPLETED } from 'src/au
 import find from 'core-js/library/fn/array/find';
 
 const CONSTANTS = require('./constants.json');
+const utils = require('./utils.js');
 
 /**
  * Creates new instance of auctionManager. There will only be one instance of auctionManager but
@@ -91,6 +92,12 @@ export function newAuctionManager() {
   auctionManager.setStatusForBids = function(adId, status) {
     let bid = auctionManager.findBidByAdId(adId);
     if (bid) bid.status = status;
+  }
+
+  auctionManager.removeBid = function(adId) {
+    _auctions.map((auction) => {
+      auction.removeBid(adId);
+    });
   }
 
   function _addAuction(auction) {
