@@ -140,6 +140,10 @@ $$PREBID_GLOBAL$$.getBidResponses = function () {
     .reduce((a, b) => Object.assign(a, b), {});
 };
 
+$$PREBID_GLOBAL$$.removeBidResponse = function(adId) {
+  return auctionManager.removeBid(...arguments);
+}
+
 /**
  * Returns bidResponses for the specified adUnitCode
  * @param  {string} adUnitCode adUnitCode

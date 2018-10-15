@@ -271,11 +271,20 @@ export function newAuction({adUnits, adUnitCodes, callback, cbTimeout, labels}) 
     adaptermanager.callBidWonBidder(winningBid.bidder, winningBid, adUnits);
   }
 
+  function removeBid(adId) {
+    _bidsReceived = _bidsReceived.filter((bid, i) => {
+      if(bid.adId != adId) {
+        return bid;
+      }
+    })
+  }
+
   return {
     addBidReceived,
     executeCallback,
     callBids,
     addWinningBid,
+    removeBid,
     getWinningBids: () => _winningBids,
     getTimeout: () => _timeout,
     getAuctionId: () => _auctionId,
@@ -600,6 +609,8 @@ export function adjustBids(bid) {
     bid.cpm = bidPriceAdjusted;
   }
 }
+
+
 
 /**
  * groupByPlacement is a reduce function that converts an array of Bid objects
