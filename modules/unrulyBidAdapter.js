@@ -70,7 +70,7 @@ export const adapter = {
 
     const context = utils.deepAccess(bid, 'mediaTypes.video.context');
 
-    return bid.mediaType === 'video' || context === 'outstream';
+    return (bid.mediaTypes.video);
   },
 
   buildRequests: function(validBidRequests, bidderRequest) {

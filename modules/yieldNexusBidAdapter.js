@@ -72,14 +72,7 @@ export const spec = {
         bidfloorcur: 'USD',
         secure: startsWith(utils.getTopWindowUrl().toLowerCase(), 'http://') ? 0 : 1
       };
-      if (!bidRequest.mediaTypes || bidRequest.mediaTypes.banner) {
-        imp.banner = {
-          w: bidRequest.sizes.length ? bidRequest.sizes[0][0] : 300,
-          h: bidRequest.sizes.length ? bidRequest.sizes[0][1] : 250,
-          pos: bidRequest.params.pos || 0,
-          topframe: topFrame
-        };
-      } else if (bidRequest.mediaTypes.video) {
+      if (bidRequest.mediaTypes.video) {
         imp.video = {
           w: bidRequest.sizes.length ? bidRequest.sizes[0][0] : 300,
           h: bidRequest.sizes.length ? bidRequest.sizes[0][1] : 250,
@@ -87,7 +80,14 @@ export const spec = {
           pos: bidRequest.params.pos || 0,
           topframe: topFrame
         };
-      } else {
+      } else if(!bidRequest.mediaTypes || bidRequest.mediaTypes.banner) {
+        imp.banner = {
+          w: bidRequest.sizes.length ? bidRequest.sizes[0][0] : 300,
+          h: bidRequest.sizes.length ? bidRequest.sizes[0][1] : 250,
+          pos: bidRequest.params.pos || 0,
+          topframe: topFrame
+        };
+      }  else {
         return;
       }
       req.imp.push(imp);
@@ -115,9 +115,7 @@ export const spec = {
           netRevenue: true,
           currency: bid.cur || serverResponse.body.cur
         };
-        if (!bidRequest.bidRequest.mediaTypes || bidRequest.bidRequest.mediaTypes.banner) {
-          outBids.push(Object.assign({}, outBid, { mediaType: 'banner', ad: bid.adm }));
-        } else if (bidRequest.bidRequest.mediaTypes.video) {
+        if (bidRequest.bidRequest.mediaTypes.video) {
           const context = utils.deepAccess(bidRequest.bidRequest, 'mediaTypes.video.context');
           outBids.push(Object.assign({}, outBid, {
             mediaType: 'video',
@@ -125,6 +123,8 @@ export const spec = {
             vastXml: bid.adm,
             renderer: context === 'outstream' ? newRenderer(bidRequest.bidRequest, bid) : undefined
           }));
+        } else if (!bidRequest.bidRequest.mediaTypes || bidRequest.bidRequest.mediaTypes.banner) {
+          outBids.push(Object.assign({}, outBid, { mediaType: 'banner', ad: bid.adm }));
         }
       });
     }
