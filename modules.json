@@ -23,6 +23,7 @@
     "komoonaBidAdapter",
     "lockerdomeBidAdapter",
     "mantisBidAdapter",
+    "orbitsoftBidAdapter",
     "openxBidAdapter",
     "prebidServerBidAdapter",
     "pubCommonId",
@@ -40,6 +41,7 @@
     "teadsBidAdapter",
     "tripleliftBidAdapter",
     "trustxBidAdapter",
+    "underdogmediaBidAdapter",
     "undertoneBidAdapter",
     "unrulyBidAdapter",
     "yieldNexusBidAdapter"
