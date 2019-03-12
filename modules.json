@@ -43,6 +43,5 @@
     "trustxBidAdapter",
     "underdogmediaBidAdapter",
     "undertoneBidAdapter",
-    "unrulyBidAdapter",
-    "yieldNexusBidAdapter"
+    "unrulyBidAdapter"
 ]
