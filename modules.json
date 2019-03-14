@@ -40,6 +40,7 @@
     "teadsBidAdapter",
     "tripleliftBidAdapter",
     "trustxBidAdapter",
+    "underdogmediaBidAdapter",
     "undertoneBidAdapter",
     "unrulyBidAdapter",
     "yieldNexusBidAdapter"
