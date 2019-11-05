@@ -269,14 +269,10 @@ export function newBidder(spec) {
         function onSuccess(response, responseObj) {
           onTimelyResponse(spec.code);
 
-          try {
-            response = JSON.parse(response);
-          } catch (e) { /* response might not be JSON... that's ok. */ }
-
           // Make response headers available for #1742. These are lazy-loaded because most adapters won't need them.
           response = {
             body: response,
-            headers: headerParser(responseObj)
+            headers: headerParser(response)
           };
           responses.push(response);
 
@@ -308,9 +304,9 @@ export function newBidder(spec) {
             }
           }
 
-          function headerParser(xmlHttpResponse) {
+          function headerParser(response) {
             return {
-              get: responseObj.getResponseHeader.bind(responseObj)
+              get: response.headers
             };
           }
         }
