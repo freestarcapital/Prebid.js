@@ -3,7 +3,7 @@ import {config} from 'src/config';
 import {registerBidder} from 'src/adapters/bidderFactory';
 import { auctionManager } from 'src/auctionManager';
 const BIDDER_CODE = 'example';
-const deviceType = !freestar.deviceInfo.device.type ? "desktop" : freestar.deviceInfo.device.type;
+const deviceType = !freestar.deviceInfo.device.type ? 'desktop' : freestar.deviceInfo.device.type;
 const ENDPOINT_URL = `${freestar.msg.dispensaryURL}/floors/v2`
 
 /**
@@ -42,12 +42,12 @@ export const spec = {
   isBidRequestValid: function(bid) {
     return false;
     bid.sizes.forEach((size) => {
-      if(size.indexOf(1) != -1) {
-        freestar.log({title:'FFA:', styles:'background: red; color: #fff; border-radius: 3px; padding: 3px'}, '1x1 FOUND, NOT BIDDING');
+      if (size.indexOf(1) != -1) {
+        freestar.log({title: 'FFA:', styles: 'background: red; color: #fff; border-radius: 3px; padding: 3px'}, '1x1 FOUND, NOT BIDDING');
         return false;
       }
     })
-    if(freestar.debug < 50) {
+    if (freestar.debug < 50) {
       // 10% of bids are valid to us
       return diceRoll();
     } else {
@@ -84,17 +84,17 @@ export const spec = {
     const bidResponses = [], floors = serverResponse.body.networkFloorMap, bids = bidRequest.data.validBidRequests;
     // loop through the bids
     bids.forEach((bid) => {
-      if(typeof floors == 'undefined') {
+      if (typeof floors == 'undefined') {
         return false;
       }
       // set some vars
       let cpm = 0;
       // if there is a value for  0 (`ffa`) use that
-      if(typeof floors[68] != 'undefined') {
+      if (typeof floors[68] != 'undefined') {
         cpm = floors[68] / 1e6;
       } else {
         // if not...
-        freestar.log({title:'FFA:', styles:'background: red; color: #fff; border-radius: 3px; padding: 3px'}, bid.adUnitCode, 'FLOOR VALUE NOT FOUND, PRODUCING AVERAGE');
+        freestar.log({title: 'FFA:', styles: 'background: red; color: #fff; border-radius: 3px; padding: 3px'}, bid.adUnitCode, 'FLOOR VALUE NOT FOUND, PRODUCING AVERAGE');
         // recast cpm to an array
         cpm = [];
         // loop through the networkFloor keys
@@ -106,8 +106,8 @@ export const spec = {
         // then, reduce the array and get the avg
         cpm = (cpm.reduce((a, b) => a + b, 0) / cpm.length);
       }
-      freestar.log({title:'FFA:', styles:'background: black; color: #fff; border-radius: 3px; padding: 3px'}, bid.adUnitCode, 'Avg CPM is', cpm);
-      freestar.log({title:'FFA:', styles:'background: black; color: #fff; border-radius: 3px; padding: 3px'}, bid.adUnitCode, bid);
+      freestar.log({title: 'FFA:', styles: 'background: black; color: #fff; border-radius: 3px; padding: 3px'}, bid.adUnitCode, 'Avg CPM is', cpm);
+      freestar.log({title: 'FFA:', styles: 'background: black; color: #fff; border-radius: 3px; padding: 3px'}, bid.adUnitCode, bid);
       // build the bid response, using whatever cpm was derived above
       // pass a custom ad creative to be rendered on the page, in which the magic happens
       bidResponses.push({
@@ -198,7 +198,7 @@ export const spec = {
    */
   getUserSyncs: function(syncOptions, serverResponses) {
     // no syncs
-    return;
+
   },
 
   /**
