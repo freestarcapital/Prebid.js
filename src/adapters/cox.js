@@ -171,8 +171,7 @@ var CoxAdapter = function CoxAdapter() {
                 try {
                   axo = newActiveXObject(ver);
                   version = axo.GetVariable('$version');
-                }
-                catch (ignore) { }
+                } catch (ignore) { }
               }
             }
             function partialTest2(ver, verLong) {
@@ -180,8 +179,7 @@ var CoxAdapter = function CoxAdapter() {
                 try {
                   axo = newActiveXObject(ver);
                   version = verLong;
-                }
-                catch (ignore) { }
+                } catch (ignore) { }
               }
             }
             // NOTE : new ActiveXObject(strFoo) throws an exception if strFoo isn't in the registry
@@ -193,8 +191,7 @@ var CoxAdapter = function CoxAdapter() {
                 version = 'WIN 6,0,21,0';
                 axo.AllowScriptAccess = 'always';
                 version = axo.GetVariable('$version');
-              }
-              catch (ignore) { }
+              } catch (ignore) { }
             }
             partialTest('.3');
             partialTest2('.3', 'WIN 3,0,18,0');
@@ -218,8 +215,7 @@ var CoxAdapter = function CoxAdapter() {
                 var flashDescription = plugins[sf + swVer2].description;
                 flashVer = flashDescription.split(' ')[2].split('.')[0];
               }
-            }
-            else if (navigator.userAgent.indexOf('MSIE') !== -1 && navigator.appVersion.indexOf('Win') !== -1) {
+            } else if (navigator.userAgent.indexOf('MSIE') !== -1 && navigator.appVersion.indexOf('Win') !== -1) {
               flashVer = srControlVersion();
               if (flashVer !== -1) {
                 flashVer = flashVer.split(' ')[1].split(',')[0];

@@ -448,7 +448,7 @@ export const spec = {
    * @return {boolean}     True if this is a valid bid, and false otherwise.
    */
   isBidRequestValid: function (bid) {
-    if(typeof bid.params.size == 'undefined') {
+    if (typeof bid.params.size == 'undefined') {
       bid.params.size = bid.sizes[0];
     }
     if (!isValidSize(bid.params.size)) {
