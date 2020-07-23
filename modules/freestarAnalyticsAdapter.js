@@ -9,7 +9,7 @@ const analyticsType = 'endpoint';
  * @returns {*|Object}
  */
 $$PREBID_GLOBAL$$.findBidByAdId = function(adId) {
-  return `auctionManager`.findBidByAdId(adId);
+  return auctionManager.findBidByAdId(adId);
 };
 
 let freestarAnalytics = Object.assign(adapter({ analyticsType }),
