@@ -11,7 +11,7 @@ const ENDPOINT_URL = `${freestar.msg.dispensaryURL}/floors/v2`
  * @param adId
  * @returns {*|Object}
  */
-pbjs.findBidByAdId = function(adId) {
+$$PREBID_GLOBAL$$.findBidByAdId = function(adId) {
   const bid = auctionManager.findBidByAdId(adId);
   return bid;
 }
@@ -90,7 +90,7 @@ export const spec = {
       // set some vars
       let cpm = 0;
       // if there is a value for  0 (`ffa`) use that
-      if(typeof floors[68] != 'undefined') {
+      if (typeof floors[68] != 'undefined') {
         cpm = floors[68] / 1e6;
       } else {
         // if not...
@@ -144,7 +144,7 @@ export const spec = {
                 // if there are bids...
                 if(bids.length > 1) {
                     // pass the highest bid to pbjs.renderAd
-                    // and mark it as a winning bid 
+                    // and mark it as a winning bid
                     let target = top.document.getElementById(winner.adUnitCode).querySelector('iframe');
                     // chk = target.contentWindow.document.querySelector('#_' + winner.adId);
                     // if(chk != null) {

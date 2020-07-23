@@ -3,7 +3,6 @@ import adapter from 'src/AnalyticsAdapter';
 import CONSTANTS from 'src/constants.json';
 import adapterManager from 'src/adapterManager';
 import { auctionManager } from 'src/auctionManager';
-import $$PREBID_GLOBAL$$ from "../";
 
 const utils = require('src/utils');
 
@@ -24,7 +23,6 @@ let freestarAnalytics = Object.assign(adapter({ analyticsType }),
     // Override AnalyticsAdapter functions by supplying custom methods
     track({ eventType, args }) {
       if (freestar.msg && freestar.msg.que) {
-        //console.log('push message:'+eventType+' to queue: '+JSON.stringify(args));
         freestar.msg.que.push({ eventType, args });
       }
     }
