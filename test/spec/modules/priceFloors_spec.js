@@ -660,6 +660,7 @@ describe('the price floors module', function () {
 
       // the exposedAdUnits should be from the fetch not setConfig level data
       // and fetchStatus is success since fetch worked
+
       validateBidRequests(true, {
         skipped: false,
         modelVersion: 'fetch model name',

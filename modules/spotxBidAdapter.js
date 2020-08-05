@@ -175,7 +175,7 @@ export const spec = {
       if (utils.getBidIdParameter('position', bid.params) != '') {
         spotxReq.video.ext.pos = utils.getBidIdParameter('position', bid.params);
       }
-
+      
       if (bid.crumbs && bid.crumbs.pubcid) {
         pubcid = bid.crumbs.pubcid;
       }
