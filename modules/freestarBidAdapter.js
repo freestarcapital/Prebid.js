@@ -1,6 +1,6 @@
 import {config} from 'src/config';
 import {registerBidder} from 'src/adapters/bidderFactory';
-import {BANNER, NATIVE, VIDEO} from "../src/mediaTypes";
+import {BANNER, NATIVE, VIDEO} from '../src/mediaTypes';
 const BIDDER_CODE = 'freestar';
 const ENDPOINT_URL = 'https://ssp.pub.network/ssp-server/HeaderBiddingService';
 const syncURLs = [];
@@ -14,12 +14,11 @@ export const spec = {
    * @return boolean True if this is a valid bid, and false otherwise.
    */
   isBidRequestValid: function(bid) {
-    if(typeof bid.sizes == 'undefined' || bid.sizes.length == 0) {
+    if (typeof bid.sizes == 'undefined' || bid.sizes.length == 0) {
       return false;
     }
     return true;
   },
-
 
   /**
    * Make a server request from the list of BidRequests.
@@ -39,7 +38,7 @@ export const spec = {
         // if so, split it
         tmp = cookie[i].split('=');
         // check if _fsloc, whose values has = within it
-        if(tmp[0].trim() == '_fsloc') {
+        if (tmp[0].trim() == '_fsloc') {
           // and if so, manipulate differently
           tmp.shift();
           cookieObj['_fsloc'] = tmp.join('=');
@@ -73,9 +72,9 @@ export const spec = {
   interpretResponse: function(serverResponse) {
     serverResponse = serverResponse.body;
     const bids = [];
-    if(serverResponse.winningProvider) {
+    if (serverResponse.winningProvider) {
       let winners = serverResponse.winningProvider;
-      if(winners instanceof Array) {
+      if (winners instanceof Array) {
         winners.forEach(function(winner) {
           bids.push(parseBid(Object.assign(
             {},
@@ -85,7 +84,7 @@ export const spec = {
             },
             winner.winningSeat.bid[0],
           )));
-          if(typeof winner.supplier.cookieSync != 'undefined') {
+          if (typeof winner.supplier.cookieSync != 'undefined') {
             syncURLs.push({
               type: 'image',
               url: decodeURIComponent(winner.supplier.cookieSync).split('\'')[1]
@@ -102,7 +101,7 @@ export const spec = {
           },
           winner.winningSeat.bid[0],
         )));
-        if(typeof winner.supplier.cookieSync != 'undefined') {
+        if (typeof winner.supplier.cookieSync != 'undefined') {
           syncURLs.push({
             type: 'image',
             url: decodeURIComponent(winner.supplier.cookieSync).split('\'')[1]
@@ -114,7 +113,7 @@ export const spec = {
   },
   // @TODO: How are we doing user sync?
   getUserSyncs: function(syncOptions) {
-    if(syncURLs.length > 0) {
+    if (syncURLs.length > 0) {
       let tmp = syncURLs.filter((syncURL) => {
         // console.log('freestar::', 'syncURL', syncURL);
       });
@@ -135,7 +134,7 @@ registerBidder(spec);
  */
 function parseBid(bid) {
   let adUnit = bid.adm, cpm = (window.location.search.indexOf('fsbidprice') === -1) ? bid.price : 25.00;
-  if(typeof bid.nurl != 'undefined') {
+  if (typeof bid.nurl != 'undefined') {
     adUnit = `<img src="${bid.nurl.replace('${AUCTION_PRICE}', cpm)}" width="0" height="0" style="display:none">` + adUnit;
   }
   const bidResponse = {
@@ -143,11 +142,11 @@ function parseBid(bid) {
     cpm: cpm,
     width: bid.w,
     height: bid.h,
-    creativeId: bid.cid, //@TODO: verify
+    creativeId: bid.cid, // @TODO: verify
     // // dealId: DEAL_ID,
     currency: bid.currency,
     netRevenue: true,
-    ttl: 60, //@TODO: verify
+    ttl: 60, // @TODO: verify
     ad: adUnit
   };
   return bidResponse;
@@ -168,8 +167,8 @@ function formatBid(bid) {
     return size.join('x');
   });
   str.promo_sizes = str.promo_sizes.join(',');
-  if(typeof bid.params != 'undefined') {
-    for(var key in bid.params) {
+  if (typeof bid.params != 'undefined') {
+    for (var key in bid.params) {
       str[key] = bid.params[key];
     }
   }
@@ -184,8 +183,8 @@ function formatBid(bid) {
 function uid() {
   const src = '1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
   var uid = '';
-  for(var i = 0; i < 16; i++) {
-    uid += src.substr((Math.floor(Math.random() * src.length) + 1 ),1)
+  for (var i = 0; i < 16; i++) {
+    uid += src.substr((Math.floor(Math.random() * src.length) + 1), 1)
   }
   return uid;
 }
