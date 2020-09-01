@@ -372,9 +372,13 @@ gulp.task('build', gulp.series(clean, 'build-bundle-prod'));
 gulp.task('build-postbid', gulp.series(escapePostbidConfig, buildPostbid));
 
 gulp.task('serve', gulp.series(clean, lint, gulp.parallel('build-bundle-dev', watch, test)));
+<<<<<<< HEAD
 
 gulp.task('serve-fast', gulp.series(clean, gulp.parallel('build-bundle-dev', watch)));
 
+=======
+gulp.task('serve-fast', gulp.series(clean, gulp.parallel('build-bundle-dev', watch)));
+>>>>>>> 4.5.0
 gulp.task('serve-fake', gulp.series(clean, gulp.parallel('build-bundle-dev', watch), injectFakeServerEndpointDev, test, startFakeServer));
 
 gulp.task('default', gulp.series(clean, makeWebpackPkg));

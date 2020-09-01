@@ -38,10 +38,17 @@ describe('The Konduit vast wrapper module', function () {
 
         expect(bid.adserverTargeting).to.be.an('object');
 
+<<<<<<< HEAD
         expect(bid.adserverTargeting.k_cpm).to.equal(bid.pbCg || bid.pbAg);
         expect(bid.adserverTargeting.k_cache_key).to.equal('test_cache_key');
         expect(bid.adserverTargeting.konduit_id).to.equal(konduitId);
       });
+=======
+      expect(bid.adserverTargeting.k_cpm).to.equal(bid.pbCg || bid.pbAg);
+      expect(bid.adserverTargeting.k_cache_key).to.equal('test_cache_key');
+      expect(bid.adserverTargeting.konduit_id).to.equal(konduitId);
+    });
+>>>>>>> 4.5.0
 
     it(`should call callback with error object in arguments if cacheData is empty in the response`, function () {
       const bid = createBid(10, 'video1', 15, '10.00_15s', '123', '395');
@@ -131,6 +138,7 @@ describe('The Konduit vast wrapper module', function () {
 
     it(`should make a correct processBids request and add kCpm and konduitCacheKey
      to the passed bids and to the adserverTargeting object`, function () {
+<<<<<<< HEAD
         const bid = createBid(10, 'video1', 15, '10.00_15s', '123', '395');
 
         server.respondWith(JSON.stringify({
@@ -158,6 +166,35 @@ describe('The Konduit vast wrapper module', function () {
         expect(bid.adserverTargeting[`k_cache_key_${bid.bidderCode}`]).to.equal('test_cache_key');
         expect(bid.adserverTargeting.konduit_id).to.equal(konduitId);
       });
+=======
+      const bid = createBid(10, 'video1', 15, '10.00_15s', '123', '395');
+
+      server.respondWith(JSON.stringify({
+        kCpmData: { [`${bid.bidderCode}:${bid.creativeId}`]: bid.cpm },
+        cacheData: { [`${bid.bidderCode}:${bid.creativeId}`]: 'test_cache_key' },
+      }));
+
+      processBids({ adUnitCode: 'video1', bids: [bid] });
+      server.respond();
+
+      expect(server.requests.length).to.equal(1);
+
+      const requestBody = JSON.parse(server.requests[0].requestBody);
+
+      expect(requestBody.clientId).to.equal(konduitId);
+
+      expect(bid.konduitCacheKey).to.equal('test_cache_key');
+      expect(bid.kCpm).to.equal(bid.cpm);
+
+      expect(bid.adserverTargeting).to.be.an('object');
+
+      expect(bid.adserverTargeting.k_cpm).to.equal(bid.pbCg || bid.pbAg);
+      expect(bid.adserverTargeting[`k_cpm_${bid.bidderCode}`]).to.equal(bid.pbCg || bid.pbAg);
+      expect(bid.adserverTargeting.k_cache_key).to.equal('test_cache_key');
+      expect(bid.adserverTargeting[`k_cache_key_${bid.bidderCode}`]).to.equal('test_cache_key');
+      expect(bid.adserverTargeting.konduit_id).to.equal(konduitId);
+    });
+>>>>>>> 4.5.0
 
     it(`should call callback with error object in arguments if cacheData is empty in the response`, function () {
       const bid = createBid(10, 'video1', 15, '10.00_15s', '123', '395');

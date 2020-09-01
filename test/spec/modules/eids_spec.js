@@ -43,7 +43,9 @@ describe('eids array generation for known sub-modules', function() {
 
   it('parrableId', function() {
     const userId = {
-      parrableid: 'some-random-id-value'
+      parrableId: {
+        eid: 'some-random-id-value'
+      }
     };
     const newEids = createEidsArray(userId);
     expect(newEids.length).to.equal(1);
@@ -108,6 +110,7 @@ describe('eids array generation for known sub-modules', function() {
   });
 
   it('lotamePanoramaId', function () {
+<<<<<<< HEAD
     const userId = {
       lotamePanoramaId: 'some-random-id-value',
     };
@@ -120,18 +123,16 @@ describe('eids array generation for known sub-modules', function() {
   });
 
   it('DigiTrust; getValue call', function() {
+=======
+>>>>>>> 4.5.0
     const userId = {
-      digitrustid: {
-        data: {
-          id: 'some-random-id-value'
-        }
-      }
+      lotamePanoramaId: 'some-random-id-value',
     };
     const newEids = createEidsArray(userId);
     expect(newEids.length).to.equal(1);
     expect(newEids[0]).to.deep.equal({
-      source: 'digitru.st',
-      uids: [{id: 'some-random-id-value', atype: 1}]
+      source: 'crwdcntrl.net',
+      uids: [{ id: 'some-random-id-value', atype: 1 }],
     });
   });
 

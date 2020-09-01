@@ -10,12 +10,20 @@ describe('waardexBidAdapter', () => {
     params: {
       placementId: 1,
       traffic: 'banner',
+<<<<<<< HEAD
       pubId: 1,
+=======
+      zoneId: 1,
+>>>>>>> 4.5.0
     }
   };
 
   describe('isBidRequestValid', () => {
+<<<<<<< HEAD
     it('Should return true. bidId and params such as placementId and pubId are present', () => {
+=======
+    it('Should return true. bidId and params such as placementId and zoneId are present', () => {
+>>>>>>> 4.5.0
       expect(spec.isBidRequestValid(validBid)).to.be.true;
     });
     it('Should return false. bidId is not present in bid object', () => {
@@ -23,6 +31,7 @@ describe('waardexBidAdapter', () => {
       delete invalidBid.bidId;
       expect(spec.isBidRequestValid(invalidBid)).to.be.false;
     });
+<<<<<<< HEAD
     it('Should return false. placementId is not present in bid.params object', () => {
       const invalidBid = deepClone(validBid);
       delete invalidBid.params.placementId;
@@ -31,6 +40,11 @@ describe('waardexBidAdapter', () => {
     it('Should return false. pubId is not present in bid.params object', () => {
       const invalidBid = deepClone(validBid);
       delete invalidBid.params.pubId;
+=======
+    it('Should return false. zoneId is not present in bid.params object', () => {
+      const invalidBid = deepClone(validBid);
+      delete invalidBid.params.zoneId;
+>>>>>>> 4.5.0
       expect(spec.isBidRequestValid(invalidBid)).to.be.false;
     });
   });
@@ -45,11 +59,18 @@ describe('waardexBidAdapter', () => {
         }
       },
       params: {
+<<<<<<< HEAD
         placementId: 1,
         bidfloor: 1.5,
         position: 1,
         instl: 1,
         pubId: 100
+=======
+        bidfloor: 1.5,
+        position: 1,
+        instl: 1,
+        zoneId: 100
+>>>>>>> 4.5.0
       },
     }];
 
@@ -72,7 +93,10 @@ describe('waardexBidAdapter', () => {
 
       expect(payload.bidRequests[0]).deep.equal({
         bidId: validBidRequests[0].bidId,
+<<<<<<< HEAD
         placementId: validBidRequests[0].params.placementId,
+=======
+>>>>>>> 4.5.0
         bidfloor: validBidRequests[0].params.bidfloor,
         position: validBidRequests[0].params.position,
         instl: validBidRequests[0].params.instl,
@@ -89,7 +113,11 @@ describe('waardexBidAdapter', () => {
           ],
         }
       });
+<<<<<<< HEAD
       const ENDPOINT = `https://hb.justbidit.xyz:8843/prebid?pubId=${validBidRequests[0].params.pubId}`;
+=======
+      const ENDPOINT = `https://hb.justbidit.xyz:8843/prebid?pubId=${validBidRequests[0].params.zoneId}`;
+>>>>>>> 4.5.0
       expect(url).to.equal(ENDPOINT);
       expect(method).to.equal('POST');
     });

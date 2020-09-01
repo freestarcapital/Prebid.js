@@ -175,7 +175,7 @@ export const spec = {
       if (utils.getBidIdParameter('position', bid.params) != '') {
         spotxReq.video.ext.pos = utils.getBidIdParameter('position', bid.params);
       }
-      
+
       if (bid.crumbs && bid.crumbs.pubcid) {
         pubcid = bid.crumbs.pubcid;
       }
@@ -330,6 +330,11 @@ export const spec = {
             width: spotxBid.w,
             height: spotxBid.h
           };
+
+          bid.meta = bid.meta || {};
+          if (spotxBid && spotxBid.adomain && spotxBid.adomain.length > 0) {
+            bid.meta.advertiserDomains = spotxBid.adomain;
+          }
 
           const context1 = utils.deepAccess(currentBidRequest, 'mediaTypes.video.context');
           const context2 = utils.deepAccess(currentBidRequest, 'params.ad_unit');
