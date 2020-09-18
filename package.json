@@ -1,10 +1,6 @@
 {
   "name": "prebid.js",
-<<<<<<< HEAD
-  "version": "3.26.0",
-=======
   "version": "4.5.0",
->>>>>>> 4.5.0
   "description": "Header Bidding Management Library",
   "main": "src/prebid.js",
   "scripts": {
@@ -43,10 +39,7 @@
     "body-parser": "^1.19.0",
     "chai": "^4.2.0",
     "coveralls": "^3.1.0",
-<<<<<<< HEAD
-=======
     "deep-equal": "^2.0.3",
->>>>>>> 4.5.0
     "documentation": "^5.2.2",
     "es5-shim": "^4.5.14",
     "eslint-config-standard": "^10.2.1",
