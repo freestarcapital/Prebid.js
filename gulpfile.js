@@ -203,8 +203,8 @@ function bundle(dev, moduleArr) {
     .pipe(gulpif(dev, sourcemaps.init({ loadMaps: true })))
     .pipe(concat(outputFileName))
     .pipe(gulpif(!argv.manualEnable, footer('\n<%= global %>.processQueue();', {
-        global: prebid.globalVarName
-      }
+      global: prebid.globalVarName
+    }
     )))
     .pipe(gulpif(dev, sourcemaps.write('.')));
 }
@@ -295,7 +295,7 @@ function testCoverage(done) {
 }
 
 function coveralls() { // 2nd arg is a dependency: 'test' must be finished
-                       // first send results of istanbul's test coverage to coveralls.io.
+  // first send results of istanbul's test coverage to coveralls.io.
   return gulp.src('gulpfile.js', { read: false }) // You have to give it a file, but you don't
     // have to read it.
     .pipe(shell('cat build/coverage/lcov.info | node_modules/coveralls/bin/coveralls.js'));
@@ -372,9 +372,7 @@ gulp.task('build', gulp.series(clean, 'build-bundle-prod'));
 gulp.task('build-postbid', gulp.series(escapePostbidConfig, buildPostbid));
 
 gulp.task('serve', gulp.series(clean, lint, gulp.parallel('build-bundle-dev', watch, test)));
-
 gulp.task('serve-fast', gulp.series(clean, gulp.parallel('build-bundle-dev', watch)));
-
 gulp.task('serve-fake', gulp.series(clean, gulp.parallel('build-bundle-dev', watch), injectFakeServerEndpointDev, test, startFakeServer));
 
 gulp.task('default', gulp.series(clean, makeWebpackPkg));
