@@ -14,11 +14,7 @@ For modules and core platform updates, the initial reviewer should request an ad
 - Review for obvious errors or bad coding practice / use best judgement here.
 - If the change is a new feature / change to core prebid.js - review the change with a Tech Lead on the project and make sure they agree with the nature of change.
 - If the change results in needing updates to docs (such as public API change, module interface etc), add a label for "needs docs" and inform the submitter they must submit a docs PR to update the appropriate area of Prebid.org **before the PR can merge**. Help them with finding where the docs are located on prebid.org if needed. 
-<<<<<<< HEAD
-  - Below are some examples of bidder specific updates that should require docs update (in their dev-docs/bidders/bidder.md file):
-=======
   - Below are some examples of bidder specific updates that should require docs update (in their dev-docs/bidders/BIDDER.md file):
->>>>>>> 4.5.0
     - If they support the GDPR consentManagement module and TCF1, add `gdpr_supported: true`
     - If they support the GDPR consentManagement module and TCF2, add `tcf2_supported: true`
     - If they support the US Privacy consentManagementUsp module, add `usp_supported: true`
@@ -27,11 +23,8 @@ For modules and core platform updates, the initial reviewer should request an ad
     - If they support COPPA, add `coppa_supported: true`
     - If they support SChain, add `schain_supported: true`
     - If their bidder doesn't work well with safeframed creatives, add `safeframes_ok: false`. This will alert publishers to not use safeframed creatives when creating the ad server entries for their bidder.
-<<<<<<< HEAD
-    - If they're a member of Prebid.org, add `prebid_member: true`
-=======
     - If they're setting a deal ID in some scenarios, add `bidder_supports_deals: true`
->>>>>>> 4.5.0
+    - If they have an IAB Global Vendor List ID, add `gvl_id: ID`. There's no default.
 - If all above is good, add a `LGTM` comment and request 1 additional core member to review.
 - Once there is 2 `LGTM` on the PR, merge to master
 - Ask the submitter to add a PR for documentation if applicable.

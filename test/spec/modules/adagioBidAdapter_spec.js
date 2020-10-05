@@ -14,6 +14,7 @@ describe('adagioAdapter', () => {
 import { _features, internal as adagio, adagioScriptFromLocalStorageCb, getAdagioScript, storage, spec, ENDPOINT, VERSION } from '../../../modules/adagioBidAdapter.js';
 import { loadExternalScript } from '../../../src/adloader.js';
 import * as utils from '../../../src/utils.js';
+import { config } from 'src/config.js';
 
 const BidRequestBuilder = function BidRequestBuilder(options) {
   const defaults = {
@@ -375,7 +376,7 @@ describe('Adagio bid adapter', () => {
       'site',
       'pageviewId',
       'adUnits',
-      'gdpr',
+      'regs',
       'schain',
       'prebidVersion',
       'adapterVersion',
@@ -540,7 +541,7 @@ describe('Adagio bid adapter', () => {
 
           const requests = spec.buildRequests([bid01], bidderRequest);
 
-          expect(requests[0].data.gdpr).to.deep.equal(expected);
+          expect(requests[0].data.regs.gdpr).to.deep.equal(expected);
         });
 
         it('send data.gdpr object to the server from TCF v.2 cmp', function() {
@@ -556,7 +557,7 @@ describe('Adagio bid adapter', () => {
 
           const requests = spec.buildRequests([bid01], bidderRequest);
 
-          expect(requests[0].data.gdpr).to.deep.equal(expected);
+          expect(requests[0].data.regs.gdpr).to.deep.equal(expected);
         });
       });
 
@@ -575,7 +576,7 @@ describe('Adagio bid adapter', () => {
 
           const requests = spec.buildRequests([bid01], bidderRequest);
 
-          expect(requests[0].data.gdpr).to.deep.equal(expected);
+          expect(requests[0].data.regs.gdpr).to.deep.equal(expected);
         });
 
         it('send data.gdpr object to the server from TCF v.2 cmp', function() {
@@ -591,7 +592,7 @@ describe('Adagio bid adapter', () => {
 
           const requests = spec.buildRequests([bid01], bidderRequest);
 
-          expect(requests[0].data.gdpr).to.deep.equal(expected);
+          expect(requests[0].data.regs.gdpr).to.deep.equal(expected);
         });
       });
 
@@ -600,8 +601,66 @@ describe('Adagio bid adapter', () => {
           const bidderRequest = new BidderRequestBuilder().build();
           const requests = spec.buildRequests([bid01], bidderRequest);
 
-          expect(requests[0].data.gdpr).to.be.empty;
+          expect(requests[0].data.regs.gdpr).to.be.empty;
         });
+      });
+    });
+
+    describe('with COPPA', function() {
+      const bid01 = new BidRequestBuilder().withParams().build();
+
+      it('should send the Coppa "required" flag set to "1" in the request', function () {
+        const bidderRequest = new BidderRequestBuilder().build();
+
+        sinon.stub(config, 'getConfig')
+          .withArgs('coppa')
+          .returns(true);
+
+        const requests = spec.buildRequests([bid01], bidderRequest);
+
+        expect(requests[0].data.regs.coppa.required).to.equal(1);
+
+        config.getConfig.restore();
+      });
+    });
+
+    describe('without COPPA', function() {
+      const bid01 = new BidRequestBuilder().withParams().build();
+
+      it('should send the Coppa "required" flag set to "0" in the request', function () {
+        const bidderRequest = new BidderRequestBuilder().build();
+
+        const requests = spec.buildRequests([bid01], bidderRequest);
+
+        expect(requests[0].data.regs.coppa.required).to.equal(0);
+      });
+    });
+
+    describe('with USPrivacy', function() {
+      const bid01 = new BidRequestBuilder().withParams().build();
+
+      const consent = 'Y11N'
+
+      it('should send the USPrivacy "ccpa.uspConsent" in the request', function () {
+        const bidderRequest = new BidderRequestBuilder({
+          uspConsent: consent
+        }).build();
+
+        const requests = spec.buildRequests([bid01], bidderRequest);
+
+        expect(requests[0].data.regs.ccpa.uspConsent).to.equal(consent);
+      });
+    });
+
+    describe('without USPrivacy', function() {
+      const bid01 = new BidRequestBuilder().withParams().build();
+
+      it('should have an empty "ccpa" field in the request', function () {
+        const bidderRequest = new BidderRequestBuilder().build();
+
+        const requests = spec.buildRequests([bid01], bidderRequest);
+
+        expect(requests[0].data.regs.ccpa).to.be.empty;
       });
     });
   });
