@@ -1,9 +1,4 @@
 import { expect } from 'chai';
-<<<<<<< HEAD
-import { spec as adapter, SUPPORTED_ID_SYSTEMS, createDomain } from 'modules/vidazooBidAdapter.js';
-import * as utils from 'src/utils.js';
-import { version } from 'package.json';
-=======
 import {
   spec as adapter,
   SUPPORTED_ID_SYSTEMS,
@@ -22,7 +17,6 @@ import {
 import * as utils from 'src/utils.js';
 import { version } from 'package.json';
 import { useFakeTimers } from 'sinon';
->>>>>>> 4.5.0
 
 const SUB_DOMAIN = 'openrtb';
 
@@ -164,11 +158,8 @@ describe('VidazooBidAdapter', function () {
           adUnitCode: 'div-gpt-ad-12345-0',
           publisherId: '59ac17c192832d0011283fe3',
           dealId: 1,
-<<<<<<< HEAD
-=======
           sessionId: '',
           uniqueDealId: `${hashUrl}_${Date.now().toString()}`,
->>>>>>> 4.5.0
           bidderVersion: adapter.version,
           prebidVersion: version,
           res: `${window.top.screen.width}x${window.top.screen.height}`,
@@ -188,7 +179,7 @@ describe('VidazooBidAdapter', function () {
 
       expect(result).to.deep.equal([{
         type: 'iframe',
-        url: 'https://static.cootlogix.com/basev/sync/user_sync.html'
+        url: 'https://prebid.cootlogix.com/api/sync/iframe/?gdpr=0&gdpr_consent=&us_privacy='
       }]);
     });
 
@@ -196,7 +187,7 @@ describe('VidazooBidAdapter', function () {
       const result = adapter.getUserSyncs({ pixelEnabled: true }, [SERVER_RESPONSE]);
 
       expect(result).to.deep.equal([{
-        'url': 'https://sync.com',
+        'url': 'https://prebid.cootlogix.com/api/sync/image/?gdpr=0&gdpr_consent=&us_privacy=',
         'type': 'image'
       }]);
     })
@@ -243,11 +234,7 @@ describe('VidazooBidAdapter', function () {
     });
   });
 
-<<<<<<< HEAD
-  describe(`user id system`, function () {
-=======
   describe('user id system', function () {
->>>>>>> 4.5.0
     Object.keys(SUPPORTED_ID_SYSTEMS).forEach((idSystemProvider) => {
       const id = Date.now().toString();
       const bid = utils.deepClone(BID);
@@ -256,10 +243,8 @@ describe('VidazooBidAdapter', function () {
         switch (idSystemProvider) {
           case 'digitrustid': return { data: { id: id } };
           case 'lipb': return { lipbid: id };
-<<<<<<< HEAD
-=======
           case 'parrableId': return { eid: id };
->>>>>>> 4.5.0
+          case 'id5id': return { uid: id };
           default: return id;
         }
       })();
@@ -274,8 +259,6 @@ describe('VidazooBidAdapter', function () {
       });
     });
   });
-<<<<<<< HEAD
-=======
 
   describe('alternate param names extractors', function () {
     it('should return undefined when param not supported', function () {
@@ -386,5 +369,4 @@ describe('VidazooBidAdapter', function () {
       expect(parsed).to.be.equal(value);
     });
   });
->>>>>>> 4.5.0
 });
