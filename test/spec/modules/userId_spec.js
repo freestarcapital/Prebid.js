@@ -5,9 +5,7 @@ import {
   requestBidsHook,
   setSubmoduleRegistry,
   syncDelay,
-  coreStorage,
-  setStoredValue,
-  setStoredConsentData
+  coreStorage
 } from 'modules/userId/index.js';
 import {createEidsArray} from 'modules/userId/eids.js';
 import {config} from 'src/config.js';
@@ -15,8 +13,6 @@ import * as utils from 'src/utils.js';
 import events from 'src/events.js';
 import CONSTANTS from 'src/constants.json';
 import {getGlobal} from 'src/prebidGlobal.js';
-import {setConsentConfig, requestBidsHook as consentManagementRequestBidsHook, resetConsentData} from 'modules/consentManagement.js';
-import {gdprDataHandler} from 'src/adapterManager.js';
 import {unifiedIdSubmodule} from 'modules/unifiedIdSystem.js';
 import {pubCommonIdSubmodule} from 'modules/pubCommonIdSystem.js';
 import {britepoolIdSubmodule} from 'modules/britepoolIdSystem.js';
@@ -31,7 +27,6 @@ import {server} from 'test/mocks/xhr.js';
 let assert = require('chai').assert;
 let expect = require('chai').expect;
 const EXPIRED_COOKIE_DATE = 'Thu, 01 Jan 1970 00:00:01 GMT';
-const CONSENT_LOCAL_STORAGE_NAME = '_pbjs_userid_consent_data';
 
 describe('User ID', function() {
   function getConfigMock(configArr1, configArr2, configArr3, configArr4, configArr5, configArr6, configArr7, configArr8) {
@@ -89,10 +84,6 @@ describe('User ID', function() {
     coreStorage.setCookie('_pubcid_optout', '', EXPIRED_COOKIE_DATE);
     localStorage.removeItem('_pbjs_id_optout');
     localStorage.removeItem('_pubcid_optout');
-  });
-
-  beforeEach(function() {
-    coreStorage.setCookie(CONSENT_LOCAL_STORAGE_NAME, '', EXPIRED_COOKIE_DATE);
   });
 
   describe('Decorate Ad Units', function() {
@@ -219,9 +210,8 @@ describe('User ID', function() {
           });
         });
       });
-      // Because the cookie exists already, there should be no setCookie call by default; the only setCookie call is
-      // to store consent data
-      expect(coreStorage.setCookie.callCount).to.equal(1);
+      // Because the cookie exists already, there should be no setCookie call by default
+      expect(coreStorage.setCookie.callCount).to.equal(0);
     });
 
     it('Extend cookie', function() {
@@ -246,9 +236,8 @@ describe('User ID', function() {
           });
         });
       });
-      // Because extend is true, the cookie will be updated even if it exists already. The second setCookie call
-      // is for storing consentData
-      expect(coreStorage.setCookie.callCount).to.equal(2);
+      // Because extend is true, the cookie will be updated even if it exists already
+      expect(coreStorage.setCookie.callCount).to.equal(1);
     });
 
     it('Disable auto create', function() {
@@ -269,8 +258,7 @@ describe('User ID', function() {
           expect(bid).to.not.have.deep.nested.property('userIdAsEids');
         });
       });
-      // setCookie is called once in order to store consentData
-      expect(coreStorage.setCookie.callCount).to.equal(1);
+      expect(coreStorage.setCookie.callCount).to.equal(0);
     });
 
     it('pbjs.getUserIds', function() {
@@ -672,7 +660,7 @@ describe('User ID', function() {
     it('does not delay auction if there are no ids to fetch', function() {
       coreStorage.getCookie.withArgs('MOCKID').returns('123456778');
       config.setConfig({
-        userSync: {
+        usersync: {
           auctionDelay: 33,
           syncDelay: 77,
           userIds: [{
@@ -862,7 +850,6 @@ describe('User ID', function() {
     });
 
     it('test hook from sharedId html5', function(done) {
-<<<<<<< HEAD
       // simulate existing browser local storage values
       localStorage.setItem('sharedid', JSON.stringify({'id': 'test_sharedId', 'ts': 1590525289611}));
       localStorage.setItem('sharedid_exp', '');
@@ -901,10 +888,6 @@ describe('User ID', function() {
     it('test hook from sharedId html5 (id not synced)', function(done) {
       // simulate existing browser local storage values
       localStorage.setItem('sharedid', JSON.stringify({'id': 'test_sharedId', 'ns': true, 'ts': 1590525289611}));
-=======
-      // simulate existing browser local storage values
-      localStorage.setItem('sharedid', JSON.stringify({'id': 'test_sharedId', 'ts': 1590525289611}));
->>>>>>> 4.5.0
       localStorage.setItem('sharedid_exp', '');
 
       setSubmoduleRegistry([sharedIdSubmodule]);
@@ -915,45 +898,6 @@ describe('User ID', function() {
           unit.bids.forEach(bid => {
             expect(bid).to.have.deep.nested.property('userId.sharedid');
             expect(bid.userId.sharedid).to.have.deep.nested.property('id');
-<<<<<<< HEAD
-=======
-            expect(bid.userId.sharedid).to.have.deep.nested.property('third');
-            expect(bid.userId.sharedid).to.deep.equal({
-              id: 'test_sharedId',
-              third: 'test_sharedId'
-            });
-            expect(bid.userIdAsEids[0]).to.deep.equal({
-              source: 'sharedid.org',
-              uids: [{
-                id: 'test_sharedId',
-                atype: 1,
-                ext: {
-                  third: 'test_sharedId'
-                }
-              }]
-            });
-          });
-        });
-        localStorage.removeItem('sharedid');
-        localStorage.removeItem('sharedid_exp');
-        done();
-      }, {adUnits});
-    });
-
-    it('test hook from sharedId html5 (id not synced)', function(done) {
-      // simulate existing browser local storage values
-      localStorage.setItem('sharedid', JSON.stringify({'id': 'test_sharedId', 'ns': true, 'ts': 1590525289611}));
-      localStorage.setItem('sharedid_exp', '');
-
-      setSubmoduleRegistry([sharedIdSubmodule]);
-      init(config);
-      config.setConfig(getConfigMock(['sharedId', 'sharedid', 'html5']));
-      requestBidsHook(function() {
-        adUnits.forEach(unit => {
-          unit.bids.forEach(bid => {
-            expect(bid).to.have.deep.nested.property('userId.sharedid');
-            expect(bid.userId.sharedid).to.have.deep.nested.property('id');
->>>>>>> 4.5.0
             expect(bid.userId.sharedid).to.deep.equal({
               id: 'test_sharedId'
             });
@@ -1498,213 +1442,5 @@ describe('User ID', function() {
       events.emit(CONSTANTS.EVENTS.AUCTION_END, {});
       expect(server.requests[0].url).to.equal('https://match.adsrvr.org/track/rid?ttd_pid=rubicon&fmt=json');
     });
-<<<<<<< HEAD
-=======
-  });
-
-  describe('Set cookie behavior', function() {
-    let coreStorageSpy;
-    beforeEach(function () {
-      coreStorageSpy = sinon.spy(coreStorage, 'setCookie');
-    });
-    afterEach(function () {
-      coreStorageSpy.restore();
-    });
-    it('should allow submodules to override the domain', function () {
-      const submodule = {
-        submodule: {
-          domainOverride: function () {
-            return 'foo.com'
-          }
-        },
-        config: {
-          storage: {
-            type: 'cookie'
-          }
-        }
-      }
-      setStoredValue(submodule, 'bar');
-      expect(coreStorage.setCookie.getCall(0).args[4]).to.equal('foo.com');
-    });
-
-    it('should pass null for domain if submodule does not override the domain', function () {
-      const submodule = {
-        submodule: {},
-        config: {
-          storage: {
-            type: 'cookie'
-          }
-        }
-      }
-      setStoredValue(submodule, 'bar');
-      expect(coreStorage.setCookie.getCall(0).args[4]).to.equal(null);
-    });
-  });
-
-  describe('Consent changes determine getId refreshes', function() {
-    let expStr;
-    let adUnits;
-
-    const mockIdCookieName = 'MOCKID';
-    let mockGetId = sinon.stub();
-    let mockDecode = sinon.stub();
-    let mockExtendId = sinon.stub();
-    const mockIdSystem = {
-      name: 'mockId',
-      getId: mockGetId,
-      decode: mockDecode,
-      extendId: mockExtendId
-    };
-    const userIdConfig = {
-      userSync: {
-        userIds: [{
-          name: 'mockId',
-          storage: {
-            name: 'MOCKID',
-            type: 'cookie',
-            refreshInSeconds: 30
-          }
-        }],
-        auctionDelay: 5
-      }
-    };
-
-    let cmpStub;
-    let testConsentData;
-    const consentConfig = {
-      cmpApi: 'iab',
-      timeout: 7500,
-      allowAuctionWithoutConsent: false
-    };
-
-    const sharedBeforeFunction = function() {
-      // clear cookies
-      expStr = (new Date(Date.now() + 25000).toUTCString());
-      coreStorage.setCookie(mockIdCookieName, '', EXPIRED_COOKIE_DATE);
-      coreStorage.setCookie(`${mockIdCookieName}_last`, '', EXPIRED_COOKIE_DATE);
-      coreStorage.setCookie(CONSENT_LOCAL_STORAGE_NAME, '', EXPIRED_COOKIE_DATE);
-
-      // init
-      adUnits = [getAdUnitMock()];
-      init(config);
-
-      // init id system
-      attachIdSystem(mockIdSystem);
-      config.setConfig(userIdConfig);
-    }
-    const sharedAfterFunction = function () {
-      config.resetConfig();
-      mockGetId.reset();
-      mockDecode.reset();
-      mockExtendId.reset();
-      cmpStub.restore();
-      resetConsentData();
-      delete window.__cmp;
-      delete window.__tcfapi;
-    };
-
-    describe('TCF v1', function() {
-      testConsentData = {
-        gdprApplies: true,
-        consentData: 'xyz',
-        apiVersion: 1
-      };
-
-      beforeEach(function () {
-        sharedBeforeFunction();
-
-        // init v1 consent management
-        window.__cmp = function () { };
-        delete window.__tcfapi;
-        cmpStub = sinon.stub(window, '__cmp').callsFake((...args) => {
-          args[2](testConsentData);
-        });
-        setConsentConfig(consentConfig);
-      });
-
-      afterEach(function() {
-        sharedAfterFunction();
-      });
-
-      it('does not call getId if no stored consent data and refresh is not needed', function () {
-        coreStorage.setCookie(mockIdCookieName, JSON.stringify({ id: '1234' }), expStr);
-        coreStorage.setCookie(`${mockIdCookieName}_last`, (new Date(Date.now() - 1 * 1000).toUTCString()), expStr);
-
-        let innerAdUnits;
-        consentManagementRequestBidsHook(() => { }, {});
-        requestBidsHook((config) => { innerAdUnits = config.adUnits }, { adUnits });
-
-        sinon.assert.notCalled(mockGetId);
-        sinon.assert.calledOnce(mockDecode);
-        sinon.assert.calledOnce(mockExtendId);
-      });
-
-      it('calls getId if no stored consent data but refresh is needed', function () {
-        coreStorage.setCookie(mockIdCookieName, JSON.stringify({ id: '1234' }), expStr);
-        coreStorage.setCookie(`${mockIdCookieName}_last`, (new Date(Date.now() - 60 * 1000).toUTCString()), expStr);
-
-        let innerAdUnits;
-        consentManagementRequestBidsHook(() => { }, {});
-        requestBidsHook((config) => { innerAdUnits = config.adUnits }, { adUnits });
-
-        sinon.assert.calledOnce(mockGetId);
-        sinon.assert.calledOnce(mockDecode);
-        sinon.assert.notCalled(mockExtendId);
-      });
-
-      it('calls getId if empty stored consent and refresh not needed', function () {
-        coreStorage.setCookie(mockIdCookieName, JSON.stringify({ id: '1234' }), expStr);
-        coreStorage.setCookie(`${mockIdCookieName}_last`, (new Date(Date.now() - 1 * 1000).toUTCString()), expStr);
-
-        setStoredConsentData();
-
-        let innerAdUnits;
-        consentManagementRequestBidsHook(() => { }, {});
-        requestBidsHook((config) => { innerAdUnits = config.adUnits }, { adUnits });
-
-        sinon.assert.calledOnce(mockGetId);
-        sinon.assert.calledOnce(mockDecode);
-        sinon.assert.notCalled(mockExtendId);
-      });
-
-      it('calls getId if stored consent does not match current consent and refresh not needed', function () {
-        coreStorage.setCookie(mockIdCookieName, JSON.stringify({ id: '1234' }), expStr);
-        coreStorage.setCookie(`${mockIdCookieName}_last`, (new Date(Date.now() - 1 * 1000).toUTCString()), expStr);
-
-        setStoredConsentData({
-          gdprApplies: testConsentData.gdprApplies,
-          consentString: 'abc',
-          apiVersion: testConsentData.apiVersion
-        });
-
-        let innerAdUnits;
-        consentManagementRequestBidsHook(() => { }, {});
-        requestBidsHook((config) => { innerAdUnits = config.adUnits }, { adUnits });
-
-        sinon.assert.calledOnce(mockGetId);
-        sinon.assert.calledOnce(mockDecode);
-        sinon.assert.notCalled(mockExtendId);
-      });
-
-      it('does not call getId if stored consent matches current consent and refresh not needed', function () {
-        coreStorage.setCookie(mockIdCookieName, JSON.stringify({ id: '1234' }), expStr);
-        coreStorage.setCookie(`${mockIdCookieName}_last`, (new Date(Date.now() - 1 * 1000).toUTCString()), expStr);
-
-        setStoredConsentData({
-          gdprApplies: testConsentData.gdprApplies,
-          consentString: testConsentData.consentData,
-          apiVersion: testConsentData.apiVersion
-        });
-
-        let innerAdUnits;
-        consentManagementRequestBidsHook(() => { }, {});
-        requestBidsHook((config) => { innerAdUnits = config.adUnits }, { adUnits });
-
-        sinon.assert.notCalled(mockGetId);
-        sinon.assert.calledOnce(mockDecode);
-        sinon.assert.calledOnce(mockExtendId);
-      });
-    });
->>>>>>> 4.5.0
   });
 });

@@ -234,7 +234,7 @@ describe('Publisher Common ID', function () {
       });
     });
 
-    it.skip('disable auto create', function() {
+    it('disable auto create', function() {
       setConfig({
         create: false
       });

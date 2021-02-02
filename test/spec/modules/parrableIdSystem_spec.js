@@ -1,5 +1,4 @@
 import { expect } from 'chai';
-import find from 'core-js-pure/features/array/find.js';
 import { config } from 'src/config.js';
 import * as utils from 'src/utils.js';
 import { newStorageManager } from 'src/storageManager.js';
@@ -69,19 +68,11 @@ function writeParrableCookie(parrableId) {
     'lax'
   );
 }
-<<<<<<< HEAD
 
 function removeParrableCookie() {
   storage.setCookie(P_COOKIE_NAME, '', EXPIRED_COOKIE_DATE);
 }
 
-=======
-
-function removeParrableCookie() {
-  storage.setCookie(P_COOKIE_NAME, '', EXPIRED_COOKIE_DATE);
-}
-
->>>>>>> 4.5.0
 describe('Parrable ID System', function() {
   describe('parrableIdSystem.getId() callback', function() {
     let logErrorStub;
@@ -191,7 +182,6 @@ describe('Parrable ID System', function() {
       expect(storage.getCookie(oldEidCookieName)).to.equal(null);
       expect(storage.getCookie(oldOptoutCookieName)).to.equal(null);
     });
-<<<<<<< HEAD
   });
 
   describe('parrableIdSystem.decode()', function() {
@@ -208,34 +198,12 @@ describe('Parrable ID System', function() {
     });
   });
 
-=======
-  });
-
-  describe('parrableIdSystem.decode()', function() {
-    it('provides the Parrable ID (EID) from a stored object', function() {
-      let eid = '01.123.4567890';
-      let parrableId = {
-        eid,
-        ibaOptout: true
-      };
-
-      expect(parrableIdSubmodule.decode(parrableId)).to.deep.equal({
-        parrableId
-      });
-    });
-  });
-
->>>>>>> 4.5.0
   describe('userId requestBids hook', function() {
     let adUnits;
 
     beforeEach(function() {
       adUnits = [getAdUnitMock()];
-<<<<<<< HEAD
       writeParrableCookie({ eid: P_COOKIE_EID });
-=======
-      writeParrableCookie({ eid: P_COOKIE_EID, ibaOptout: true });
->>>>>>> 4.5.0
       setSubmoduleRegistry([parrableIdSubmodule]);
       init(config);
       config.setConfig(getConfigMock());
@@ -250,54 +218,12 @@ describe('Parrable ID System', function() {
       requestBidsHook(function() {
         adUnits.forEach(unit => {
           unit.bids.forEach(bid => {
-            expect(bid).to.have.deep.nested.property('userId.parrableId');
-            expect(bid.userId.parrableId.eid).to.equal(P_COOKIE_EID);
-            expect(bid.userId.parrableId.ibaOptout).to.equal(true);
-            const parrableIdAsEid = find(bid.userIdAsEids, e => e.source == 'parrable.com');
-            expect(parrableIdAsEid).to.deep.equal({
-              source: 'parrable.com',
-              uids: [{
-                id: P_COOKIE_EID,
-                atype: 1,
-                ext: {
-                  ibaOptout: true
-                }
-              }]
-            });
+            expect(bid).to.have.deep.nested.property('userId.parrableid');
+            expect(bid.userId.parrableid).to.equal(P_COOKIE_EID);
           });
         });
         done();
       }, { adUnits });
     });
-<<<<<<< HEAD
-=======
-
-    it('supplies an optout reason when the EID is missing due to CCPA non-consent', function(done) {
-      // the ID system itself will not write a cookie with an EID when CCPA=true
-      writeParrableCookie({ ccpaOptout: true });
-
-      requestBidsHook(function() {
-        adUnits.forEach(unit => {
-          unit.bids.forEach(bid => {
-            expect(bid).to.have.deep.nested.property('userId.parrableId');
-            expect(bid.userId.parrableId).to.not.have.property('eid');
-            expect(bid.userId.parrableId.ccpaOptout).to.equal(true);
-            const parrableIdAsEid = find(bid.userIdAsEids, e => e.source == 'parrable.com');
-            expect(parrableIdAsEid).to.deep.equal({
-              source: 'parrable.com',
-              uids: [{
-                id: '',
-                atype: 1,
-                ext: {
-                  ccpaOptout: true
-                }
-              }]
-            });
-          });
-        });
-        done();
-      }, { adUnits });
-    });
->>>>>>> 4.5.0
   });
 });

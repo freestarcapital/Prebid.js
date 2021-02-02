@@ -42,7 +42,7 @@ import { auctionManager } from '../src/auctionManager.js';
 const defaultParamConstants = {
   env: 'vp',
   gdfp_req: 1,
-  output: 'vast',
+  output: 'xml_vast3',
   unviewed_position_start: 1,
 };
 
@@ -82,7 +82,7 @@ export function buildDfpVideoUrl(options) {
 
   const derivedParams = {
     correlator: Date.now(),
-    sz: parseSizesInput(deepAccess(adUnit, 'mediaTypes.video.playerSize')).join('|'),
+    sz: parseSizesInput(adUnit.sizes).join('|'),
     url: encodeURIComponent(location.href),
   };
   const encodedCustomParams = getCustParams(bid, options);

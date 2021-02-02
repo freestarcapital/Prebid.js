@@ -138,10 +138,10 @@ function generatePossibleEnumerations(arrayOfFields, delimiter) {
 /**
  * @summary If a the input bidder has a registered cpmadjustment it returns the input CPM after being adjusted
  */
-export function getBiddersCpmAdjustment(bidderName, inputCpm, bid = {}) {
+export function getBiddersCpmAdjustment(bidderName, inputCpm) {
   const adjustmentFunction = utils.deepAccess(getGlobal(), `bidderSettings.${bidderName}.bidCpmAdjustment`);
   if (adjustmentFunction) {
-    return parseFloat(adjustmentFunction(inputCpm, {...bid, cpm: inputCpm}));
+    return parseFloat(adjustmentFunction(inputCpm));
   }
   return parseFloat(inputCpm);
 }
@@ -286,10 +286,9 @@ export function updateAdUnitsForAuction(adUnits, floorData, auctionId) {
       bid.auctionId = auctionId;
       bid.floorData = {
         skipped: floorData.skipped,
-        skipRate: floorData.skipRate,
         modelVersion: utils.deepAccess(floorData, 'data.modelVersion'),
-        location: utils.deepAccess(floorData, 'data.location', 'noData'),
-        floorProvider: floorData.floorProvider,
+        location: utils.deepAccess(floorData, 'data.location'),
+        skipRate: floorData.skipRate,
         fetchStatus: _floorsConfig.fetchStatus
       }
     });
@@ -514,7 +513,6 @@ export function handleFetchResponse(fetchResponse) {
     _floorsConfig.data = fetchData;
     // set skipRate override if necessary
     _floorsConfig.skipRate = utils.isNumber(fetchData.skipRate) ? fetchData.skipRate : _floorsConfig.skipRate;
-    _floorsConfig.floorProvider = fetchData.floorProvider || _floorsConfig.floorProvider;
   }
 
   // if any auctions are waiting for fetch to finish, we need to continue them!
@@ -570,7 +568,6 @@ export function handleSetFloorsConfig(config) {
   _floorsConfig = utils.pick(config, [
     'enabled', enabled => enabled !== false, // defaults to true
     'auctionDelay', auctionDelay => auctionDelay || 0,
-    'floorProvider', floorProvider => utils.deepAccess(config, 'data.floorProvider', floorProvider),
     'endpoint', endpoint => endpoint || {},
     'skipRate', () => !isNaN(utils.deepAccess(config, 'data.skipRate')) ? config.data.skipRate : config.skipRate || 0,
     'enforcement', enforcement => utils.pick(enforcement || {}, [
@@ -682,7 +679,7 @@ export function addBidResponseHook(fn, adUnitCode, bid) {
   }
 
   // ok we got the bid response cpm in our desired currency. Now we need to run the bidders CPMAdjustment function if it exists
-  adjustedCpm = getBiddersCpmAdjustment(bid.bidderCode, adjustedCpm, bid);
+  adjustedCpm = getBiddersCpmAdjustment(bid.bidderCode, adjustedCpm);
 
   // add necessary data information for analytics adapters / floor providers would possibly need
   addFloorDataToBid(floorData, floorInfo, bid, adjustedCpm);

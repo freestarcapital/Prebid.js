@@ -1,17 +1,12 @@
 import * as utils from '../src/utils.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { BANNER } from '../src/mediaTypes.js';
-import { getStorageManager } from '../src/storageManager.js';
 
-const GLVID = 744;
 const DEFAULT_SUB_DOMAIN = 'prebid';
 const BIDDER_CODE = 'vidazoo';
 const BIDDER_VERSION = '1.0.0';
 const CURRENCY = 'USD';
 const TTL_SECONDS = 60 * 5;
-const DEAL_ID_EXPIRY = 1000 * 60 * 15;
-const UNIQUE_DEAL_ID_EXPIRY = 1000 * 60 * 15;
-const SESSION_ID_KEY = 'vidSid';
 const INTERNAL_SYNC_TYPE = {
   IFRAME: 'iframe',
   IMAGE: 'img'
@@ -28,43 +23,25 @@ export const SUPPORTED_ID_SYSTEMS = {
   'idl_env': 1,
   'lipb': 1,
   'netId': 1,
-  'parrableId': 1,
+  'parrableid': 1,
   'pubcid': 1,
   'tdid': 1,
 };
-const storage = getStorageManager(GLVID);
 
 export function createDomain(subDomain = DEFAULT_SUB_DOMAIN) {
   return `https://${subDomain}.cootlogix.com`;
 }
 
-export function extractCID(params) {
-  return params.cId || params.CID || params.cID || params.CId || params.cid || params.ciD || params.Cid || params.CiD;
-}
-
-export function extractPID(params) {
-  return params.pId || params.PID || params.pID || params.PId || params.pid || params.piD || params.Pid || params.PiD;
-}
-
-export function extractSubDomain(params) {
-  return params.subDomain || params.SubDomain || params.Subdomain || params.subdomain || params.SUBDOMAIN || params.subDOMAIN;
-}
-
 function isBidRequestValid(bid) {
   const params = bid.params || {};
-  return !!(extractCID(params) && extractPID(params));
+  return !!(params.cId && params.pId);
 }
 
 function buildRequest(bid, topWindowUrl, sizes, bidderRequest) {
   const { params, bidId, userId, adUnitCode } = bid;
-  const { bidFloor, ext } = params;
+  const { bidFloor, cId, pId, ext, subDomain } = params;
   const hashUrl = hashCode(topWindowUrl);
   const dealId = getNextDealId(hashUrl);
-  const uniqueDealId = getUniqueDealId(hashUrl);
-  const sId = getVidazooSessionId();
-  const cId = extractCID(params);
-  const pId = extractPID(params);
-  const subDomain = extractSubDomain(params);
 
   let data = {
     url: encodeURIComponent(topWindowUrl),
@@ -73,10 +50,8 @@ function buildRequest(bid, topWindowUrl, sizes, bidderRequest) {
     bidId: bidId,
     adUnitCode: adUnitCode,
     publisherId: pId,
-    sessionId: sId,
     sizes: sizes,
     dealId: dealId,
-    uniqueDealId: uniqueDealId,
     bidderVersion: BIDDER_VERSION,
     prebidVersion: '$prebid.version$',
     res: `${screen.width}x${screen.height}`
@@ -95,7 +70,6 @@ function buildRequest(bid, topWindowUrl, sizes, bidderRequest) {
   if (bidderRequest.uspConsent) {
     data.usPrivacy = bidderRequest.uspConsent
   }
-
   const dto = {
     method: 'POST',
     url: `${createDomain(subDomain)}/prebid/multi/${cId}`,
@@ -121,9 +95,6 @@ function appendUserIdsToRequestPayload(payloadRef, userIds) {
           break;
         case 'lipb':
           payloadRef[key] = userId.lipbid;
-          break;
-        case 'parrableId':
-          payloadRef[key] = userId.eid;
           break;
         default:
           payloadRef[key] = userId;
@@ -211,7 +182,7 @@ function getUserSyncs(syncOptions, responses) {
   return [];
 }
 
-export function hashCode(s, prefix = '_') {
+function hashCode(s, prefix = '_') {
   const l = s.length;
   let h = 0
   let i = 0;
@@ -221,67 +192,33 @@ export function hashCode(s, prefix = '_') {
   return prefix + h;
 }
 
-export function getNextDealId(key, expiry = DEAL_ID_EXPIRY) {
+function getNextDealId(key) {
   try {
-    const data = getStorageItem(key);
-    let currentValue = 0;
-    let timestamp;
-
-    if (data && data.value && Date.now() - data.created < expiry) {
-      currentValue = data.value;
-      timestamp = data.created;
-    }
-
+    const currentValue = Number(getStorageItem(key) || 0);
     const nextValue = currentValue + 1;
-    setStorageItem(key, nextValue, timestamp);
+    setStorageItem(key, nextValue);
     return nextValue;
   } catch (e) {
     return 0;
   }
 }
 
-export function getUniqueDealId(key, expiry = UNIQUE_DEAL_ID_EXPIRY) {
-  const storageKey = `u_${key}`;
-  const now = Date.now();
-  const data = getStorageItem(storageKey);
-  let uniqueId;
-
-  if (!data || !data.value || now - data.created > expiry) {
-    uniqueId = `${key}_${now.toString()}`;
-    setStorageItem(storageKey, uniqueId);
-  } else {
-    uniqueId = data.value;
-  }
-
-  return uniqueId;
+function getStorage() {
+  return window['sessionStorage'];
 }
 
-export function getVidazooSessionId() {
-  return getStorageItem(SESSION_ID_KEY) || '';
-}
-
-export function getStorageItem(key) {
+function getStorageItem(key) {
   try {
-    return tryParseJSON(storage.getDataFromLocalStorage(key));
-  } catch (e) { }
-
-  return null;
-}
-
-export function setStorageItem(key, value, timestamp) {
-  try {
-    const created = timestamp || Date.now();
-    const data = JSON.stringify({ value, created });
-    storage.setDataInLocalStorage(key, data);
-  } catch (e) { }
-}
-
-export function tryParseJSON(value) {
-  try {
-    return JSON.parse(value);
+    return getStorage().getItem(key);
   } catch (e) {
-    return value;
+    return null;
   }
+}
+
+function setStorageItem(key, value) {
+  try {
+    getStorage().setItem(key, String(value));
+  } catch (e) { }
 }
 
 export const spec = {

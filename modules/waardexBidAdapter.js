@@ -62,6 +62,7 @@ function buildBidRequests(validBidRequests) {
 
     const item = {
       bidId: validBidRequest.bidId,
+      placementId: params.placementId,
       bidfloor: parseFloat(params.bidfloor) || 0,
       position: parseInt(params.position) || 1,
       instl: parseInt(params.instl) || 0,
@@ -169,7 +170,7 @@ export const spec = {
   code: BIDDER_CODE,
   supportedMediaTypes: [BANNER],
 
-  isBidRequestValid: (bid) => Boolean(bid.bidId && bid.params && +bid.params.zoneId),
+  isBidRequestValid: (bid) => Boolean(bid.bidId && bid.params && +bid.params.placementId && +bid.params.pubId),
 
   /**
    * @param {Object[]} validBidRequests -  array of valid bid requests
@@ -180,12 +181,12 @@ export const spec = {
     const payload = getCommonBidsData(bidderRequest);
     payload.bidRequests = buildBidRequests(validBidRequests);
 
-    let zoneId = '';
-    if (validBidRequests[0] && validBidRequests[0].params && +validBidRequests[0].params.zoneId) {
-      zoneId = +validBidRequests[0].params.zoneId;
+    let pubId = '';
+    if (validBidRequests[0] && validBidRequests[0].params && +validBidRequests[0].params.pubId) {
+      pubId = +validBidRequests[0].params.pubId;
     }
 
-    const url = `${ENDPOINT}?pubId=${zoneId}`;
+    const url = `${ENDPOINT}?pubId=${pubId}`;
 
     return {
       method: 'POST',

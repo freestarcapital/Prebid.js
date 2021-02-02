@@ -71,54 +71,34 @@ describe('AdheseAdapter', function () {
       }
     };
 
-    it('should include requested slots', function () {
-      let req = spec.buildRequests([ minimalBid() ], bidderRequest);
-
-      expect(JSON.parse(req.data).slots).to.deep.include({ 'slotname': '_main_page_-leaderboard' });
-    });
-
     it('should include all extra bid params', function () {
       let req = spec.buildRequests([ bidWithParams({ 'ag': '25' }) ], bidderRequest);
 
-      expect(JSON.parse(req.data).parameters).to.deep.include({ 'ag': [ '25' ] });
+      expect(req.url).to.contain('/sl_main_page_-leaderboard/ag25');
     });
 
     it('should include duplicate bid params once', function () {
       let req = spec.buildRequests([ bidWithParams({ 'ag': '25' }), bidWithParams({ 'ag': '25', 'ci': 'gent' }) ], bidderRequest);
 
-      expect(JSON.parse(req.data).parameters).to.deep.include({'ag': ['25']}).and.to.deep.include({ 'ci': [ 'gent' ] });
+      expect(req.url).to.contain('/sl_main_page_-leaderboard/ag25/cigent');
     });
 
     it('should split multiple target values', function () {
       let req = spec.buildRequests([ bidWithParams({ 'ci': 'london' }), bidWithParams({ 'ci': 'gent' }) ], bidderRequest);
 
-      expect(JSON.parse(req.data).parameters).to.deep.include({ 'ci': [ 'london', 'gent' ] });
-    });
-
-    it('should filter out empty params', function () {
-      let req = spec.buildRequests([ bidWithParams({ 'aa': [], 'bb': null, 'cc': '', 'dd': [ '', '' ], 'ee': [ 0, 1, null ], 'ff': 0, 'gg': [ 'x', 'y', '' ] }) ], bidderRequest);
-
-      let params = JSON.parse(req.data).parameters;
-      expect(params).to.not.have.any.keys('aa', 'bb', 'cc', 'dd');
-      expect(params).to.deep.include({ 'ee': [ 0, 1 ], 'ff': [ 0 ], 'gg': [ 'x', 'y' ] });
+      expect(req.url).to.contain('/sl_main_page_-leaderboard/cilondon;gent');
     });
 
     it('should include gdpr consent param', function () {
       let req = spec.buildRequests([ minimalBid() ], bidderRequest);
 
-      expect(JSON.parse(req.data).parameters).to.deep.include({ 'xt': [ 'CONSENT_STRING' ] });
+      expect(req.url).to.contain('/xtCONSENT_STRING');
     });
 
     it('should include referer param in base64url format', function () {
       let req = spec.buildRequests([ minimalBid() ], bidderRequest);
 
-      expect(JSON.parse(req.data).parameters).to.deep.include({ 'xf': [ 'aHR0cDovL3ByZWJpZC5vcmcvZGV2LWRvY3Mvc3ViamVjdHM_X2Q9MQ' ] });
-    });
-
-    it('should include id5 id as /x5 param', function () {
-      let req = spec.buildRequests([ bidWithParams({}, { 'id5id': 'ID5-1234567890' }) ], bidderRequest);
-
-      expect(JSON.parse(req.data).parameters).to.deep.include({ 'x5': [ 'ID5-1234567890' ] });
+      expect(req.url).to.contain('/xfaHR0cDovL3ByZWJpZC5vcmcvZGV2LWRvY3Mvc3ViamVjdHM_X2Q9MQ');
     });
 
     it('should include id5 id as /x5 param', function () {
@@ -132,18 +112,6 @@ describe('AdheseAdapter', function () {
       let req = spec.buildRequests([ bid ], bidderRequest);
 
       expect(req.bids).to.deep.equal([ bid ]);
-    });
-
-    it('should make a POST request', function () {
-      let req = spec.buildRequests([ minimalBid() ], bidderRequest);
-
-      expect(req.method).to.equal('POST');
-    });
-
-    it('should request the json endpoint', function () {
-      let req = spec.buildRequests([ minimalBid() ], bidderRequest);
-
-      expect(req.url).to.equal('https://ads-demo.adhese.com/json');
     });
   });
 
@@ -243,12 +211,7 @@ describe('AdheseAdapter', function () {
         adhese: {
           origin: 'RUBICON',
           originInstance: '',
-<<<<<<< HEAD
           originData: {} }
-=======
-          originData: {}
-        }
->>>>>>> 4.5.0
       }];
       expect(spec.interpretResponse(sspVideoResponse, bidRequest)).to.deep.equal(expectedResponse);
     });

@@ -314,10 +314,9 @@ describe('the price floors module', function () {
       validateBidRequests(false, {
         skipped: true,
         modelVersion: undefined,
-        location: 'noData',
+        location: undefined,
         skipRate: 0,
-        fetchStatus: undefined,
-        floorProvider: undefined
+        fetchStatus: undefined
       });
     });
     it('should use adUnit level data if not setConfig or fetch has occured', function () {
@@ -349,66 +348,18 @@ describe('the price floors module', function () {
         modelVersion: 'adUnit Model Version',
         location: 'adUnit',
         skipRate: 0,
-        fetchStatus: undefined,
-        floorProvider: undefined
+        fetchStatus: undefined
       });
     });
     it('bidRequests should have getFloor function and flooring meta data when setConfig occurs', function () {
-      handleSetFloorsConfig({...basicFloorConfig, floorProvider: 'floorprovider'});
+      handleSetFloorsConfig({...basicFloorConfig});
       runStandardAuction();
       validateBidRequests(true, {
         skipped: false,
         modelVersion: 'basic model',
         location: 'setConfig',
         skipRate: 0,
-        fetchStatus: undefined,
-        floorProvider: 'floorprovider'
-      });
-    });
-    it('should pick the right floorProvider', function () {
-      let inputFloors = {
-        ...basicFloorConfig,
-        floorProvider: 'providerA',
-        data: {
-          ...basicFloorData,
-          floorProvider: 'providerB',
-        }
-      };
-      handleSetFloorsConfig(inputFloors);
-      runStandardAuction();
-      validateBidRequests(true, {
-        skipped: false,
-        modelVersion: 'basic model',
-        location: 'setConfig',
-        skipRate: 0,
-        fetchStatus: undefined,
-        floorProvider: 'providerB'
-      });
-
-      // if not at data level take top level
-      delete inputFloors.data.floorProvider;
-      handleSetFloorsConfig(inputFloors);
-      runStandardAuction();
-      validateBidRequests(true, {
-        skipped: false,
-        modelVersion: 'basic model',
-        location: 'setConfig',
-        skipRate: 0,
-        fetchStatus: undefined,
-        floorProvider: 'providerA'
-      });
-
-      // if none should be undefined
-      delete inputFloors.floorProvider;
-      handleSetFloorsConfig(inputFloors);
-      runStandardAuction();
-      validateBidRequests(true, {
-        skipped: false,
-        modelVersion: 'basic model',
-        location: 'setConfig',
-        skipRate: 0,
-        fetchStatus: undefined,
-        floorProvider: undefined
+        fetchStatus: undefined
       });
     });
     it('should take the right skipRate depending on input', function () {
@@ -429,8 +380,7 @@ describe('the price floors module', function () {
         modelVersion: 'basic model',
         location: 'setConfig',
         skipRate: 50,
-        fetchStatus: undefined,
-        floorProvider: undefined
+        fetchStatus: undefined
       });
 
       // if that does not exist uses topLevel skipRate setting
@@ -442,8 +392,7 @@ describe('the price floors module', function () {
         modelVersion: 'basic model',
         location: 'setConfig',
         skipRate: 10,
-        fetchStatus: undefined,
-        floorProvider: undefined
+        fetchStatus: undefined
       });
 
       // if that is not there defaults to zero
@@ -455,95 +404,7 @@ describe('the price floors module', function () {
         modelVersion: 'basic model',
         location: 'setConfig',
         skipRate: 0,
-        fetchStatus: undefined,
-        floorProvider: undefined
-      });
-    });
-    it('should randomly pick a model if floorsSchemaVersion is 2', function () {
-      let inputFloors = {
-        ...basicFloorConfig,
-        floorProvider: 'floorprovider',
-        data: {
-          floorsSchemaVersion: 2,
-          currency: 'USD',
-          modelGroups: [
-            {
-              modelVersion: 'model-1',
-              modelWeight: 10,
-              schema: {
-                delimiter: '|',
-                fields: ['mediaType']
-              },
-              values: {
-                'banner': 1.0,
-                '*': 2.5
-              }
-            }, {
-              modelVersion: 'model-2',
-              modelWeight: 40,
-              schema: {
-                delimiter: '|',
-                fields: ['size']
-              },
-              values: {
-                '300x250': 1.0,
-                '*': 2.5
-              }
-            }, {
-              modelVersion: 'model-3',
-              modelWeight: 50,
-              schema: {
-                delimiter: '|',
-                fields: ['domain']
-              },
-              values: {
-                'www.prebid.org': 1.0,
-                '*': 2.5
-              }
-            }
-          ]
-        }
-      };
-      handleSetFloorsConfig(inputFloors);
-
-      // stub random to give us wanted vals
-      let randValue;
-      sandbox.stub(Math, 'random').callsFake(() => randValue);
-
-      // 0 - 10 should use first model
-      randValue = 0.05;
-      runStandardAuction();
-      validateBidRequests(true, {
-        skipped: false,
-        modelVersion: 'model-1',
-        location: 'setConfig',
-        skipRate: 0,
-        fetchStatus: undefined,
-        floorProvider: 'floorprovider'
-      });
-
-      // 11 - 50 should use second model
-      randValue = 0.40;
-      runStandardAuction();
-      validateBidRequests(true, {
-        skipped: false,
-        modelVersion: 'model-2',
-        location: 'setConfig',
-        skipRate: 0,
-        fetchStatus: undefined,
-        floorProvider: 'floorprovider'
-      });
-
-      // 51 - 100 should use third model
-      randValue = 0.75;
-      runStandardAuction();
-      validateBidRequests(true, {
-        skipped: false,
-        modelVersion: 'model-3',
-        location: 'setConfig',
-        skipRate: 0,
-        fetchStatus: undefined,
-        floorProvider: 'floorprovider'
+        fetchStatus: undefined
       });
     });
     it('should randomly pick a model if floorsSchemaVersion is 2', function () {
@@ -653,8 +514,7 @@ describe('the price floors module', function () {
         modelVersion: 'basic model',
         location: 'setConfig',
         skipRate: 0,
-        fetchStatus: undefined,
-        floorProvider: undefined
+        fetchStatus: undefined
       });
     });
     it('should dynamically add new schema fileds and functions if added via setConfig', function () {
@@ -731,8 +591,7 @@ describe('the price floors module', function () {
         modelVersion: 'basic model',
         location: 'setConfig',
         skipRate: 0,
-        fetchStatus: 'timeout',
-        floorProvider: undefined
+        fetchStatus: 'timeout'
       });
       fakeFloorProvider.respond();
     });
@@ -745,7 +604,7 @@ describe('the price floors module', function () {
       fakeFloorProvider.respondWith(JSON.stringify(fetchFloorData));
 
       // run setConfig indicating fetch
-      handleSetFloorsConfig({...basicFloorConfig, floorProvider: 'floorprovider', auctionDelay: 250, endpoint: {url: 'http://www.fakeFloorProvider.json'}});
+      handleSetFloorsConfig({...basicFloorConfig, auctionDelay: 250, endpoint: {url: 'http://www.fakeFloorProvider.json'}});
 
       // floor provider should be called
       expect(fakeFloorProvider.requests.length).to.equal(1);
@@ -768,83 +627,7 @@ describe('the price floors module', function () {
         modelVersion: 'fetch model name',
         location: 'fetch',
         skipRate: 0,
-        fetchStatus: 'success',
-        floorProvider: 'floorprovider'
-      });
-    });
-    it('it should correctly overwrite floorProvider with fetch provider', function () {
-      // init the fake server with response stuff
-      let fetchFloorData = {
-        ...basicFloorData,
-        floorProvider: 'floorProviderD', // change the floor provider
-        modelVersion: 'fetch model name', // change the model name
-      };
-      fakeFloorProvider.respondWith(JSON.stringify(fetchFloorData));
-
-      // run setConfig indicating fetch
-      handleSetFloorsConfig({...basicFloorConfig, floorProvider: 'floorproviderC', auctionDelay: 250, endpoint: {url: 'http://www.fakeFloorProvider.json'}});
-
-      // floor provider should be called
-      expect(fakeFloorProvider.requests.length).to.equal(1);
-      expect(fakeFloorProvider.requests[0].url).to.equal('http://www.fakeFloorProvider.json');
-
-      // start the auction it should delay and not immediately call `continueAuction`
-      runStandardAuction();
-
-      // exposedAdUnits should be undefined if the auction has not continued
-      expect(exposedAdUnits).to.be.undefined;
-
-      // make the fetch respond
-      fakeFloorProvider.respond();
-
-      // the exposedAdUnits should be from the fetch not setConfig level data
-      // and fetchStatus is success since fetch worked
-      validateBidRequests(true, {
-        skipped: false,
-        modelVersion: 'fetch model name',
-        location: 'fetch',
-        skipRate: 0,
-        fetchStatus: 'success',
-        floorProvider: 'floorProviderD'
-      });
-    });
-    it('it should correctly overwrite skipRate with fetch skipRate', function () {
-      // so floors does not skip
-      sandbox.stub(Math, 'random').callsFake(() => 0.99);
-      // init the fake server with response stuff
-      let fetchFloorData = {
-        ...basicFloorData,
-        modelVersion: 'fetch model name', // change the model name
-      };
-      fetchFloorData.skipRate = 95;
-      fakeFloorProvider.respondWith(JSON.stringify(fetchFloorData));
-
-      // run setConfig indicating fetch
-      handleSetFloorsConfig({...basicFloorConfig, floorProvider: 'floorprovider', auctionDelay: 250, endpoint: {url: 'http://www.fakeFloorProvider.json'}});
-
-      // floor provider should be called
-      expect(fakeFloorProvider.requests.length).to.equal(1);
-      expect(fakeFloorProvider.requests[0].url).to.equal('http://www.fakeFloorProvider.json');
-
-      // start the auction it should delay and not immediately call `continueAuction`
-      runStandardAuction();
-
-      // exposedAdUnits should be undefined if the auction has not continued
-      expect(exposedAdUnits).to.be.undefined;
-
-      // make the fetch respond
-      fakeFloorProvider.respond();
-      expect(exposedAdUnits).to.not.be.undefined;
-
-      // the exposedAdUnits should be from the fetch not setConfig level data
-      // and fetchStatus is success since fetch worked
-      validateBidRequests(true, {
-        skipped: false,
-        modelVersion: 'fetch model name',
-        location: 'fetch',
-        skipRate: 95,
-        fetchStatus: 'success',
-        floorProvider: 'floorprovider'
+        fetchStatus: 'success'
       });
     });
     it('it should correctly overwrite skipRate with fetch skipRate', function () {
@@ -903,8 +686,7 @@ describe('the price floors module', function () {
         modelVersion: 'basic model',
         location: 'setConfig',
         skipRate: 0,
-        fetchStatus: 'error',
-        floorProvider: undefined
+        fetchStatus: 'error'
       });
     });
     it('Should not break if floor provider returns non json', function () {
@@ -926,8 +708,7 @@ describe('the price floors module', function () {
         modelVersion: 'basic model',
         location: 'setConfig',
         skipRate: 0,
-        fetchStatus: 'success',
-        floorProvider: undefined
+        fetchStatus: 'success'
       });
     });
     it('should handle not using fetch correctly', function () {
@@ -1200,39 +981,6 @@ describe('the price floors module', function () {
           appnexus: {
             bidCpmAdjustment: function (bidCpm) {
               return bidCpm * 0.75;
-            },
-          }
-        };
-        _floorDataForAuction[bidRequest.auctionId] = utils.deepClone(basicFloorConfig);
-        _floorDataForAuction[bidRequest.auctionId].data.values = { '*': 1.0 };
-        let appnexusBid = {
-          ...bidRequest,
-          bidder: 'appnexus'
-        };
-
-        // the conversion should be what the bidder would need to return in order to match the actual floor
-        // rubicon
-        expect(bidRequest.getFloor()).to.deep.equal({
-          currency: 'USD',
-          floor: 2.0 // a 2.0 bid after rubicons cpm adjustment would be 1.0 and thus is the floor after adjust
-        });
-
-        // appnexus
-        expect(appnexusBid.getFloor()).to.deep.equal({
-          currency: 'USD',
-          floor: 1.3334 // 1.3334 * 0.75 = 1.000005 which is the floor (we cut off getFloor at 4 decimal points)
-        });
-      });
-      it('should work when cpmAdjust function uses bid object', function () {
-        getGlobal().bidderSettings = {
-          rubicon: {
-            bidCpmAdjustment: function (bidCpm, bidResponse) {
-              return bidResponse.cpm * 0.5;
-            },
-          },
-          appnexus: {
-            bidCpmAdjustment: function (bidCpm, bidResponse) {
-              return bidResponse.cpm * 0.75;
             },
           }
         };
