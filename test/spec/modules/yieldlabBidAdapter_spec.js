@@ -10,12 +10,7 @@ const REQUEST = {
     'adSize': '728x90',
     'targeting': {
       'key1': 'value1',
-      'key2': 'value2',
-      'notDoubleEncoded': 'value3,value4'
-    },
-    'customParams': {
-      'extraParam': true,
-      'foo': 'bar'
+      'key2': 'value2'
     },
     'customParams': {
       'extraParam': true,
@@ -49,16 +44,6 @@ const RESPONSE = {
 
 const VIDEO_RESPONSE = Object.assign({}, RESPONSE, {
   'adtype': 'VIDEO'
-})
-
-const REQPARAMS = {
-  json: true,
-  ts: 1234567890
-}
-
-const REQPARAMS_GDPR = Object.assign({}, REQPARAMS, {
-  gdpr: true,
-  consent: 'BN5lERiOMYEdiAKAWXEND1AAAAE6DABACMA'
 })
 
 describe('yieldlabBidAdapter', function () {
@@ -99,8 +84,8 @@ describe('yieldlabBidAdapter', function () {
       expect(request.validBidRequests).to.eql([REQUEST])
     })
 
-    it('passes single-encoded targeting to bid request', function () {
-      expect(request.url).to.include('t=key1%3Dvalue1%26key2%3Dvalue2%26notDoubleEncoded%3Dvalue3%2Cvalue4')
+    it('passes targeting to bid request', function () {
+      expect(request.url).to.include('t=key1%3Dvalue1%26key2%3Dvalue2')
     })
 
     it('passes userids to bid request', function () {
@@ -111,23 +96,6 @@ describe('yieldlabBidAdapter', function () {
       expect(request.url).to.include('extraParam=true&foo=bar')
     })
 
-<<<<<<< HEAD
-=======
-    const refererRequest = spec.buildRequests(bidRequests, {
-      refererInfo: {
-        canonicalUrl: undefined,
-        numIframes: 0,
-        reachedTop: true,
-        referer: 'https://www.yieldlab.de/test?with=querystring',
-        stack: ['https://www.yieldlab.de/test?with=querystring']
-      }
-    })
-
-    it('passes encoded referer to bid request', function () {
-      expect(refererRequest.url).to.include('pubref=https%3A%2F%2Fwww.yieldlab.de%2Ftest%3Fwith%3Dquerystring')
-    })
-
->>>>>>> 4.5.0
     const gdprRequest = spec.buildRequests(bidRequests, {
       gdprConsent: {
         consentString: 'BN5lERiOMYEdiAKAWXEND1AAAAE6DABACMA',
@@ -148,7 +116,7 @@ describe('yieldlabBidAdapter', function () {
     })
 
     it('should get correct bid response', function () {
-      const result = spec.interpretResponse({body: [RESPONSE]}, {validBidRequests: [REQUEST], queryParams: REQPARAMS})
+      const result = spec.interpretResponse({body: [RESPONSE]}, {validBidRequests: [REQUEST]})
 
       expect(result[0].requestId).to.equal('2d925f27f5079f')
       expect(result[0].cpm).to.equal(0.01)
@@ -164,13 +132,6 @@ describe('yieldlabBidAdapter', function () {
       expect(result[0].ad).to.include('&id=abc')
     })
 
-    it('should append gdpr parameters to adtag', function () {
-      const result = spec.interpretResponse({body: [RESPONSE]}, {validBidRequests: [REQUEST], queryParams: REQPARAMS_GDPR})
-
-      expect(result[0].ad).to.include('&gdpr=true')
-      expect(result[0].ad).to.include('&consent=BN5lERiOMYEdiAKAWXEND1AAAAE6DABACMA')
-    })
-
     it('should get correct bid response when passing more than one size', function () {
       const REQUEST2 = Object.assign({}, REQUEST, {
         'sizes': [
@@ -179,7 +140,7 @@ describe('yieldlabBidAdapter', function () {
           [970, 90],
         ]
       })
-      const result = spec.interpretResponse({body: [RESPONSE]}, {validBidRequests: [REQUEST2], queryParams: REQPARAMS})
+      const result = spec.interpretResponse({body: [RESPONSE]}, {validBidRequests: [REQUEST2]})
 
       expect(result[0].requestId).to.equal('2d925f27f5079f')
       expect(result[0].cpm).to.equal(0.01)
@@ -203,27 +164,13 @@ describe('yieldlabBidAdapter', function () {
           }
         }
       })
-      const result = spec.interpretResponse({body: [VIDEO_RESPONSE]}, {validBidRequests: [VIDEO_REQUEST], queryParams: REQPARAMS})
+      const result = spec.interpretResponse({body: [VIDEO_RESPONSE]}, {validBidRequests: [VIDEO_REQUEST]})
 
       expect(result[0].requestId).to.equal('2d925f27f5079f')
       expect(result[0].cpm).to.equal(0.01)
       expect(result[0].mediaType).to.equal('video')
       expect(result[0].vastUrl).to.include('https://ad.yieldlab.net/d/1111/2222/728x90?ts=')
       expect(result[0].vastUrl).to.include('&id=abc')
-    })
-
-    it('should append gdpr parameters to vastUrl', function () {
-      const VIDEO_REQUEST = Object.assign({}, REQUEST, {
-        'mediaTypes': {
-          'video': {
-            'context': 'instream'
-          }
-        }
-      })
-      const result = spec.interpretResponse({body: [VIDEO_RESPONSE]}, {validBidRequests: [VIDEO_REQUEST], queryParams: REQPARAMS_GDPR})
-
-      expect(result[0].vastUrl).to.include('&gdpr=true')
-      expect(result[0].vastUrl).to.include('&consent=BN5lERiOMYEdiAKAWXEND1AAAAE6DABACMA')
     })
 
     it('should add renderer if outstream context', function () {
@@ -235,7 +182,7 @@ describe('yieldlabBidAdapter', function () {
           }
         }
       })
-      const result = spec.interpretResponse({body: [VIDEO_RESPONSE]}, {validBidRequests: [OUTSTREAM_REQUEST], queryParams: REQPARAMS})
+      const result = spec.interpretResponse({body: [VIDEO_RESPONSE]}, {validBidRequests: [OUTSTREAM_REQUEST]})
 
       expect(result[0].renderer.id).to.equal('2d925f27f5079f')
       expect(result[0].renderer.url).to.equal('https://ad2.movad.net/dynamic.ad?a=o193092&ma_loadEvent=ma-start-event')

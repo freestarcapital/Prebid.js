@@ -4,10 +4,7 @@ import { BANNER, VIDEO } from '../src/mediaTypes.js';
 import { INSTREAM, OUTSTREAM } from '../src/video.js';
 import { Renderer } from '../src/Renderer.js';
 import find from 'core-js-pure/features/array/find.js';
-import { getStorageManager } from '../src/storageManager.js';
-import { registerBidder } from '../src/adapters/bidderFactory.js';
-
-const storage = getStorageManager();
+const { registerBidder } = require('../src/adapters/bidderFactory.js');
 
 const ENDPOINT = 'https://onetag-sys.com/prebid-request';
 const USER_SYNC_ENDPOINT = 'https://onetag-sys.com/usync/';
@@ -65,15 +62,14 @@ function buildRequests(validBidRequests, bidderRequest) {
   if (bidderRequest && bidderRequest.userId) {
     payload.userId = bidderRequest.userId;
   }
-  try {
-    if (storage.hasLocalStorage()) {
-      payload.onetagSid = storage.getDataFromLocalStorage('onetag_sid');
-    }
-  } catch (e) {}
+  if (window.localStorage) {
+    payload.onetagSid = window.localStorage.getItem('onetag_sid');
+  }
+  const payloadString = JSON.stringify(payload);
   return {
     method: 'POST',
     url: ENDPOINT,
-    data: JSON.stringify(payload)
+    data: payloadString
   }
 }
 
@@ -165,22 +161,17 @@ function onetagRenderer({renderer, width, height, vastXml, adUnitCode}) {
 }
 
 function getFrameNesting() {
-  let topmostFrame = window;
-  let parent = window.parent;
-  let currentFrameNesting = 0;
+  let frame = window;
   try {
-    while (topmostFrame !== topmostFrame.parent) {
-      parent = topmostFrame.parent;
+    while (frame !== frame.top) {
       // eslint-disable-next-line no-unused-expressions
-      parent.location.href;
-      topmostFrame = topmostFrame.parent;
+      frame.location.href;
+      frame = frame.parent;
     }
-  } catch (e) {
-    currentFrameNesting = parent === topmostFrame.top ? 1 : 2;
-  }
+  } catch (e) {}
   return {
-    topmostFrame,
-    currentFrameNesting
+    topmostFrame: frame,
+    currentFrameNesting: frame.top === frame ? 1 : 2
   }
 }
 
@@ -207,11 +198,8 @@ function getDocumentVisibility(window) {
 function getPageInfo() {
   const { topmostFrame, currentFrameNesting } = getFrameNesting();
   return {
-    location: topmostFrame.location.href,
-    referrer:
-      topmostFrame.document.referrer !== ''
-        ? topmostFrame.document.referrer
-        : null,
+    location: encodeURIComponent(topmostFrame.location.href),
+    referrer: encodeURIComponent(topmostFrame.document.referrer) || '0',
     masked: currentFrameNesting,
     wWidth: topmostFrame.innerWidth,
     wHeight: topmostFrame.innerHeight,
@@ -228,11 +216,7 @@ function getPageInfo() {
     docHidden: getDocumentVisibility(topmostFrame),
     docHeight: topmostFrame.document.body ? topmostFrame.document.body.scrollHeight : null,
     hLength: history.length,
-    timing: getTiming(),
-    version: {
-      prebid: '$prebid.version$',
-      adapter: '1.0.0'
-    }
+    timing: getTiming()
   };
 }
 
@@ -272,7 +256,6 @@ function setGeneralInfo(bidRequest) {
   this['auctionId'] = bidRequest.auctionId;
   this['transactionId'] = bidRequest.transactionId;
   this['pubId'] = params.pubId;
-  this['ext'] = params.ext;
   if (params.pubClick) {
     this['click'] = params.pubClick;
   }
@@ -343,7 +326,7 @@ function parseSizes(bid) {
 
 function getSizes(sizes) {
   const ret = [];
-  for (let i = 0; i < sizes.length; i++) {
+  for (let i = 0, lenght = sizes.length; i < lenght; i++) {
     const size = sizes[i];
     ret.push({width: size[0], height: size[1]})
   }

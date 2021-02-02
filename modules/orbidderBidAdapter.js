@@ -1,20 +1,18 @@
 import {registerBidder} from '../src/adapters/bidderFactory.js';
 import { getStorageManager } from '../src/storageManager.js';
 
-const storageManager = getStorageManager();
+const storage = getStorageManager();
 
 export const spec = {
   code: 'orbidder',
-  hostname: 'https://orbidder.otto.de',
-
-  getHostname() {
-    let ret = this.hostname;
+  orbidderHost: (() => {
+    let ret = 'https://orbidder.otto.de';
     try {
-      ret = storageManager.getDataFromLocalStorage('ov_orbidder_host') || ret;
+      ret = storage.getDataFromLocalStorage('ov_orbidder_host') || ret;
     } catch (e) {
     }
     return ret;
-  },
+  })(),
 
   isBidRequestValid(bid) {
     return !!(bid.sizes && bid.bidId && bid.params &&
@@ -25,7 +23,6 @@ export const spec = {
   },
 
   buildRequests(validBidRequests, bidderRequest) {
-    const hostname = this.getHostname();
     return validBidRequests.map((bidRequest) => {
       let referer = '';
       if (bidderRequest && bidderRequest.refererInfo) {
@@ -33,7 +30,7 @@ export const spec = {
       }
 
       const ret = {
-        url: `${hostname}/bid`,
+        url: `${spec.orbidderHost}/bid`,
         method: 'POST',
         options: { withCredentials: true },
         data: {

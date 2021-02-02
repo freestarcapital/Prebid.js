@@ -21,6 +21,7 @@ module.exports = {
     'fun-hooks/no-eval',
     'just-clone',
     'dlv',
-    'dset'
+    'dset',
+    'deep-equal'
   ]
 };

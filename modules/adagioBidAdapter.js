@@ -5,18 +5,16 @@ import { loadExternalScript } from '../src/adloader.js'
 import JSEncrypt from 'jsencrypt/bin/jsencrypt.js';
 import sha256 from 'crypto-js/sha256.js';
 import { getStorageManager } from '../src/storageManager.js';
-import { getRefererInfo } from '../src/refererDetection.js';
 
-export const BIDDER_CODE = 'adagio';
-export const LOG_PREFIX = 'Adagio:';
-export const VERSION = '2.3.0';
-export const FEATURES_VERSION = '1';
-export const ENDPOINT = 'https://mp.4dex.io/prebid';
-export const SUPPORTED_MEDIA_TYPES = ['banner'];
-export const ADAGIO_TAG_URL = 'https://script.4dex.io/localstore.js';
-export const ADAGIO_LOCALSTORAGE_KEY = 'adagioScript';
-export const GVLID = 617;
-export const storage = getStorageManager(GVLID, 'adagio');
+const BIDDER_CODE = 'adagio';
+const VERSION = '2.2.2';
+const FEATURES_VERSION = '1';
+const ENDPOINT = 'https://mp.4dex.io/prebid';
+const SUPPORTED_MEDIA_TYPES = ['banner'];
+const ADAGIO_TAG_URL = 'https://script.4dex.io/localstore.js';
+const ADAGIO_LOCALSTORAGE_KEY = 'adagioScript';
+const GVLID = 617;
+const storage = getStorageManager(GVLID, 'adagio');
 
 export const ADAGIO_PUBKEY = `-----BEGIN PUBLIC KEY-----
 MIGfMA0GCSqGSIb3DQEBAQUAA4GNADCBiQKBgQC9el0+OEn6fvEh1RdVHQu4cnT0
@@ -25,19 +23,17 @@ t0b0lsHN+W4n9kitS/DZ/xnxWK/9vxhv0ZtL1LL/rwR5Mup7rmJbNtDoNBw4TIGj
 pV6EP3MTLosuUEpLaQIDAQAB
 -----END PUBLIC KEY-----`;
 
-let currentWindow;
-
 export function adagioScriptFromLocalStorageCb(ls) {
   try {
     if (!ls) {
-      utils.logWarn(`${LOG_PREFIX} script not found.`);
+      utils.logWarn('Adagio Script not found');
       return;
     }
 
     const hashRgx = /^(\/\/ hash: (.+)\n)(.+\n)$/;
 
     if (!hashRgx.test(ls)) {
-      utils.logWarn(`${LOG_PREFIX} no hash found.`);
+      utils.logWarn('No hash found in Adagio script');
       storage.removeDataFromLocalStorage(ADAGIO_LOCALSTORAGE_KEY);
     } else {
       const r = ls.match(hashRgx);
@@ -48,32 +44,21 @@ export function adagioScriptFromLocalStorageCb(ls) {
       jsEncrypt.setPublicKey(ADAGIO_PUBKEY);
 
       if (jsEncrypt.verify(content, hash, sha256)) {
-        utils.logInfo(`${LOG_PREFIX} start script.`);
+        utils.logInfo('Start Adagio script');
         Function(ls)(); // eslint-disable-line no-new-func
       } else {
-        utils.logWarn(`${LOG_PREFIX} invalid script found.`);
+        utils.logWarn('Invalid Adagio script found');
         storage.removeDataFromLocalStorage(ADAGIO_LOCALSTORAGE_KEY);
       }
     }
   } catch (err) {
-    utils.logError(LOG_PREFIX, err);
+    //
   }
 }
 
 export function getAdagioScript() {
   storage.getDataFromLocalStorage(ADAGIO_LOCALSTORAGE_KEY, (ls) => {
-    internal.adagioScriptFromLocalStorageCb(ls)
-  });
-
-  storage.localStorageIsEnabled(isValid => {
-    if (isValid) {
-      loadExternalScript(ADAGIO_TAG_URL, BIDDER_CODE);
-    } else {
-      // ensure adagio removing for next time.
-      // It's an antipattern regarding the TCF2 enforcement logic
-      // but it's the only way to respect the user choice update.
-      window.localStorage.removeItem(ADAGIO_LOCALSTORAGE_KEY);
-    }
+    adagioScriptFromLocalStorageCb(ls)
   });
 }
 
@@ -87,197 +72,113 @@ function canAccessTopWindow() {
   }
 }
 
-function getCurrentWindow() {
-  return currentWindow || utils.getWindowSelf();
-}
-
-function isSafeFrameWindow() {
-  const ws = utils.getWindowSelf();
-  return !!(ws.$sf && ws.$sf.ext);
-}
-
 function initAdagio() {
-  if (canAccessTopWindow()) {
-    currentWindow = (canAccessTopWindow()) ? utils.getWindowTop() : utils.getWindowSelf();
-  }
-
-  const w = internal.getCurrentWindow();
+  const w = utils.getWindowTop();
 
   w.ADAGIO = w.ADAGIO || {};
-  w.ADAGIO.adUnits = w.ADAGIO.adUnits || {};
-  w.ADAGIO.pbjsAdUnits = w.ADAGIO.pbjsAdUnits || [];
   w.ADAGIO.queue = w.ADAGIO.queue || [];
   w.ADAGIO.versions = w.ADAGIO.versions || {};
   w.ADAGIO.versions.adagioBidderAdapter = VERSION;
-  w.ADAGIO.isSafeFrameWindow = isSafeFrameWindow();
 
   getAdagioScript();
+
+  loadExternalScript(ADAGIO_TAG_URL, BIDDER_CODE)
+}
+
+if (canAccessTopWindow()) {
+  initAdagio();
 }
 
 export const _features = {
-  getPrintNumber(adUnitCode) {
-    const adagioAdUnit = internal.getOrAddAdagioAdUnit(adUnitCode);
+  getPrintNumber: function (adUnitCode) {
+    const adagioAdUnit = _getOrAddAdagioAdUnit(adUnitCode);
     return adagioAdUnit.printNumber || 1;
   },
 
-  getPageDimensions() {
-    if (isSafeFrameWindow() || !canAccessTopWindow()) {
-      return '';
-    }
-
-    // the page dimension can be computed on window.top only.
-    const wt = utils.getWindowTop();
-    const body = wt.document.querySelector('body');
-
+  getPageDimensions: function () {
+    const viewportDims = _features.getViewPortDimensions().split('x');
+    const w = utils.getWindowTop();
+    const body = w.document.body;
     if (!body) {
-      return '';
+      return ''
     }
-    const html = wt.document.documentElement;
-    const pageWidth = Math.max(body.scrollWidth, body.offsetWidth, html.clientWidth, html.scrollWidth, html.offsetWidth);
+    const html = w.document.documentElement;
     const pageHeight = Math.max(body.scrollHeight, body.offsetHeight, html.clientHeight, html.scrollHeight, html.offsetHeight);
 
-    return `${pageWidth}x${pageHeight}`;
+    return viewportDims[0] + 'x' + pageHeight;
   },
 
-  getViewPortDimensions() {
-    if (!isSafeFrameWindow() && !canAccessTopWindow()) {
-      return '';
-    }
+  getViewPortDimensions: function () {
+    let viewPortWidth;
+    let viewPortHeight;
+    const w = utils.getWindowTop();
+    const d = w.document;
 
-    const viewportDims = { w: 0, h: 0 };
-
-    if (isSafeFrameWindow()) {
-      const ws = utils.getWindowSelf();
-
-      if (typeof ws.$sf.ext.geom !== 'function') {
-        utils.logWarn(`${LOG_PREFIX} cannot use the $sf.ext.geom() safeFrame API method`);
-        return '';
-      }
-
-      const sfGeom = ws.$sf.ext.geom().win;
-      viewportDims.w = Math.round(sfGeom.w);
-      viewportDims.h = Math.round(sfGeom.h);
+    if (w.innerWidth) {
+      viewPortWidth = w.innerWidth;
+      viewPortHeight = w.innerHeight;
     } else {
-      // window.top based computing
-      const wt = utils.getWindowTop();
-
-      if (wt.innerWidth) {
-        viewportDims.w = wt.innerWidth;
-        viewportDims.h = wt.innerHeight;
-      } else {
-        const d = wt.document;
-        const body = d.querySelector('body');
-
-        if (!body) {
-          return '';
-        }
-
-        viewportDims.w = d.querySelector('body').clientWidth;
-        viewportDims.h = d.querySelector('body').clientHeight;
-      }
+      viewPortWidth = d.getElementsByTagName('body')[0].clientWidth;
+      viewPortHeight = d.getElementsByTagName('body')[0].clientHeight;
     }
 
-    return `${viewportDims.w}x${viewportDims.h}`;
+    return viewPortWidth + 'x' + viewPortHeight;
   },
 
-  /**
-   * domLoading feature is computed on window.top if reachable.
-   */
-  getDomLoadingDuration() {
-    let domLoadingDuration = -1;
-    let performance;
-
-    performance = (canAccessTopWindow()) ? utils.getWindowTop().performance : utils.getWindowSelf().performance;
+  isDomLoading: function () {
+    const w = utils.getWindowTop();
+    let performance = w.performance || w.msPerformance || w.webkitPerformance || w.mozPerformance;
+    let domLoading = -1;
 
     if (performance && performance.timing && performance.timing.navigationStart > 0) {
       const val = performance.timing.domLoading - performance.timing.navigationStart;
-      if (val > 0) {
-        domLoadingDuration = val;
-      }
+      if (val > 0) domLoading = val;
     }
-
-    return domLoadingDuration;
+    return domLoading;
   },
 
-  getSlotPosition(params) {
-    const { adUnitElementId, postBid } = params;
+  getSlotPosition: function (element) {
+    if (!element) return '';
 
-    if (!adUnitElementId) {
-      return '';
+    const w = utils.getWindowTop();
+    const d = w.document;
+    const el = element;
+
+    let box = el.getBoundingClientRect();
+    const docEl = d.documentElement;
+    const body = d.body;
+    const clientTop = d.clientTop || body.clientTop || 0;
+    const clientLeft = d.clientLeft || body.clientLeft || 0;
+    const scrollTop = w.pageYOffset || docEl.scrollTop || body.scrollTop;
+    const scrollLeft = w.pageXOffset || docEl.scrollLeft || body.scrollLeft;
+
+    const elComputedStyle = w.getComputedStyle(el, null);
+    const elComputedDisplay = elComputedStyle.display || 'block';
+    const mustDisplayElement = elComputedDisplay === 'none';
+
+    if (mustDisplayElement) {
+      el.style = el.style || {};
+      el.style.display = 'block';
+      box = el.getBoundingClientRect();
+      el.style.display = elComputedDisplay;
     }
 
-    if (!isSafeFrameWindow() && !canAccessTopWindow()) {
-      return '';
-    }
+    const position = {
+      x: Math.round(box.left + scrollLeft - clientLeft),
+      y: Math.round(box.top + scrollTop - clientTop)
+    };
 
-    const position = { x: 0, y: 0 };
-
-    if (isSafeFrameWindow()) {
-      const ws = utils.getWindowSelf();
-
-      if (typeof ws.$sf.ext.geom !== 'function') {
-        utils.logWarn(`${LOG_PREFIX} cannot use the $sf.ext.geom() safeFrame API method`);
-        return '';
-      }
-
-      const sfGeom = ws.$sf.ext.geom().self;
-      position.x = Math.round(sfGeom.t);
-      position.y = Math.round(sfGeom.l);
-    } else if (canAccessTopWindow()) {
-      // window.top based computing
-      const wt = utils.getWindowTop();
-      const d = wt.document;
-
-      let domElement;
-
-      if (postBid === true) {
-        const ws = utils.getWindowSelf();
-        const currentElement = ws.document.getElementById(adUnitElementId);
-        domElement = internal.getElementFromTopWindow(currentElement, ws);
-      } else {
-        domElement = wt.document.getElementById(adUnitElementId);
-      }
-
-      if (!domElement) {
-        return '';
-      }
-
-      let box = domElement.getBoundingClientRect();
-
-      const docEl = d.documentElement;
-      const body = d.body;
-      const clientTop = d.clientTop || body.clientTop || 0;
-      const clientLeft = d.clientLeft || body.clientLeft || 0;
-      const scrollTop = wt.pageYOffset || docEl.scrollTop || body.scrollTop;
-      const scrollLeft = wt.pageXOffset || docEl.scrollLeft || body.scrollLeft;
-
-      const elComputedStyle = wt.getComputedStyle(domElement, null);
-      const elComputedDisplay = elComputedStyle.display || 'block';
-      const mustDisplayElement = elComputedDisplay === 'none';
-
-      if (mustDisplayElement) {
-        domElement.style = domElement.style || {};
-        domElement.style.display = 'block';
-        box = domElement.getBoundingClientRect();
-        domElement.style.display = elComputedDisplay;
-      }
-      position.x = Math.round(box.left + scrollLeft - clientLeft);
-      position.y = Math.round(box.top + scrollTop - clientTop);
-    } else {
-      return '';
-    }
-
-    return `${position.x}x${position.y}`;
+    return position.x + 'x' + position.y;
   },
 
-  getTimestampUTC() {
-    // timestamp returned in seconds
+  getTimestamp: function () {
     return Math.floor(new Date().getTime() / 1000) - new Date().getTimezoneOffset() * 60;
   },
 
-  getDevice() {
-    const ws = utils.getWindowSelf();
-    const ua = ws.navigator.userAgent;
+  getDevice: function () {
+    if (!canAccessTopWindow()) return false;
+    const w = utils.getWindowTop();
+    const ua = w.navigator.userAgent;
 
     if ((/(tablet|ipad|playbook|silk)|(android(?!.*mobi))/i).test(ua)) {
       return 5; // "tablet"
@@ -288,83 +189,52 @@ export const _features = {
     return 2; // personal computers
   },
 
-  getBrowser() {
-    const ws = utils.getWindowSelf();
-    const ua = ws.navigator.userAgent;
+  getBrowser: function () {
+    const w = utils.getWindowTop();
+    const ua = w.navigator.userAgent;
     const uaLowerCase = ua.toLowerCase();
-    return /Edge\/\d./i.test(ua) ? 'edge' : uaLowerCase.indexOf('chrome') > 0 ? 'chrome' : uaLowerCase.indexOf('firefox') > 0 ? 'firefox' : uaLowerCase.indexOf('safari') > 0 ? 'safari' : uaLowerCase.indexOf('opera') > 0 ? 'opera' : uaLowerCase.indexOf('msie') > 0 || ws.MSStream ? 'ie' : 'unknow';
+    return /Edge\/\d./i.test(ua) ? 'edge' : uaLowerCase.indexOf('chrome') > 0 ? 'chrome' : uaLowerCase.indexOf('firefox') > 0 ? 'firefox' : uaLowerCase.indexOf('safari') > 0 ? 'safari' : uaLowerCase.indexOf('opera') > 0 ? 'opera' : uaLowerCase.indexOf('msie') > 0 || w.MSStream ? 'ie' : 'unknow';
   },
 
-  getOS() {
-    const ws = utils.getWindowSelf();
-    const ua = ws.navigator.userAgent;
+  getOS: function () {
+    const w = window.top;
+    const ua = w.navigator.userAgent;
     const uaLowerCase = ua.toLowerCase();
     return uaLowerCase.indexOf('linux') > 0 ? 'linux' : uaLowerCase.indexOf('mac') > 0 ? 'mac' : uaLowerCase.indexOf('win') > 0 ? 'windows' : '';
-  },
-
-  getUrl(refererInfo) {
-    // top has not been reached, it means we are not sure
-    // to get the proper page url.
-    if (!refererInfo.reachedTop) {
-      return;
-    }
-    return refererInfo.referer;
-  },
-
-  getUrlFromParams(params) {
-    const { postBidOptions } = params;
-    if (postBidOptions && postBidOptions.url) {
-      return postBidOptions.url;
-    }
   }
+}
+
+function _pushInAdagioQueue(ob) {
+  try {
+    if (!canAccessTopWindow()) return;
+    const w = utils.getWindowTop();
+    w.ADAGIO.queue.push(ob);
+  } catch (e) {}
 };
 
-function enqueue(ob) {
-  const w = internal.getCurrentWindow();
-
-  w.ADAGIO = w.ADAGIO || {};
-  w.ADAGIO.queue = w.ADAGIO.queue || [];
-  w.ADAGIO.queue.push(ob);
-};
-
-function getOrAddAdagioAdUnit(adUnitCode) {
-  const w = internal.getCurrentWindow();
-
-  w.ADAGIO = w.ADAGIO || {};
-
+function _getOrAddAdagioAdUnit(adUnitCode) {
+  const w = utils.getWindowTop();
   if (w.ADAGIO.adUnits[adUnitCode]) {
     return w.ADAGIO.adUnits[adUnitCode]
   }
-
   return w.ADAGIO.adUnits[adUnitCode] = {};
-};
+}
 
-function getPageviewId() {
-  const w = internal.getCurrentWindow();
-
-  w.ADAGIO = w.ADAGIO || {};
-  w.ADAGIO.pageviewId = w.ADAGIO.pageviewId || utils.generateUUID();
-
-  return w.ADAGIO.pageviewId;
-};
-
-function computePrintNumber(adUnitCode) {
+function _computePrintNumber(adUnitCode) {
   let printNumber = 1;
-  const w = internal.getCurrentWindow();
-
+  const w = utils.getWindowTop();
   if (
     w.ADAGIO &&
     w.ADAGIO.adUnits && w.ADAGIO.adUnits[adUnitCode] &&
-    w.ADAGIO.adUnits[adUnitCode].pageviewId === internal.getPageviewId() &&
+    w.ADAGIO.adUnits[adUnitCode].pageviewId === _getPageviewId() &&
     w.ADAGIO.adUnits[adUnitCode].printNumber
   ) {
     printNumber = parseInt(w.ADAGIO.adUnits[adUnitCode].printNumber, 10) + 1;
   }
-
   return printNumber;
-};
+}
 
-function getDevice() {
+function _getDevice() {
   const language = navigator.language ? 'language' : 'userLanguage';
   return {
     userAgent: navigator.userAgent,
@@ -376,63 +246,35 @@ function getDevice() {
   };
 };
 
-function getSite(bidderRequest) {
-  let domain = '';
-  let page = '';
-  let referrer = '';
-
-  const { refererInfo } = bidderRequest;
-
-  if (canAccessTopWindow()) {
-    const wt = utils.getWindowTop();
-    domain = wt.location.hostname;
-    page = wt.location.href;
-    referrer = wt.document.referrer || '';
-  } else if (refererInfo.reachedTop) {
-    const url = utils.parseUrl(refererInfo.referer);
-    domain = url.hostname;
-    page = refererInfo.referer;
-  } else if (refererInfo.stack && refererInfo.stack.length && refererInfo.stack[0]) {
-    // important note check if refererInfo.stack[0] is 'thruly' because a `null` value
-    // will be considered as "localhost" by the parseUrl function.
-    // As the isBidRequestValid returns false when it does not reach the referer
-    // this should never called.
-    const url = utils.parseUrl(refererInfo.stack[0]);
-    domain = url.hostname;
-  }
-
+function _getSite() {
+  const w = utils.getWindowTop();
   return {
-    domain,
-    page,
-    referrer
+    domain: w.location.hostname,
+    page: w.location.href,
+    referrer: w.document.referrer || ''
   };
 };
 
-function getElementFromTopWindow(element, currentWindow) {
-  try {
-    if (utils.getWindowTop() === currentWindow) {
-      if (!element.getAttribute('id')) {
-        element.setAttribute('id', `adg-${utils.getUniqueIdentifierStr()}`);
-      }
-      return element;
-    } else {
-      const frame = currentWindow.frameElement;
-      const frameClientRect = frame.getBoundingClientRect();
-      const elementClientRect = element.getBoundingClientRect();
-
-      if (frameClientRect.width !== elementClientRect.width || frameClientRect.height !== elementClientRect.height) {
-        return false;
-      }
-
-      return getElementFromTopWindow(frame, currentWindow.parent);
-    }
-  } catch (err) {
-    utils.logWarn(`${LOG_PREFIX}`, err);
-    return false;
-  }
+function _getPageviewId() {
+  if (!canAccessTopWindow()) return false;
+  const w = utils.getWindowTop();
+  w.ADAGIO.pageviewId = w.ADAGIO.pageviewId || utils.generateUUID();
+  return w.ADAGIO.pageviewId;
 };
 
-function autoDetectAdUnitElementId(adUnitCode) {
+function _getElementFromTopWindow(element, currentWindow) {
+  if (utils.getWindowTop() === currentWindow) {
+    if (!element.getAttribute('id')) {
+      element.setAttribute('id', `adg-${utils.getUniqueIdentifierStr()}`);
+    }
+    return element;
+  } else {
+    const frame = currentWindow.frameElement;
+    return _getElementFromTopWindow(frame, currentWindow.parent);
+  }
+}
+
+export function _autoDetectAdUnitElementId(adUnitCode) {
   const autoDetectedAdUnit = utils.getGptSlotInfoForAdUnitCode(adUnitCode)
   let adUnitElementId = null;
 
@@ -441,9 +283,9 @@ function autoDetectAdUnitElementId(adUnitCode) {
   }
 
   return adUnitElementId;
-};
+}
 
-function autoDetectEnvironment() {
+function _autoDetectEnvironment() {
   const device = _features.getDevice();
   let environment;
   switch (device) {
@@ -458,36 +300,52 @@ function autoDetectEnvironment() {
       break;
   };
   return environment
-};
+}
 
-function getFeatures(bidRequest, bidderRequest) {
-  const { adUnitCode, params } = bidRequest;
-  const { adUnitElementId } = params;
-  const { refererInfo } = bidderRequest;
+/**
+ * Returns all features for a specific adUnit element
+ *
+ * @param {Object} bidRequest
+ * @returns {Object} features for an element (see specs)
+ */
+function _getFeatures(bidRequest) {
+  if (!canAccessTopWindow()) return;
+  const w = utils.getWindowTop();
+  const adUnitCode = bidRequest.adUnitCode;
+  const adUnitElementId = bidRequest.params.adUnitElementId || _autoDetectAdUnitElementId(adUnitCode);
+  let element;
 
   if (!adUnitElementId) {
-    utils.logWarn(`${LOG_PREFIX} unable to get params.adUnitElementId. Continue without tiv.`);
+    utils.logWarn('Unable to detect adUnitElementId. Adagio measures won\'t start');
+  } else {
+    if (bidRequest.params.postBid === true) {
+      window.document.getElementById(adUnitElementId);
+      element = _getElementFromTopWindow(element, window);
+      w.ADAGIO.pbjsAdUnits.map((adUnit) => {
+        if (adUnit.code === adUnitCode) {
+          const outerElementId = element.getAttribute('id');
+          adUnit.outerAdUnitElementId = outerElementId;
+          bidRequest.params.outerAdUnitElementId = outerElementId;
+        }
+      });
+    } else {
+      element = w.document.getElementById(adUnitElementId);
+    }
   }
 
   const features = {
-    print_number: _features.getPrintNumber(adUnitCode).toString(),
+    print_number: _features.getPrintNumber(bidRequest.adUnitCode).toString(),
     page_dimensions: _features.getPageDimensions().toString(),
     viewport_dimensions: _features.getViewPortDimensions().toString(),
-    dom_loading: _features.getDomLoadingDuration().toString(),
+    dom_loading: _features.isDomLoading().toString(),
     // layout: features.getLayout().toString(),
-    adunit_position: _features.getSlotPosition(params).toString(),
-    user_timestamp: _features.getTimestampUTC().toString(),
+    adunit_position: _features.getSlotPosition(element).toString(),
+    user_timestamp: _features.getTimestamp().toString(),
     device: _features.getDevice().toString(),
-    url: _features.getUrl(refererInfo) || _features.getUrlFromParams(params) || '',
+    url: w.location.origin + w.location.pathname,
     browser: _features.getBrowser(),
     os: _features.getOS()
   };
-
-  Object.keys(features).forEach((prop) => {
-    if (features[prop] === '') {
-      delete features[prop];
-    }
-  });
 
   const adUnitFeature = {};
 
@@ -496,7 +354,7 @@ function getFeatures(bidRequest, bidderRequest) {
     version: FEATURES_VERSION
   };
 
-  internal.enqueue({
+  _pushInAdagioQueue({
     action: 'features',
     ts: Date.now(),
     data: adUnitFeature
@@ -505,53 +363,22 @@ function getFeatures(bidRequest, bidderRequest) {
   return features;
 };
 
-export const internal = {
-  enqueue,
-  getOrAddAdagioAdUnit,
-  getPageviewId,
-  computePrintNumber,
-  getDevice,
-  getSite,
-  getElementFromTopWindow,
-  autoDetectAdUnitElementId,
-  autoDetectEnvironment,
-  getFeatures,
-  getRefererInfo,
-  adagioScriptFromLocalStorageCb,
-  getCurrentWindow,
-  canAccessTopWindow
-};
-
 function _getGdprConsent(bidderRequest) {
-  if (!utils.deepAccess(bidderRequest, 'gdprConsent')) {
-    return false;
-  }
-
-  const {
-    apiVersion,
-    gdprApplies,
-    consentString,
-    allowAuctionWithoutConsent
-  } = bidderRequest.gdprConsent;
-
   const consent = {};
-
-  if (apiVersion !== undefined) {
-    consent.apiVersion = apiVersion
+  if (utils.deepAccess(bidderRequest, 'gdprConsent')) {
+    if (bidderRequest.gdprConsent.consentString !== undefined) {
+      consent.consentString = bidderRequest.gdprConsent.consentString;
+    }
+    if (bidderRequest.gdprConsent.gdprApplies !== undefined) {
+      consent.consentRequired = bidderRequest.gdprConsent.gdprApplies ? 1 : 0;
+    }
+    if (bidderRequest.gdprConsent.allowAuctionWithoutConsent !== undefined) {
+      consent.allowAuctionWithoutConsent = bidderRequest.gdprConsent.allowAuctionWithoutConsent ? 1 : 0;
+    }
+    if (bidderRequest.gdprConsent.apiVersion !== undefined) {
+      consent.apiVersion = bidderRequest.gdprConsent.apiVersion;
+    }
   }
-
-  if (consentString !== undefined) {
-    consent.consentString = consentString;
-  }
-
-  if (gdprApplies !== undefined) {
-    consent.consentRequired = (gdprApplies) ? 1 : 0;
-  }
-
-  if (allowAuctionWithoutConsent !== undefined) {
-    consent.allowAuctionWithoutConsent = allowAuctionWithoutConsent ? 1 : 0;
-  }
-
   return consent;
 }
 
@@ -564,103 +391,84 @@ function _getSchain(bidRequest) {
 export const spec = {
   code: BIDDER_CODE,
   gvlid: GVLID,
-  supportedMediaTypes: SUPPORTED_MEDIA_TYPES,
+  supportedMediaType: SUPPORTED_MEDIA_TYPES,
 
-  isBidRequestValid(bid) {
+  isBidRequestValid: function (bid) {
     const { adUnitCode, auctionId, sizes, bidder, params, mediaTypes } = bid;
-    if (!params) {
-      utils.logWarn(`${LOG_PREFIX} the "params" property is missing.`);
-      return false;
-    }
+    const { organizationId, site, placement } = bid.params;
+    const adUnitElementId = bid.params.adUnitElementId || _autoDetectAdUnitElementId(adUnitCode);
+    const environment = bid.params.environment || _autoDetectEnvironment();
+    let isValid = false;
 
-    const { organizationId, site, placement } = params;
-    const adUnitElementId = params.adUnitElementId || internal.autoDetectAdUnitElementId(adUnitCode);
-    const environment = params.environment || internal.autoDetectEnvironment();
+    utils.logInfo('adUnitElementId', adUnitElementId)
 
-    // insure auto-detected params are kept in `bid` object.
-    bid.params = {
-      ...params,
-      adUnitElementId,
-      environment
-    }
+    try {
+      if (canAccessTopWindow()) {
+        const w = utils.getWindowTop();
+        w.ADAGIO = w.ADAGIO || {};
+        w.ADAGIO.adUnits = w.ADAGIO.adUnits || {};
+        w.ADAGIO.pbjsAdUnits = w.ADAGIO.pbjsAdUnits || [];
+        isValid = !!(organizationId && site && placement);
 
-    const debugData = () => ({
-      action: 'pb-dbg',
-      ts: Date.now(),
-      data: {
-        bid
+        const tempAdUnits = w.ADAGIO.pbjsAdUnits.filter((adUnit) => adUnit.code !== adUnitCode);
+
+        bid.params = {
+          ...bid.params,
+          adUnitElementId,
+          environment
+        }
+
+        tempAdUnits.push({
+          code: adUnitCode,
+          sizes: (mediaTypes && mediaTypes.banner && Array.isArray(mediaTypes.banner.sizes)) ? mediaTypes.banner.sizes : sizes,
+          bids: [{
+            bidder,
+            params
+          }]
+        });
+        w.ADAGIO.pbjsAdUnits = tempAdUnits;
+
+        if (isValid === true) {
+          let printNumber = _computePrintNumber(adUnitCode);
+          w.ADAGIO.adUnits[adUnitCode] = {
+            auctionId: auctionId,
+            pageviewId: _getPageviewId(),
+            printNumber
+          };
+        }
       }
-    });
-
-    const refererInfo = internal.getRefererInfo();
-
-    if (!refererInfo.reachedTop) {
-      utils.logWarn(`${LOG_PREFIX} the main page url is unreachabled.`);
-      internal.enqueue(debugData());
-
-      return false;
-    } else if (!(organizationId && site && placement)) {
-      utils.logWarn(`${LOG_PREFIX} at least one required param is missing.`);
-      internal.enqueue(debugData());
-
-      return false;
+    } catch (e) {
+      return isValid;
     }
-
-    const w = internal.getCurrentWindow();
-    const pageviewId = internal.getPageviewId();
-    const printNumber = internal.computePrintNumber(adUnitCode);
-
-    // Store adUnits config.
-    // If an adUnitCode has already been stored, it will be replaced.
-    w.ADAGIO = w.ADAGIO || {};
-    w.ADAGIO.pbjsAdUnits = w.ADAGIO.pbjsAdUnits.filter((adUnit) => adUnit.code !== adUnitCode)
-    w.ADAGIO.pbjsAdUnits.push({
-      code: adUnitCode,
-      mediaTypes: mediaTypes || {},
-      sizes: (mediaTypes && mediaTypes.banner && Array.isArray(mediaTypes.banner.sizes)) ? mediaTypes.banner.sizes : sizes,
-      bids: [{
-        bidder,
-        params: bid.params // use the updated bid.params object with auto-detected params
-      }],
-      auctionId,
-      pageviewId,
-      printNumber
-    });
-
-    // (legacy) Store internal adUnit information
-    w.ADAGIO.adUnits[adUnitCode] = {
-      auctionId,
-      pageviewId,
-      printNumber,
-    };
-
-    return true;
+    return isValid;
   },
 
-  buildRequests(validBidRequests, bidderRequest) {
+  buildRequests: function (validBidRequests, bidderRequest) {
+    // AdagioBidAdapter works when window.top can be reached only
+    if (!bidderRequest.refererInfo.reachedTop) return [];
+
     const secure = (location.protocol === 'https:') ? 1 : 0;
-    const device = internal.getDevice();
-    const site = internal.getSite(bidderRequest);
-    const pageviewId = internal.getPageviewId();
-    const gdprConsent = _getGdprConsent(bidderRequest) || {};
+    const device = _getDevice();
+    const site = _getSite();
+    const pageviewId = _getPageviewId();
+    const gdprConsent = _getGdprConsent(bidderRequest);
     const schain = _getSchain(validBidRequests[0]);
     const adUnits = utils._map(validBidRequests, (bidRequest) => {
-      bidRequest.features = internal.getFeatures(bidRequest, bidderRequest);
+      bidRequest.features = _getFeatures(bidRequest);
       return bidRequest;
     });
 
-    // Group ad units by organizationId
+    // Regroug ad units by siteId
     const groupedAdUnits = adUnits.reduce((groupedAdUnits, adUnit) => {
-      adUnit.params.organizationId = adUnit.params.organizationId.toString();
-
-      groupedAdUnits[adUnit.params.organizationId] = groupedAdUnits[adUnit.params.organizationId] || []
-      groupedAdUnits[adUnit.params.organizationId].push(adUnit);
-
+      if (adUnit.params && adUnit.params.organizationId) {
+        adUnit.params.organizationId = adUnit.params.organizationId.toString();
+      }
+      (groupedAdUnits[adUnit.params.organizationId] = groupedAdUnits[adUnit.params.organizationId] || []).push(adUnit);
       return groupedAdUnits;
     }, {});
 
-    // Build one request per organizationId
-    const requests = utils._map(Object.keys(groupedAdUnits), organizationId => {
+    // Build one request per siteId
+    const requests = utils._map(Object.keys(groupedAdUnits), (organizationId) => {
       return {
         method: 'POST',
         url: ENDPOINT,
@@ -687,13 +495,13 @@ export const spec = {
     return requests;
   },
 
-  interpretResponse(serverResponse, bidRequest) {
+  interpretResponse: function (serverResponse, bidRequest) {
     let bidResponses = [];
     try {
       const response = serverResponse.body;
       if (response) {
         if (response.data) {
-          internal.enqueue({
+          _pushInAdagioQueue({
             action: 'ssp-data',
             ts: Date.now(),
             data: response.data
@@ -720,20 +528,18 @@ export const spec = {
     return bidResponses;
   },
 
-  getUserSyncs(syncOptions, serverResponses) {
+  getUserSyncs: function (syncOptions, serverResponses) {
     if (!serverResponses.length || serverResponses[0].body === '' || !serverResponses[0].body.userSyncs) {
       return false;
     }
-
-    const syncs = serverResponses[0].body.userSyncs.map(sync => ({
-      type: sync.t === 'p' ? 'image' : 'iframe',
-      url: sync.u
-    }));
-
+    const syncs = serverResponses[0].body.userSyncs.map((sync) => {
+      return {
+        type: sync.t === 'p' ? 'image' : 'iframe',
+        url: sync.u
+      }
+    })
     return syncs;
-  },
-};
-
-initAdagio();
+  }
+}
 
 registerBidder(spec);

@@ -162,7 +162,6 @@ export const emxAdapter = {
 
 export const spec = {
   code: BIDDER_CODE,
-  gvlid: 183,
   supportedMediaTypes: [BANNER, VIDEO],
   isBidRequestValid: function (bid) {
     if (!bid || !bid.params) {
@@ -280,21 +279,12 @@ export const spec = {
     }
     return emxBidResponses;
   },
-  getUserSyncs: function (syncOptions, responses, gdprConsent, uspConsent) {
+  getUserSyncs: function (syncOptions) {
     const syncs = [];
     if (syncOptions.iframeEnabled) {
-      let url = 'https://biddr.brealtime.com/check.html';
-      if (gdprConsent && typeof gdprConsent.consentString === 'string') {
-        // add 'gdpr' only if 'gdprApplies' is defined
-        if (typeof gdprConsent.gdprApplies === 'boolean') {
-          url += `?gdpr=${Number(gdprConsent.gdprApplies)}&gdpr_consent=${gdprConsent.consentString}`;
-        } else {
-          url += `?gdpr_consent=${gdprConsent.consentString}`;
-        }
-      }
       syncs.push({
         type: 'iframe',
-        url: url
+        url: 'https://biddr.brealtime.com/check.html'
       });
     }
     return syncs;

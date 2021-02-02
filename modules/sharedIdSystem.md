@@ -13,7 +13,7 @@ ex: $ gulp build --modules=userId,sharedIdSystem
 Individual params may be set for the Shared ID User ID Submodule. 
 ```
 pbjs.setConfig({
-    userSync: {
+    usersync: {
         userIds: [{
             name: 'sharedId',
             params: {

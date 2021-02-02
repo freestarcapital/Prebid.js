@@ -70,11 +70,6 @@ function buildRequests(bidReqs, bidderRequest) {
       tmax: config.getConfig('bidderTimeout')
     };
 
-    if (bidderRequest && bidderRequest.gdprConsent) {
-      utils.deepSetValue(brightcomBidReq, 'regs.ext.gdpr', +bidderRequest.gdprConsent.gdprApplies);
-      utils.deepSetValue(brightcomBidReq, 'user.ext.consent', bidderRequest.gdprConsent.consentString);
-    }
-
     return {
       method: 'POST',
       url: URL,

@@ -13,8 +13,7 @@ var appnexusAdapter = adapter({
 
 adapterManager.registerAnalyticsAdapter({
   adapter: appnexusAdapter,
-  code: 'appnexus',
-  gvlid: 32
+  code: 'appnexus'
 });
 
 export default appnexusAdapter;

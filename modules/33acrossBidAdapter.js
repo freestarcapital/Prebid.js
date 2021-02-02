@@ -91,7 +91,9 @@ function _createServerRequest({bidRequest, gdprConsent = {}, uspConsent, pageUrl
   }
 
   const minSize = _getMinSize(sizes);
-
+  if (!element) {
+    return;
+  }
   const viewabilityAmount = _isViewabilityMeasurable(element)
     ? _getViewability(element, utils.getWindowTop(), minSize)
     : NON_MEASURABLE;
@@ -167,7 +169,7 @@ function _createServerRequest({bidRequest, gdprConsent = {}, uspConsent, pageUrl
 
   // Allow the ability to configure the HB endpoint for testing purposes.
   const ttxSettings = config.getConfig('ttxSettings');
-  const url = (ttxSettings && ttxSettings.url) || `${END_POINT}?guid=${params.siteId}`;
+  const url = (ttxSettings && ttxSettings.url) || END_POINT;
 
   // Return the server request
   return {
