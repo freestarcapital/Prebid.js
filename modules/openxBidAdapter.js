@@ -276,6 +276,12 @@ function appendUserIdsToQueryParams(queryParams, userIds) {
         case 'lipb':
           queryParams[key] = userIdObjectOrValue.lipbid;
           break;
+        case 'parrableId':
+          queryParams[key] = userIdObjectOrValue.eid;
+          break;
+        case 'id5id':
+          queryParams[key] = userIdObjectOrValue.uid;
+          break;
         default:
           queryParams[key] = userIdObjectOrValue;
       }

@@ -153,8 +153,16 @@ export function registerBidder(spec) {
   putBidder(spec);
   if (Array.isArray(spec.aliases)) {
     spec.aliases.forEach(alias => {
-      adapterManager.aliasRegistry[alias] = spec.code;
-      putBidder(Object.assign({}, spec, { code: alias }));
+      let aliasCode = alias;
+      let gvlid;
+      let skipPbsAliasing;
+      if (isPlainObject(alias)) {
+        aliasCode = alias.code;
+        gvlid = alias.gvlid;
+        skipPbsAliasing = alias.skipPbsAliasing
+      }
+      adapterManager.aliasRegistry[aliasCode] = spec.code;
+      putBidder(Object.assign({}, spec, { code: aliasCode, gvlid, skipPbsAliasing }));
     });
   }
 }
