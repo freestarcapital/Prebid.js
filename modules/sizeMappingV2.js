@@ -62,7 +62,7 @@ export function isUsingNewSizeMapping(adUnits) {
       });
 
       // checks for the presence of sizeConfig property at the adUnit.bids[].bidder object
-      adUnit.bids.forEach(bidder => {
+      adUnit.bids && utils.isArray(adUnit.bids) && adUnit.bids.forEach(bidder => {
         if (bidder.sizeConfig) {
           if (isUsingSizeMappingBool === false) {
             isUsingSizeMappingBool = true;
@@ -77,8 +77,97 @@ export function isUsingNewSizeMapping(adUnits) {
 // returns "adUnits" array which have passed sizeConfig validation checks in addition to mediaTypes checks
 // deletes properties from adUnit which fail validation.
 export function checkAdUnitSetupHook(adUnits) {
-  return adUnits.filter(adUnit => {
+  const validateSizeConfig = function (mediaType, sizeConfig, adUnitCode) {
+    let isValid = true;
+    const associatedProperty = {
+      banner: 'sizes',
+      video: 'playerSize',
+      native: 'active'
+    }
+    const propertyName = associatedProperty[mediaType];
+    const conditionalLogMessages = {
+      banner: 'Removing mediaTypes.banner from ad unit.',
+      video: 'Removing mediaTypes.video.sizeConfig from ad unit.',
+      native: 'Removing mediaTypes.native.sizeConfig from ad unit.'
+    }
+    if (Array.isArray(sizeConfig)) {
+      sizeConfig.forEach((config, index) => {
+        const keys = Object.keys(config);
+        /*
+          Check #1 (Applies to 'banner', 'video' and 'native' media types.)
+          Verify that all config objects include 'minViewPort' and 'sizes' property.
+          If they do not, return 'false'.
+        */
+        if (!(includes(keys, 'minViewPort') && includes(keys, propertyName))) {
+          utils.logError(`Ad unit ${adUnitCode}: Missing required property 'minViewPort' or 'sizes' from 'mediaTypes.${mediaType}.sizeConfig[${index}]'. ${conditionalLogMessages[mediaType]}`);
+          isValid = false;
+          return;
+        }
+        /*
+          Check #2 (Applies to 'banner', 'video' and 'native' media types.)
+          Verify that 'config.minViewPort' property is in [width, height] format.
+          If not, return false.
+        */
+        if (!utils.isArrayOfNums(config.minViewPort, 2)) {
+          utils.logError(`Ad unit ${adUnitCode}: Invalid declaration of 'minViewPort' in 'mediaTypes.${mediaType}.sizeConfig[${index}]'. ${conditionalLogMessages[mediaType]}`);
+          isValid = false
+          return;
+        }
+        /*
+          Check #3 (Applies only to 'banner' and 'video' media types.)
+          Verify that 'config.sizes' (in case of banner) or 'config.playerSize' (in case of video)
+          property is in [width, height] format. If not, return 'false'.
+        */
+        if (mediaType === 'banner' || mediaType === 'video') {
+          let showError = false;
+          if (Array.isArray(config[propertyName])) {
+            const validatedSizes = adUnitSetupChecks.validateSizes(config[propertyName]);
+            if (config[propertyName].length > 0 && validatedSizes.length === 0) {
+              isValid = false;
+              showError = true;
+            }
+          } else {
+            // Either 'sizes' or 'playerSize' is not declared as an array, which makes it invalid by default.
+            isValid = false;
+            showError = true;
+          }
+          if (showError) {
+            utils.logError(`Ad unit ${adUnitCode}: Invalid declaration of '${propertyName}' in 'mediaTypes.${mediaType}.sizeConfig[${index}]'. ${conditionalLogMessages[mediaType]}`);
+            return;
+          }
+        }
+        /*
+          Check #4 (Applies only to 'native' media type)
+          Verify that 'config.active' is a 'boolean'.
+          If not, return 'false'.
+        */
+        if (mediaType === 'native') {
+          if (typeof config[propertyName] !== 'boolean') {
+            utils.logError(`Ad unit ${adUnitCode}: Invalid declaration of 'active' in 'mediaTypes.${mediaType}.sizeConfig[${index}]'. ${conditionalLogMessages[mediaType]}`);
+            isValid = false;
+          }
+        }
+      });
+    } else {
+      utils.logError(`Ad unit ${adUnitCode}: Invalid declaration of 'sizeConfig' in 'mediaTypes.${mediaType}.sizeConfig'. ${conditionalLogMessages[mediaType]}`);
+      isValid = false;
+      return isValid;
+    }
+
+    // If all checks have passed, isValid should equal 'true'
+    return isValid;
+  }
+  const validatedAdUnits = [];
+  adUnits.forEach(adUnit => {
+    const bids = adUnit.bids;
     const mediaTypes = adUnit.mediaTypes;
+    let validatedBanner, validatedVideo, validatedNative;
+
+    if (!bids || !utils.isArray(bids)) {
+      utils.logError(`Detected adUnit.code '${adUnit.code}' did not have 'adUnit.bids' defined or 'adUnit.bids' is not an array. Removing adUnit from auction.`);
+      return;
+    }
+
     if (!mediaTypes || Object.keys(mediaTypes).length === 0) {
       utils.logError(`Detected adUnit.code '${adUnit.code}' did not have a 'mediaTypes' object defined. This is a required field for the auction, so this adUnit has been removed.`);
       return false;

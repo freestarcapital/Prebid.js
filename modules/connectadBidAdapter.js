@@ -10,6 +10,7 @@ const SUPPORTED_MEDIA_TYPES = [BANNER];
 
 export const spec = {
   code: BIDDER_CODE,
+  gvlid: 138,
   aliases: [ BIDDER_CODE_ALIAS ],
   supportedMediaTypes: SUPPORTED_MEDIA_TYPES,
 
@@ -142,8 +143,11 @@ export const spec = {
         id: bid.transactionId,
         divName: bid.bidId,
         sizes: bid.mediaTypes.banner.sizes,
-        adTypes: getSize(bid.mediaTypes.banner.sizes || bid.sizes)
-      }, bid.params);
+        adTypes: getSize(bid.mediaTypes.banner.sizes || bid.sizes),
+        bidfloor: getBidFloor(bid),
+        siteId: bid.params.siteId,
+        networkId: bid.params.networkId
+      });
 
       if (placement.networkId && placement.siteId) {
         data.placements.push(placement);
@@ -193,6 +197,13 @@ export const spec = {
     }
 
     return bidResponses;
+  },
+
+  transformBidParams: function (params, isOpenRtb) {
+    return utils.convertTypes({
+      'siteId': 'number',
+      'networkId': 'number'
+    }, params);
   },
 
   getUserSyncs: function(syncOptions, serverResponses, gdprConsent, uspConsent) {
@@ -276,6 +287,22 @@ sizeMap[1578] = '320x100';
 sizeMap[331] = '320x250';
 sizeMap[3301] = '320x267';
 sizeMap[2730] = '728x250';
+
+function getBidFloor(bidRequest) {
+  let floorInfo = {};
+
+  if (typeof bidRequest.getFloor === 'function') {
+    floorInfo = bidRequest.getFloor({
+      currency: 'USD',
+      mediaType: 'banner',
+      size: '*'
+    });
+  }
+
+  let floor = floorInfo.floor || bidRequest.params.bidfloor || bidRequest.params.floorprice || 0;
+
+  return floor;
+}
 
 function getSize(sizes) {
   const result = [];
