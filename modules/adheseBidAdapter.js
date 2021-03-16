@@ -4,12 +4,10 @@ import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { BANNER, VIDEO } from '../src/mediaTypes.js';
 
 const BIDDER_CODE = 'adhese';
-const GVLID = 553;
 const USER_SYNC_BASE_URL = 'https://user-sync.adhese.com/iframe/user_sync.html';
 
 export const spec = {
   code: BIDDER_CODE,
-  gvlid: GVLID,
   supportedMediaTypes: [BANNER, VIDEO],
 
   isBidRequestValid: function(bid) {
@@ -22,28 +20,21 @@ export const spec = {
     }
     const { gdprConsent, refererInfo } = bidderRequest;
 
-    const targets = validBidRequests.map(bid => bid.params.data).reduce(mergeTargets, {});
-    const gdprParams = (gdprConsent && gdprConsent.consentString) ? { xt: [gdprConsent.consentString] } : {};
-    const refererParams = (refererInfo && refererInfo.referer) ? { xf: [base64urlEncode(refererInfo.referer)] } : {};
-    const id5Params = (getId5Id(validBidRequests)) ? { x5: [getId5Id(validBidRequests)] } : {};
-    const slots = validBidRequests.map(bid => ({ slotname: bidToSlotName(bid) }));
-
-    const payload = {
-      slots: slots,
-      parameters: { ...targets, ...gdprParams, ...refererParams, ...id5Params }
-    }
-
     const account = getAccount(validBidRequests);
-    const uri = 'https://ads-' + account + '.adhese.com/json';
+    const targets = validBidRequests.map(bid => bid.params.data).reduce(mergeTargets, {});
+    const gdprParams = (gdprConsent && gdprConsent.consentString) ? [`xt${gdprConsent.consentString}`] : [];
+    const refererParams = (refererInfo && refererInfo.referer) ? [`xf${base64urlEncode(refererInfo.referer)}`] : [];
+    const id5Params = (getId5Id(validBidRequests)) ? [`x5${getId5Id(validBidRequests)}`] : [];
+    const targetsParams = Object.keys(targets).map(targetCode => targetCode + targets[targetCode].join(';'));
+    const slotsParams = validBidRequests.map(bid => 'sl' + bidToSlotName(bid));
+    const params = [...slotsParams, ...targetsParams, ...gdprParams, ...refererParams, ...id5Params].map(s => `/${s}`).join('');
+    const cacheBuster = '?t=' + new Date().getTime();
+    const uri = 'https://ads-' + account + '.adhese.com/json' + params + cacheBuster;
 
     return {
-      method: 'POST',
+      method: 'GET',
       url: uri,
-      data: JSON.stringify(payload),
-      bids: validBidRequests,
-      options: {
-        contentType: 'application/json'
-      }
+      bids: validBidRequests
     };
   },
 
@@ -114,15 +105,12 @@ function mergeTargets(targets, target) {
   if (target) {
     Object.keys(target).forEach(function (key) {
       const val = target[key];
-      const dirtyValues = Array.isArray(val) ? val : [val];
-      const values = dirtyValues.filter(v => v === 0 || v);
-      if (values.length > 0) {
-        if (targets[key]) {
-          const distinctValues = values.filter(v => targets[key].indexOf(v) < 0);
-          targets[key].push.apply(targets[key], distinctValues);
-        } else {
-          targets[key] = values;
-        }
+      const values = Array.isArray(val) ? val : [val];
+      if (targets[key]) {
+        const distinctValues = values.filter(v => targets[key].indexOf(v) < 0);
+        targets[key].push.apply(targets[key], distinctValues);
+      } else {
+        targets[key] = values;
       }
     });
   }
@@ -160,7 +148,7 @@ function getbaseAdResponse(response) {
 }
 
 function isAdheseAd(ad) {
-  return !ad.origin || ad.origin === 'JERLICIA';
+  return !ad.origin || ad.origin === 'JERLICIA' || ad.origin === 'DALE';
 }
 
 function getMediaType(markup) {

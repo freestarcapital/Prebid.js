@@ -683,7 +683,7 @@ export const spec = {
       this.addExternalUserId(eids, utils.deepAccess(bidRequest, `userId.criteortus.${BIDDER_CODE}.userid`), 'criteortus', 1);
       this.addExternalUserId(eids, utils.deepAccess(bidRequest, `userId.idl_env`), 'liveramp.com', 1);
       this.addExternalUserId(eids, utils.deepAccess(bidRequest, `userId.lipb.lipbid`), 'liveintent.com', 1);
-      this.addExternalUserId(eids, utils.deepAccess(bidRequest, `userId.parrableId.eid`), 'parrable.com', 1);
+      this.addExternalUserId(eids, utils.deepAccess(bidRequest, `userId.parrableid`), 'parrable.com', 1);
     }
     return eids;
   },

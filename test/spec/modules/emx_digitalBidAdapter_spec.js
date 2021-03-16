@@ -370,7 +370,7 @@ describe('emx_digital Adapter', function () {
 
     it('should add schain object to request', function() {
       const schainBidderRequest = utils.deepClone(bidderRequest);
-      schainBidderRequest.schain = {
+      schainBidderRequest.bids[0].schain = {
         'complete': 1,
         'ver': '1.0',
         'nodes': [
@@ -386,7 +386,7 @@ describe('emx_digital Adapter', function () {
       expect(request.source.ext.schain).to.exist;
       expect(request.source.ext.schain).to.have.property('complete', 1);
       expect(request.source.ext.schain).to.have.property('ver', '1.0');
-      expect(request.source.ext.schain.nodes[0].asi).to.equal(schainBidderRequest.schain.nodes[0].asi);
+      expect(request.source.ext.schain.nodes[0].asi).to.equal(schainBidderRequest.bids[0].schain.nodes[0].asi);
     });
   });
 
@@ -633,23 +633,12 @@ describe('emx_digital Adapter', function () {
   });
 
   describe('getUserSyncs', function () {
-    it('should register the iframe sync url', function () {
-      let syncs = spec.getUserSyncs({
-        iframeEnabled: true
-      });
-      expect(syncs).to.not.be.an('undefined');
-      expect(syncs).to.have.lengthOf(1);
-      expect(syncs[0].type).to.equal('iframe');
-    });
-
-    it('should pass gdpr params', function () {
-      let syncs = spec.getUserSyncs({ iframeEnabled: true }, {}, {
-        gdprApplies: false, consentString: 'test'
-      });
-      expect(syncs).to.not.be.an('undefined');
-      expect(syncs).to.have.lengthOf(1);
-      expect(syncs[0].type).to.equal('iframe');
-      expect(syncs[0].url).to.contains('gdpr=0');
+    let syncOptionsIframe = { iframeEnabled: true };
+    let syncOptionsPixel = { pixelEnabled: true };
+    it('Should push the correct sync type depending on the config', function () {
+      let iframeSync = spec.getUserSyncs(syncOptionsIframe);
+      expect(iframeSync.length).to.equal(1);
+      expect(iframeSync[0].type).to.equal('iframe');
     });
   });
 });

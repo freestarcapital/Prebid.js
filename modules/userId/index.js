@@ -49,6 +49,20 @@
  */
 
 /**
+ * @property
+ * @summary use a predefined domain override for cookies or provide your own
+ * @name Submodule#domainOverride
+ * @type {(undefined|function)}
+ */
+
+/**
+ * @function
+ * @summary Returns the root domain
+ * @name Submodule#findRootDomain
+ * @returns {string}
+ */
+
+/**
  * @typedef {Object} SubmoduleConfig
  * @property {string} name - the User ID submodule name (used to link submodule with config)
  * @property {(SubmoduleStorage|undefined)} storage - browser storage config
@@ -170,23 +184,17 @@ export function setSubmoduleRegistry(submodules) {
 }
 
 /**
- * @param {SubmoduleContainer} submodule
+ * @param {SubmoduleStorage} storage
  * @param {(Object|string)} value
  */
-export function setStoredValue(submodule, value) {
-  /**
-   * @type {SubmoduleStorage}
-   */
-  const storage = submodule.config.storage;
-  const domainOverride = (typeof submodule.submodule.domainOverride === 'function') ? submodule.submodule.domainOverride() : null;
-
+function setStoredValue(storage, value) {
   try {
     const valueStr = utils.isPlainObject(value) ? JSON.stringify(value) : value;
     const expiresStr = (new Date(Date.now() + (storage.expires * (60 * 60 * 24 * 1000)))).toUTCString();
     if (storage.type === COOKIE) {
-      coreStorage.setCookie(storage.name, valueStr, expiresStr, 'Lax', domainOverride);
+      coreStorage.setCookie(storage.name, valueStr, expiresStr, 'Lax');
       if (typeof storage.refreshInSeconds === 'number') {
-        coreStorage.setCookie(`${storage.name}_last`, new Date().toUTCString(), expiresStr, 'Lax', domainOverride);
+        coreStorage.setCookie(`${storage.name}_last`, new Date().toUTCString(), expiresStr);
       }
     } else if (storage.type === LOCAL_STORAGE) {
       coreStorage.setDataInLocalStorage(`${storage.name}_exp`, expiresStr);
@@ -233,69 +241,6 @@ function getStoredValue(storage, key = undefined) {
 }
 
 /**
- * makes an object that can be stored with only the keys we need to check.
- * excluding the vendorConsents object since the consentString is enough to know
- * if consent has changed without needing to have all the details in an object
- * @param consentData
- * @returns {{apiVersion: number, gdprApplies: boolean, consentString: string}}
- */
-function makeStoredConsentDataHash(consentData) {
-  const storedConsentData = {
-    consentString: '',
-    gdprApplies: false,
-    apiVersion: 0
-  };
-
-  if (consentData) {
-    storedConsentData.consentString = consentData.consentString;
-    storedConsentData.gdprApplies = consentData.gdprApplies;
-    storedConsentData.apiVersion = consentData.apiVersion;
-  }
-  return utils.cyrb53Hash(JSON.stringify(storedConsentData));
-}
-
-/**
- * puts the current consent data into cookie storage
- * @param consentData
- */
-export function setStoredConsentData(consentData) {
-  try {
-    const expiresStr = (new Date(Date.now() + (CONSENT_DATA_COOKIE_STORAGE_CONFIG.expires * (60 * 60 * 24 * 1000)))).toUTCString();
-    coreStorage.setCookie(CONSENT_DATA_COOKIE_STORAGE_CONFIG.name, makeStoredConsentDataHash(consentData), expiresStr, 'Lax');
-  } catch (error) {
-    utils.logError(error);
-  }
-}
-
-/**
- * get the stored consent data from local storage, if any
- * @returns {string}
- */
-function getStoredConsentData() {
-  try {
-    return coreStorage.getCookie(CONSENT_DATA_COOKIE_STORAGE_CONFIG.name);
-  } catch (e) {
-    utils.logError(e);
-  }
-}
-
-/**
- * test if the consent object stored locally matches the current consent data.
- * if there is nothing in storage, return true and we'll do an actual comparison next time.
- * this way, we don't force a refresh for every user when this code rolls out
- * @param storedConsentData
- * @param consentData
- * @returns {boolean}
- */
-function storedConsentDataMatchesConsentData(storedConsentData, consentData) {
-  return (
-    typeof storedConsentData === 'undefined' ||
-    storedConsentData === null ||
-    storedConsentData === makeStoredConsentDataHash(consentData)
-  );
-}
-
-/**
  * test if consent module is present, applies, and is valid for local storage or cookies (purpose 1)
  * @param {ConsentData} consentData
  * @returns {boolean}
@@ -316,6 +261,60 @@ function hasGDPRConsent(consentData) {
 }
 
 /**
+   * Find the root domain
+   * @param {string|undefined} fullDomain
+   * @return {string}
+   */
+export function findRootDomain(fullDomain = window.location.hostname) {
+  if (!coreStorage.cookiesAreEnabled()) {
+    return fullDomain;
+  }
+
+  const domainParts = fullDomain.split('.');
+  if (domainParts.length == 2) {
+    return fullDomain;
+  }
+  let rootDomain;
+  let continueSearching;
+  let startIndex = -2;
+  const TEST_COOKIE_NAME = `_rdc${Date.now()}`;
+  const TEST_COOKIE_VALUE = 'writeable';
+  do {
+    rootDomain = domainParts.slice(startIndex).join('.');
+    let expirationDate = new Date(utils.timestamp() + 10 * 1000).toUTCString();
+
+    // Write a test cookie
+    coreStorage.setCookie(
+      TEST_COOKIE_NAME,
+      TEST_COOKIE_VALUE,
+      expirationDate,
+      'Lax',
+      rootDomain,
+      undefined
+    );
+
+    // See if the write was successful
+    const value = coreStorage.getCookie(TEST_COOKIE_NAME, undefined);
+    if (value === TEST_COOKIE_VALUE) {
+      continueSearching = false;
+      // Delete our test cookie
+      coreStorage.setCookie(
+        TEST_COOKIE_NAME,
+        '',
+        'Thu, 01 Jan 1970 00:00:01 GMT',
+        undefined,
+        rootDomain,
+        undefined
+      );
+    } else {
+      startIndex += -1;
+      continueSearching = Math.abs(startIndex) <= domainParts.length;
+    }
+  } while (continueSearching);
+  return rootDomain;
+}
+
+/**
  * @param {SubmoduleContainer[]} submodules
  * @param {function} cb - callback for after processing is done.
  */
@@ -332,7 +331,7 @@ function processSubmoduleCallbacks(submodules, cb) {
       // if valid, id data should be saved to cookie/html storage
       if (idObj) {
         if (submodule.config.storage) {
-          setStoredValue(submodule, idObj);
+          setStoredValue(submodule.config.storage, idObj);
         }
         // cache decoded value (this is copied to every adUnit bid)
         submodule.idObj = submodule.submodule.decode(idObj, submodule.config);
@@ -389,7 +388,7 @@ function addIdDataToAdUnitBids(adUnits, submodules) {
 }
 
 /**
- * This is a common function that will initialize subModules if not already done and it will also execute subModule callbacks
+ * This is a common function that will initalize subModules if not already done and it will also execute subModule callbacks
  */
 function initializeSubmodulesAndExecuteCallbacks(continueAuction) {
   let delayed = false;
@@ -591,10 +590,6 @@ function populateSubmoduleId(submodule, consentData, storedConsentData, forceRef
  * @returns {SubmoduleContainer[]} initialized submodules
  */
 function initSubmodules(submodules, consentData) {
-  // we always want the latest consentData stored, even if we don't execute any submodules
-  const storedConsentData = getStoredConsentData();
-  setStoredConsentData(consentData);
-
   // gdpr consent with purpose one is required, otherwise exit immediately
   let { userIdModules, hasValidated } = validateGdprEnforcement(submodules, consentData);
   if (!hasValidated && !hasGDPRConsent(consentData)) {
@@ -657,6 +652,7 @@ function updateSubmodules() {
   // find submodule and the matching configuration, if found create and append a SubmoduleContainer
   submodules = addedSubmodules.map(i => {
     const submoduleConfig = find(configs, j => j.name === i.name);
+    i.findRootDomain = findRootDomain;
     return submoduleConfig ? {
       submodule: i,
       config: submoduleConfig,
@@ -713,8 +709,8 @@ export function init(config) {
 
   // listen for config userSyncs to be set
   config.getConfig(conf => {
-    // Note: support for 'usersync' was dropped as part of Prebid.js 4.0
-    const userSync = conf.userSync;
+    // Note: support for both 'userSync' and 'usersync' will be deprecated with Prebid.js 3.0
+    const userSync = conf.userSync || conf.usersync;
     if (userSync && userSync.userIds) {
       configRegistry = userSync.userIds;
       syncDelay = utils.isNumber(userSync.syncDelay) ? userSync.syncDelay : DEFAULT_SYNC_DELAY;

@@ -1,5 +1,5 @@
 # Overview
-Module Name: YuktaOne Analytics by YuktaMedia
+Module Name: YuktaMedia Analytics Adapter
 
 Module Type: Analytics Adapter
 
@@ -15,11 +15,8 @@ Analytics adapter for prebid provided by YuktaMedia. Contact info@yuktamedia.com
 {
   provider: 'yuktamedia',
     options : {
-      pubId : 50357,               // id provided by YuktaMedia LLP
-      pubKey: 'xxx',               // key provided by YuktaMedia LLP
-      enableUTMCollection: true,   // set true if want to collect utm info
-      enableSession: true,         // set true if want to collect information by sessions
-      enableUserIdCollection: true // set true if want to collect user ID module info
+      pubId : 50357   //id provided by YuktaMedia LLP
+      pubKey: 'xxx'   //key provided by YuktaMedia LLP
     }
 }
 ```

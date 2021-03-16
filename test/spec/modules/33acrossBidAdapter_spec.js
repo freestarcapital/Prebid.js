@@ -200,7 +200,7 @@ describe('33acrossBidAdapter:', function () {
   function ServerRequestBuilder() {
     const serverRequest = {
       'method': 'POST',
-      'url': `${END_POINT}?guid=${SITE_ID}`,
+      'url': END_POINT,
       'data': null,
       'options': {
         'contentType': 'text/plain',

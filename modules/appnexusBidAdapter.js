@@ -63,20 +63,7 @@ const storage = getStorageManager(GVLID, BIDDER_CODE);
 export const spec = {
   code: BIDDER_CODE,
   gvlid: GVLID,
-  aliases: [
-    { code: 'appnexusAst', gvlid: 32 },
-    { code: 'brealtime' },
-    { code: 'emxdigital', gvlid: 183 },
-    { code: 'pagescience' },
-    { code: 'defymedia' },
-    { code: 'gourmetads' },
-    { code: 'matomy' },
-    { code: 'featureforward' },
-    { code: 'oftmedia' },
-    { code: 'districtm', gvlid: 144 },
-    { code: 'adasta' },
-    { code: 'beintoo', gvlid: 618 },
-  ],
+  aliases: ['appnexusAst', 'brealtime', 'emxdigital', 'pagescience', 'defymedia', 'gourmetads', 'matomy', 'featureforward', 'districtm', 'adasta', 'beintoo'], // @NOTE we must remove oftmedia here if there is ever a conflict
   supportedMediaTypes: [BANNER, VIDEO, NATIVE],
 
   /**
@@ -85,7 +72,7 @@ export const spec = {
    * @param {object} bid The bid to validate.
    * @return boolean True if this is a valid bid, and false otherwise.
    */
-  isBidRequestValid: function (bid) {
+  isBidRequestValid: function(bid) {
     return !!(bid.params.placementId || (bid.params.member && bid.params.invCode));
   },
 
@@ -95,12 +82,12 @@ export const spec = {
    * @param {BidRequest[]} bidRequests A non-empty list of bid requests which should be sent to the Server.
    * @return ServerRequest Info describing the request to the server.
    */
-  buildRequests: function (bidRequests, bidderRequest) {
+  buildRequests: function(bidRequests, bidderRequest) {
     const tags = bidRequests.map(bidToTag);
     const userObjBid = find(bidRequests, hasUserInfo);
     let userObj = {};
     if (config.getConfig('coppa') === true) {
-      userObj = { 'coppa': true };
+      userObj = {'coppa': true};
     }
     if (userObjBid) {
       Object.keys(userObjBid.params.user)
@@ -249,6 +236,14 @@ export const spec = {
       });
     }
 
+    const netidId = utils.deepAccess(bidRequests[0], `userId.netId`);
+    if (netidId) {
+      eids.push({
+        source: 'netid.de',
+        id: netidId
+      });
+    }
+
     const tdid = utils.deepAccess(bidRequests[0], `userId.tdid`);
     if (tdid) {
       eids.push({
@@ -266,6 +261,10 @@ export const spec = {
       payload.publisher_id = tags[0].publisher_id;
     }
 
+    if (tags[0].publisher_id) {
+      payload.publisher_id = tags[0].publisher_id;
+    }
+
     const request = formatRequest(payload, bidderRequest);
     return request;
   },
@@ -276,7 +275,7 @@ export const spec = {
    * @param {*} serverResponse A successful response from the server.
    * @return {Bid[]} An array of bids which were nested inside the server.
    */
-  interpretResponse: function (serverResponse, { bidderRequest }) {
+  interpretResponse: function(serverResponse, {bidderRequest}) {
     serverResponse = serverResponse.body;
     const bids = [];
     if (!serverResponse || serverResponse.error) {
@@ -328,14 +327,14 @@ export const spec = {
    * Returns mapping file info. This info will be used by bidderFactory to preload mapping file and store data in local storage
    * @returns {mappingFileInfo}
    */
-  getMappingFileInfo: function () {
+  getMappingFileInfo: function() {
     return {
       url: mappingFileUrl,
       refreshInDays: 2
     }
   },
 
-  getUserSyncs: function (syncOptions) {
+  getUserSyncs: function(syncOptions) {
     if (syncOptions.iframeEnabled) {
       return [{
         type: 'iframe',
@@ -344,7 +343,7 @@ export const spec = {
     }
   },
 
-  transformBidParams: function (params, isOpenRtb) {
+  transformBidParams: function(params, isOpenRtb) {
     params = utils.convertTypes({
       'member': 'string',
       'invCode': 'string',
@@ -377,7 +376,7 @@ export const spec = {
    * Add element selector to javascript tracker to improve native viewability
    * @param {Bid} bid
    */
-  onBidWon: function (bid) {
+  onBidWon: function(bid) {
     if (bid.native) {
       reloadViewabilityScriptWithCorrectParameters(bid);
     }
@@ -684,11 +683,9 @@ function newBid(serverBid, rtbBid, bidderRequest) {
       ad: rtbBid.rtb.banner.content
     });
     try {
-      if (rtbBid.rtb.trackers) {
-        const url = rtbBid.rtb.trackers[0].impression_urls[0];
-        const tracker = utils.createTrackPixelHtml(url);
-        bid.ad += tracker;
-      }
+      const url = rtbBid.rtb.trackers[0].impression_urls[0];
+      const tracker = utils.createTrackPixelHtml(url);
+      bid.ad += tracker;
     } catch (error) {
       utils.logError('Error appending tracking pixel', error);
     }
@@ -716,7 +713,7 @@ function bidToTag(bid) {
     tag.reserve = bid.params.reserve;
   }
   if (bid.params.position) {
-    tag.position = { 'above': 1, 'below': 2 }[bid.params.position] || 0;
+    tag.position = {'above': 1, 'below': 2}[bid.params.position] || 0;
   }
   if (bid.params.trafficSourceCode) {
     tag.traffic_source_code = bid.params.trafficSourceCode;
@@ -756,7 +753,7 @@ function bidToTag(bid) {
 
     if (bid.nativeParams) {
       const nativeRequest = buildNativeRequest(bid.nativeParams);
-      tag[NATIVE] = { layouts: [nativeRequest] };
+      tag[NATIVE] = {layouts: [nativeRequest]};
     }
   }
 
@@ -804,7 +801,11 @@ function bidToTag(bid) {
   }
 
   if (bid.renderer) {
-    tag.video = Object.assign({}, tag.video, { custom_renderer_present: true });
+    tag.video = Object.assign({}, tag.video, {custom_renderer_present: true});
+  }
+
+  if (bid.params.frameworks && utils.isArray(bid.params.frameworks)) {
+    tag['banner_frameworks'] = bid.params.frameworks;
   }
 
   if (bid.params.frameworks && utils.isArray(bid.params.frameworks)) {
@@ -991,9 +992,22 @@ function hidedfpContainer(elementId) {
   }
 }
 
+function hideSASIframe(elementId) {
+  try {
+    // find script tag with id 'sas_script'. This ensures it only works if you're using Smart Ad Server.
+    const el = document.getElementById(elementId).querySelectorAll("script[id^='sas_script']");
+    if (el[0].nextSibling && el[0].nextSibling.localName === 'iframe') {
+      el[0].nextSibling.style.setProperty('display', 'none');
+    }
+  } catch (e) {
+    // element not found!
+  }
+}
+
 function outstreamRender(bid) {
-  // push to render queue because ANOutstreamVideo may not be loaded yet
   hidedfpContainer(bid.adUnitCode);
+  hideSASIframe(bid.adUnitCode);
+  // push to render queue because ANOutstreamVideo may not be loaded yet
   bid.renderer.push(() => {
     window.ANOutstreamVideo.renderAd({
       tagId: bid.adResponse.tag_id,

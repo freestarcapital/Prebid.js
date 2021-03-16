@@ -8,8 +8,8 @@ import includes from 'core-js-pure/features/array/includes.js';
 const ADAPTER_VERSION = '1.0';
 const BIDDER_CODE = 'lunamedia';
 
-export const VIDEO_ENDPOINT = 'https://nep.advangelists.com/xp/get?pubid=';// https://api.lunamedia.io/xp/get?pubid=0cf8d6d643e13d86a5b6374148a4afac';
-export const BANNER_ENDPOINT = 'https://nep.advangelists.com/xp/get?pubid=';// 0cf8d6d643e13d86a5b6374148a4afac';
+export const VIDEO_ENDPOINT = 'https://api.lunamedia.io/xp/get?pubid=';// 0cf8d6d643e13d86a5b6374148a4afac';
+export const BANNER_ENDPOINT = 'https://api.lunamedia.io/xp/get?pubid=';// 0cf8d6d643e13d86a5b6374148a4afac';
 export const OUTSTREAM_SRC = 'https://player-cdn.beachfrontmedia.com/playerapi/loader/outstream.js';
 export const VIDEO_TARGETING = ['mimes', 'playbackmethod', 'maxduration', 'skip'];
 export const DEFAULT_MIMES = ['video/mp4', 'application/javascript'];
@@ -44,7 +44,6 @@ export const spec = {
 
     bannerBids.forEach(bid => {
       pubid = getBannerBidParam(bid, 'pubid');
-
       requests.push({
         method: 'POST',
         url: BANNER_ENDPOINT + pubid,
@@ -211,16 +210,8 @@ function createVideoRequestData(bid, bidderRequest) {
   let topLocation = getTopWindowLocation(bidderRequest);
   let topReferrer = getTopWindowReferrer();
 
-  // if size is explicitly given via adapter params
-  let paramSize = getVideoBidParam(bid, 'size');
-  let sizes = [];
-
-  if (typeof paramSize !== 'undefined' && paramSize != '') {
-    sizes = parseSizes(paramSize);
-  } else {
-    sizes = getVideoSizes(bid);
-  }
-  const firstSize = getFirstSize(sizes);
+  let sizes = getVideoSizes(bid);
+  let firstSize = getFirstSize(sizes);
 
   let video = getVideoTargetingParams(bid);
   const o = {
@@ -310,15 +301,7 @@ function createBannerRequestData(bid, bidderRequest) {
   let topLocation = getTopWindowLocation(bidderRequest);
   let topReferrer = getTopWindowReferrer();
 
-  // if size is explicitly given via adapter params
-
-  let paramSize = getBannerBidParam(bid, 'size');
-  let sizes = [];
-  if (typeof paramSize !== 'undefined' && paramSize != '') {
-    sizes = parseSizes(paramSize);
-  } else {
-    sizes = getBannerSizes(bid);
-  }
+  let sizes = getBannerSizes(bid);
 
   const o = {
     'device': {
@@ -396,4 +379,5 @@ function createBannerRequestData(bid, bidderRequest) {
 
   return o;
 }
+
 registerBidder(spec);

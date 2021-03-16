@@ -1769,11 +1769,7 @@ describe('PubMatic adapter', function () {
         describe('Parrable Id', function() {
           it('send the Parrable id if it is present', function() {
             bidRequests[0].userId = {};
-<<<<<<< HEAD
-            bidRequests[0].userId.parrableid = 'parrable-user-id';
-=======
             bidRequests[0].userId.parrableId = { eid: 'parrable-user-id' };
->>>>>>> 4.5.0
             bidRequests[0].userIdAsEids = createEidsArray(bidRequests[0].userId);
             let request = spec.buildRequests(bidRequests, {});
             let data = JSON.parse(request.data);

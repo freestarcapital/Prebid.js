@@ -45,7 +45,6 @@ export const spec = {
       referrer: getReferrerInfo(bidderRequest),
       pageReferrer: document.referrer,
       networkBandwidth: getConnectionDownLink(window.navigator),
-      timeToFirstByte: getTimeToFirstByte(window),
       data: bids,
       deviceWidth: screen.width,
       hb_version: '$prebid.version$'

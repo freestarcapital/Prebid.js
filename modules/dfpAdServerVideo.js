@@ -8,7 +8,7 @@ import { deepAccess, isEmpty, logError, parseSizesInput, formatQS, parseUrl, bui
 import { config } from '../src/config.js';
 import { getHook, submodule } from '../src/hook.js';
 import { auctionManager } from '../src/auctionManager.js';
-import { uspDataHandler } from '../src/adapterManager.js';
+import { gdprDataHandler, uspDataHandler } from '../src/adapterManager.js';
 import events from '../src/events.js';
 import CONSTANTS from '../src/constants.json';
 
@@ -45,7 +45,7 @@ import CONSTANTS from '../src/constants.json';
 const defaultParamConstants = {
   env: 'vp',
   gdfp_req: 1,
-  output: 'vast',
+  output: 'xml_vast3',
   unviewed_position_start: 1,
 };
 
@@ -85,7 +85,7 @@ export function buildDfpVideoUrl(options) {
 
   const derivedParams = {
     correlator: Date.now(),
-    sz: parseSizesInput(deepAccess(adUnit, 'mediaTypes.video.playerSize')).join('|'),
+    sz: parseSizesInput(adUnit.sizes).join('|'),
     url: encodeURIComponent(location.href),
   };
   const encodedCustomParams = getCustParams(bid, options);
@@ -100,6 +100,13 @@ export function buildDfpVideoUrl(options) {
 
   const descriptionUrl = getDescriptionUrl(bid, options, 'params');
   if (descriptionUrl) { queryParams.description_url = descriptionUrl; }
+
+  const gdprConsent = gdprDataHandler.getConsentData();
+  if (gdprConsent) {
+    if (typeof gdprConsent.gdprApplies === 'boolean') { queryParams.gdpr = Number(gdprConsent.gdprApplies); }
+    if (gdprConsent.consentString) { queryParams.gdpr_consent = gdprConsent.consentString; }
+    if (gdprConsent.addtlConsent) { queryParams.addtl_consent = gdprConsent.addtlConsent; }
+  }
 
   const uspConsent = uspDataHandler.getConsentData();
   if (uspConsent) { queryParams.us_privacy = uspConsent; }
@@ -186,6 +193,13 @@ export function buildAdpodVideoUrl({code, params, callback} = {}) {
       params,
       { cust_params: encodedCustomParams }
     );
+
+    const gdprConsent = gdprDataHandler.getConsentData();
+    if (gdprConsent) {
+      if (typeof gdprConsent.gdprApplies === 'boolean') { queryParams.gdpr = Number(gdprConsent.gdprApplies); }
+      if (gdprConsent.consentString) { queryParams.gdpr_consent = gdprConsent.consentString; }
+      if (gdprConsent.addtlConsent) { queryParams.addtl_consent = gdprConsent.addtlConsent; }
+    }
 
     const uspConsent = uspDataHandler.getConsentData();
     if (uspConsent) { queryParams.us_privacy = uspConsent; }

@@ -7,22 +7,11 @@ const BIDDER_CODE = 'districtmDMX';
 
 const DMXURI = 'https://dmx.districtm.io/b/v1';
 
-const VIDEO_MAPPING = {
-  playback_method: {
-    'auto_play_sound_on': 1,
-    'auto_play_sound_off': 2,
-    'click_to_play': 3,
-    'mouse_over': 4,
-    'viewport_sound_on': 5,
-    'viewport_sound_off': 6
-  }
-};
 export const spec = {
   code: BIDDER_CODE,
-  supportedFormat: [BANNER, VIDEO],
-  supportedMediaTypes: [VIDEO, BANNER],
+  supportedFormat: ['banner'],
   isBidRequestValid(bid) {
-    return !!(bid.params.dmxid && bid.params.memberid);
+    return !!(bid.params.memberid);
   },
   interpretResponse(response, bidRequest) {
     response = response.body || {};
@@ -48,7 +37,6 @@ export const spec = {
               if (nBid.dealid) {
                 nBid.dealId = nBid.dealid;
               }
-              nBid.uuid = nBid.bidId;
               nBid.ad = nBid.adm;
               nBid.netRevenue = true;
               nBid.creativeId = nBid.crid;
@@ -152,7 +140,7 @@ export const spec = {
     let tosendtags = bidRequest.map(dmx => {
       var obj = {};
       obj.id = dmx.bidId;
-      obj.tagid = String(dmx.params.dmxid);
+      obj.tagid = String(dmx.params.dmxid || dmx.adUnitCode);
       obj.secure = 1;
       obj.bidfloor = getFloor(dmx);
       if (dmx.mediaTypes && dmx.mediaTypes.video) {

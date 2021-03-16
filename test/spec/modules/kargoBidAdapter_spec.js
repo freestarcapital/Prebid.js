@@ -505,8 +505,7 @@ describe('kargo adapter tests', function () {
         netRevenue: true,
         currency: 'USD',
         meta: {
-          clickUrl: 'https://foobar.com',
-          advertiserDomains: ['https://foobar.com']
+          clickUrl: 'https://foobar.com'
         }
       }, {
         requestId: '3',

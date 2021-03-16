@@ -57,10 +57,13 @@ describe('eids array generation for known sub-modules', function() {
       expect(newEids.length).to.equal(1);
       expect(newEids[0]).to.deep.equal({
         source: 'id5-sync.com',
-        uids: [{ id: 'some-random-id-value', atype: 1 }],
-        ext: {
-          linkType: 0
-        }
+        uids: [{
+          id: 'some-random-id-value',
+          atype: 1,
+          ext: {
+            linkType: 0
+          }
+        }]
       });
     });
   });
@@ -146,21 +149,6 @@ describe('eids array generation for known sub-modules', function() {
   });
 
   it('lotamePanoramaId', function () {
-<<<<<<< HEAD
-    const userId = {
-      lotamePanoramaId: 'some-random-id-value',
-    };
-    const newEids = createEidsArray(userId);
-    expect(newEids.length).to.equal(1);
-    expect(newEids[0]).to.deep.equal({
-      source: 'crwdcntrl.net',
-      uids: [{ id: 'some-random-id-value', atype: 1 }],
-    });
-  });
-
-  it('DigiTrust; getValue call', function() {
-=======
->>>>>>> 4.5.0
     const userId = {
       lotamePanoramaId: 'some-random-id-value',
     };
@@ -180,6 +168,18 @@ describe('eids array generation for known sub-modules', function() {
     expect(newEids.length).to.equal(1);
     expect(newEids[0]).to.deep.equal({
       source: 'criteo.com',
+      uids: [{id: 'some-random-id-value', atype: 1}]
+    });
+  });
+
+  it('tapadId', function() {
+    const userId = {
+      tapadId: 'some-random-id-value'
+    };
+    const newEids = createEidsArray(userId);
+    expect(newEids.length).to.equal(1);
+    expect(newEids[0]).to.deep.equal({
+      source: 'tapad.com',
       uids: [{id: 'some-random-id-value', atype: 1}]
     });
   });

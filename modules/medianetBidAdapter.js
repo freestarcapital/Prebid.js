@@ -1,7 +1,7 @@
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import * as utils from '../src/utils.js';
 import { config } from '../src/config.js';
-import { BANNER, NATIVE, VIDEO } from '../src/mediaTypes.js';
+import { BANNER, NATIVE } from '../src/mediaTypes.js';
 import { getRefererInfo } from '../src/refererDetection.js';
 import { Renderer } from '../src/Renderer.js';
 
@@ -27,7 +27,7 @@ window.mnet = window.mnet || {};
 window.mnet.queue = window.mnet.queue || [];
 
 mnData.urlData = {
-  domain: utils.parseUrl(refererInfo.referer).hostname,
+  domain: utils.parseUrl(refererInfo.referer).host,
   page: refererInfo.referer,
   isTop: refererInfo.reachedTop
 }
@@ -179,15 +179,7 @@ function slotParams(bidRequest) {
     },
     all: bidRequest.params
   };
-  let bannerSizes = utils.deepAccess(bidRequest, 'mediaTypes.banner.sizes') || [];
-
-  const videoInMediaType = utils.deepAccess(bidRequest, 'mediaTypes.video') || {};
-  const videoInParams = utils.deepAccess(bidRequest, 'params.video') || {};
-  const videoCombinedObj = Object.assign({}, videoInParams, videoInMediaType);
-
-  if (!utils.isEmpty(videoCombinedObj)) {
-    params.video = videoCombinedObj;
-  }
+  let bannerSizes = utils.deepAccess(bidRequest, 'mediaTypes.banner.sizes') || bidRequest.sizes || [];
 
   if (bannerSizes.length > 0) {
     params.banner = transformSizes(bannerSizes);
@@ -366,7 +358,7 @@ export const spec = {
   code: BIDDER_CODE,
   gvlid: 142,
 
-  supportedMediaTypes: [BANNER, NATIVE, VIDEO],
+  supportedMediaTypes: [BANNER, NATIVE],
 
   /**
    * Determines whether or not the given bid request is valid.

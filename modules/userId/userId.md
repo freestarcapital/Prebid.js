@@ -87,7 +87,7 @@ pbjs.setConfig({
 Example showing `localStorage` for user id data for some submodules
 ```
 pbjs.setConfig({
-    userSync: {
+    usersync: {
         userIds: [{
             name: "unifiedId",
             params: {
@@ -164,7 +164,7 @@ pbjs.setConfig({
 Example showing how to configure a `value` object to pass directly to bid adapters
 ```
 pbjs.setConfig({
-    userSync: {
+    usersync: {
         userIds: [{
             name: "pubCommonId",
             value: {
