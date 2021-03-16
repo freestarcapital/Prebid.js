@@ -7,9 +7,23 @@ const BIDDER_CODE = 'districtmDMX';
 
 const DMXURI = 'https://dmx.districtm.io/b/v1';
 
+const GVLID = 144;
+const VIDEO_MAPPING = {
+  playback_method: {
+    'auto_play_sound_on': 1,
+    'auto_play_sound_off': 2,
+    'click_to_play': 3,
+    'mouse_over': 4,
+    'viewport_sound_on': 5,
+    'viewport_sound_off': 6
+  }
+};
 export const spec = {
   code: BIDDER_CODE,
-  supportedFormat: ['banner'],
+  gvlid: GVLID,
+  aliases: ['dmx'],
+  supportedFormat: [BANNER, VIDEO],
+  supportedMediaTypes: [VIDEO, BANNER],
   isBidRequestValid(bid) {
     return !!(bid.params.memberid);
   },
@@ -28,15 +42,16 @@ export const spec = {
               nBid.requestId = nBid.impid;
               nBid.width = nBid.w || width;
               nBid.height = nBid.h || height;
-              nBid.ttl = 360;
+              nBid.ttl = 300;
               nBid.mediaType = bid.mediaTypes && bid.mediaTypes.video ? 'video' : 'banner';
-              if (nBid.mediaType) {
+              if (nBid.mediaType === 'video') {
                 nBid.vastXml = cleanVast(nBid.adm, nBid.nurl);
                 nBid.ttl = 3600;
               }
               if (nBid.dealid) {
                 nBid.dealId = nBid.dealid;
               }
+              nBid.uuid = nBid.bidId;
               nBid.ad = nBid.adm;
               nBid.netRevenue = true;
               nBid.creativeId = nBid.crid;

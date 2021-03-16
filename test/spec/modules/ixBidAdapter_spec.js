@@ -3,9 +3,10 @@ import { config } from 'src/config.js';
 import { expect } from 'chai';
 import { newBidder } from 'src/adapters/bidderFactory.js';
 import { spec } from 'modules/ixBidAdapter.js';
+import { createEidsArray } from 'modules/userId/eids.js';
 
 describe('IndexexchangeAdapter', function () {
-  const IX_SECURE_ENDPOINT = 'https://as-sec.casalemedia.com/cygnus';
+  const IX_SECURE_ENDPOINT = 'https://htlb.casalemedia.com/cygnus';
   const VIDEO_ENDPOINT_VERSION = 8.1;
   const BANNER_ENDPOINT_VERSION = 7.2;
 
@@ -240,6 +241,35 @@ describe('IndexexchangeAdapter', function () {
     ]
   };
 
+  const DEFAULT_BANNER_BID_RESPONSE_WITHOUT_ADOMAIN = {
+    cur: 'USD',
+    id: '11a22b33c44d',
+    seatbid: [
+      {
+        bid: [
+          {
+            crid: '12345',
+            adid: '14851455',
+            impid: '1a2b3c4d',
+            cid: '3051266',
+            price: 100,
+            w: 300,
+            h: 250,
+            id: '1',
+            ext: {
+              dspid: 50,
+              pricelevel: '_100',
+              advbrandid: 303325,
+              advbrand: 'OECTA'
+            },
+            adm: '<a target="_blank" href="https://www.indexexchange.com"></a>'
+          }
+        ],
+        seat: '3970'
+      }
+    ]
+  };
+
   const DEFAULT_VIDEO_BID_RESPONSE = {
     cur: 'USD',
     id: '1aa2bb3cc4de',
@@ -322,7 +352,12 @@ describe('IndexexchangeAdapter', function () {
 
   const DEFAULT_USERID_DATA = {
     idl_env: '1234-5678-9012-3456', // Liveramp
+    netId: 'testnetid123', // NetId
+    IDP: 'userIDP000', // IDP
+    fabrickId: 'fabrickId9000', // FabrickId
   };
+
+  const DEFAULT_USERIDASEIDS_DATA = createEidsArray(DEFAULT_USERID_DATA);
 
   const DEFAULT_USERID_PAYLOAD = [
     {
@@ -331,6 +366,30 @@ describe('IndexexchangeAdapter', function () {
         id: DEFAULT_USERID_DATA.idl_env,
         ext: {
           rtiPartner: 'idl'
+        }
+      }]
+    }, {
+      source: 'netid.de',
+      uids: [{
+        id: DEFAULT_USERID_DATA.netId,
+        ext: {
+          rtiPartner: 'NETID'
+        }
+      }]
+    }, {
+      source: 'neustar.biz',
+      uids: [{
+        id: DEFAULT_USERID_DATA.fabrickId,
+        ext: {
+          rtiPartner: 'fabrickId'
+        }
+      }]
+    }, {
+      source: 'zeotap.com',
+      uids: [{
+        id: DEFAULT_USERID_DATA.IDP,
+        ext: {
+          rtiPartner: 'zeotapIdPlus'
         }
       }]
     }
@@ -732,14 +791,18 @@ describe('IndexexchangeAdapter', function () {
       delete window.headertag;
     });
 
-    it('IX adapter reads LiveRamp IDL envelope from Prebid and adds it to Video', function () {
+    it('IX adapter reads supported user modules from Prebid and adds it to Video', function () {
       const cloneValidBid = utils.deepClone(DEFAULT_VIDEO_VALID_BID);
-      cloneValidBid[0].userId = utils.deepClone(DEFAULT_USERID_DATA);
+      // cloneValidBid[0].userId = utils.deepClone(DEFAULT_USERID_DATA);
+      cloneValidBid[0].userIdAsEids = utils.deepClone(DEFAULT_USERIDASEIDS_DATA);
       const request = spec.buildRequests(cloneValidBid, DEFAULT_OPTION)[0];
       const payload = JSON.parse(request.data.r);
 
-      expect(payload.user.eids).to.have.lengthOf(1);
+      expect(payload.user.eids).to.have.lengthOf(4);
       expect(payload.user.eids).to.deep.include(DEFAULT_USERID_PAYLOAD[0]);
+      expect(payload.user.eids).to.deep.include(DEFAULT_USERID_PAYLOAD[1]);
+      expect(payload.user.eids).to.deep.include(DEFAULT_USERID_PAYLOAD[2]);
+      expect(payload.user.eids).to.deep.include(DEFAULT_USERID_PAYLOAD[3]);
     });
 
     it('We continue to send in IXL identity info and Prebid takes precedence over IXL', function () {
@@ -793,11 +856,45 @@ describe('IndexexchangeAdapter', function () {
               }
             }
           ]
+        },
+        NetIdIp: {
+          source: 'netid.de',
+          uids: [
+            {
+              id: 'testnetid',
+              ext: {
+                rtiPartner: 'NETID'
+              }
+            }
+          ]
+        },
+        NeustarIp: {
+          source: 'neustar.biz',
+          uids: [
+            {
+              id: 'testfabrick',
+              ext: {
+                rtiPartner: 'fabrickId'
+              }
+            }
+          ]
+        },
+        ZeotapIp: {
+          source: 'zeotap.com',
+          uids: [
+            {
+              id: 'testzeotap',
+              ext: {
+                rtiPartner: 'zeotapIdPlus'
+              }
+            }
+          ]
         }
       };
 
       const cloneValidBid = utils.deepClone(DEFAULT_BANNER_VALID_BID);
-      cloneValidBid[0].userId = utils.deepClone(DEFAULT_USERID_DATA)
+      // cloneValidBid[0].userId = utils.deepClone(DEFAULT_USERID_DATA);
+      cloneValidBid[0].userIdAsEids = utils.deepClone(DEFAULT_USERIDASEIDS_DATA);
 
       const request = spec.buildRequests(cloneValidBid, DEFAULT_OPTION)[0];
       const payload = JSON.parse(request.data.r);
@@ -838,10 +935,14 @@ describe('IndexexchangeAdapter', function () {
       })
 
       expect(payload.user).to.exist;
-      expect(payload.user.eids).to.have.lengthOf(3);
+      expect(payload.user.eids).to.have.lengthOf(6);
+
       expect(payload.user.eids).to.deep.include(validUserIdPayload[0]);
       expect(payload.user.eids).to.deep.include(validUserIdPayload[1]);
       expect(payload.user.eids).to.deep.include(validUserIdPayload[2]);
+      expect(payload.user.eids).to.deep.include(validUserIdPayload[3]);
+      expect(payload.user.eids).to.deep.include(validUserIdPayload[4]);
+      expect(payload.user.eids).to.deep.include(validUserIdPayload[5]);
     });
 
     it('IXL and Prebid are mutually exclusive', function () {
@@ -863,7 +964,8 @@ describe('IndexexchangeAdapter', function () {
       };
 
       const cloneValidBid = utils.deepClone(DEFAULT_VIDEO_VALID_BID);
-      cloneValidBid[0].userId = utils.deepClone(DEFAULT_USERID_DATA);
+      // cloneValidBid[0].userId = utils.deepClone(DEFAULT_USERID_DATA);
+      cloneValidBid[0].userIdAsEids = utils.deepClone(DEFAULT_USERIDASEIDS_DATA);
 
       const request = spec.buildRequests(cloneValidBid, DEFAULT_OPTION)[0];
 
@@ -881,9 +983,12 @@ describe('IndexexchangeAdapter', function () {
       });
 
       const payload = JSON.parse(request.data.r);
-      expect(payload.user.eids).to.have.lengthOf(2);
+      expect(payload.user.eids).to.have.lengthOf(5);
       expect(payload.user.eids).to.deep.include(validUserIdPayload[0]);
       expect(payload.user.eids).to.deep.include(validUserIdPayload[1]);
+      expect(payload.user.eids).to.deep.include(validUserIdPayload[2]);
+      expect(payload.user.eids).to.deep.include(validUserIdPayload[3]);
+      expect(payload.user.eids).to.deep.include(validUserIdPayload[4]);
     });
   });
 
@@ -1467,6 +1572,7 @@ describe('IndexexchangeAdapter', function () {
         expect(diagObj.ren).to.equal(false);
         expect(diagObj.mfu).to.equal(1);
         expect(diagObj.allU).to.equal(1);
+        expect(diagObj.version).to.equal('$prebid.version$');
       });
     });
   });
@@ -1489,11 +1595,37 @@ describe('IndexexchangeAdapter', function () {
           meta: {
             networkId: 50,
             brandId: 303325,
-            brandName: 'OECTA'
+            brandName: 'OECTA',
+            advertiserDomains: ['www.abc.com']
           }
         }
       ];
       const result = spec.interpretResponse({ body: DEFAULT_BANNER_BID_RESPONSE }, { data: DEFAULT_BIDDER_REQUEST_DATA });
+      expect(result[0]).to.deep.equal(expectedParse[0]);
+    });
+
+    it('should get correct bid response for banner ad with missing adomain', function () {
+      const expectedParse = [
+        {
+          requestId: '1a2b3c4d',
+          cpm: 1,
+          creativeId: '12345',
+          width: 300,
+          height: 250,
+          mediaType: 'banner',
+          ad: '<a target="_blank" href="https://www.indexexchange.com"></a>',
+          currency: 'USD',
+          ttl: 300,
+          netRevenue: true,
+          dealId: undefined,
+          meta: {
+            networkId: 50,
+            brandId: 303325,
+            brandName: 'OECTA'
+          }
+        }
+      ];
+      const result = spec.interpretResponse({ body: DEFAULT_BANNER_BID_RESPONSE_WITHOUT_ADOMAIN }, { data: DEFAULT_BIDDER_REQUEST_DATA });
       expect(result[0]).to.deep.equal(expectedParse[0]);
     });
 
@@ -1516,7 +1648,8 @@ describe('IndexexchangeAdapter', function () {
           meta: {
             networkId: 50,
             brandId: 303325,
-            brandName: 'OECTA'
+            brandName: 'OECTA',
+            advertiserDomains: ['www.abc.com']
           }
         }
       ];
@@ -1542,7 +1675,8 @@ describe('IndexexchangeAdapter', function () {
           meta: {
             networkId: 50,
             brandId: 303325,
-            brandName: 'OECTA'
+            brandName: 'OECTA',
+            advertiserDomains: ['www.abc.com']
           }
         }
       ];
@@ -1569,7 +1703,8 @@ describe('IndexexchangeAdapter', function () {
           meta: {
             networkId: 50,
             brandId: 303325,
-            brandName: 'OECTA'
+            brandName: 'OECTA',
+            advertiserDomains: ['www.abc.com']
           }
         }
       ];
@@ -1594,7 +1729,8 @@ describe('IndexexchangeAdapter', function () {
           meta: {
             networkId: 51,
             brandId: 303326,
-            brandName: 'OECTB'
+            brandName: 'OECTB',
+            advertiserDomains: ['www.abcd.com']
           }
         }
       ];
@@ -1712,6 +1848,33 @@ describe('IndexexchangeAdapter', function () {
       const requestWithConsent = JSON.parse(validBidWithConsent[0].data.r);
       expect(requestWithConsent.regs.ext.gdpr).to.equal(1);
       expect(requestWithConsent.regs.ext.us_privacy).to.equal('1YYN');
+    });
+
+    it('should contain `consented_providers_settings.consented_providers` & consent on user.ext when both are provided', function () {
+      const options = {
+        gdprConsent: {
+          consentString: '3huaa11=qu3198ae',
+          addtlConsent: '1~1.35.41.101',
+        }
+      };
+
+      const validBidWithConsent = spec.buildRequests(DEFAULT_BANNER_VALID_BID, options);
+      const requestWithConsent = JSON.parse(validBidWithConsent[0].data.r);
+      expect(requestWithConsent.user.ext.consented_providers_settings.consented_providers).to.equal('1~1.35.41.101');
+      expect(requestWithConsent.user.ext.consent).to.equal('3huaa11=qu3198ae');
+    });
+
+    it('should not contain `consented_providers_settings.consented_providers` on user.ext when consent is not provided', function () {
+      const options = {
+        gdprConsent: {
+          addtlConsent: '1~1.35.41.101',
+        }
+      };
+
+      const validBidWithConsent = spec.buildRequests(DEFAULT_BANNER_VALID_BID, options);
+      const requestWithConsent = JSON.parse(validBidWithConsent[0].data.r);
+      expect(utils.deepAccess(requestWithConsent, 'user.ext.consented_providers_settings')).to.not.exist;
+      expect(utils.deepAccess(requestWithConsent, 'user.ext.consent')).to.not.exist;
     });
   });
 });
