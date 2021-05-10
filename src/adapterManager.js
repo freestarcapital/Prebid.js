@@ -68,7 +68,7 @@ function getBids({bidderCode, auctionId, bidderRequestId, adUnits, labels, src})
           }
 
           bid = Object.assign({}, bid, getDefinedParams(adUnit, [
-            'fpd',
+            'ortb2Imp',
             'mediaType',
             'renderer',
             'storedAuctionResponse'
@@ -176,6 +176,12 @@ export let uspDataHandler = {
   },
   getConsentData: function() {
     return uspDataHandler.consentData;
+  }
+};
+
+export let coppaDataHandler = {
+  getCoppa: function() {
+    return !!(config.getConfig('coppa'))
   }
 };
 
@@ -411,8 +417,10 @@ adapterManager.callBids = (adUnits, bidRequests, addBidResponse, doneCb, request
     bidRequest.start = timestamp();
     // TODO : Do we check for bid in pool from here and skip calling adapter again ?
     const adapter = _bidderRegistry[bidRequest.bidderCode];
-    utils.logMessage(`CALLING BIDDER ======= ${bidRequest.bidderCode}`);
-    events.emit(CONSTANTS.EVENTS.BID_REQUESTED, bidRequest);
+    config.runWithBidder(bidRequest.bidderCode, () => {
+      utils.logMessage(`CALLING BIDDER`);
+      events.emit(CONSTANTS.EVENTS.BID_REQUESTED, bidRequest);
+    });
     let ajax = ajaxBuilder(requestBidsTimeout, requestCallbacks ? {
       request: requestCallbacks.request.bind(null, bidRequest.bidderCode),
       done: requestCallbacks.done
@@ -475,7 +483,7 @@ adapterManager.registerBidAdapter = function (bidAdapter, bidderCode, {supported
   }
 };
 
-adapterManager.aliasBidAdapter = function (bidderCode, alias) {
+adapterManager.aliasBidAdapter = function (bidderCode, alias, options) {
   let existingAlias = _bidderRegistry[alias];
 
   if (typeof existingAlias === 'undefined') {
@@ -524,11 +532,11 @@ adapterManager.aliasBidAdapter = function (bidderCode, alias) {
   }
 };
 
-adapterManager.registerAnalyticsAdapter = function ({adapter, code}) {
+adapterManager.registerAnalyticsAdapter = function ({adapter, code, gvlid}) {
   if (adapter && code) {
     if (typeof adapter.enableAnalytics === 'function') {
       adapter.code = code;
-      _analyticsRegistry[code] = adapter;
+      _analyticsRegistry[code] = { adapter, gvlid };
     } else {
       utils.logError(`Prebid Error: Analytics adaptor error for analytics "${code}"
         analytics adapter must implement an enableAnalytics() function`);
@@ -544,7 +552,7 @@ adapterManager.enableAnalytics = function (config) {
   }
 
   utils._each(config, adapterConfig => {
-    var adapter = _analyticsRegistry[adapterConfig.provider];
+    var adapter = _analyticsRegistry[adapterConfig.provider].adapter;
     if (adapter) {
       adapter.enableAnalytics(adapterConfig);
     } else {
@@ -552,11 +560,15 @@ adapterManager.enableAnalytics = function (config) {
         ${adapterConfig.provider}.`);
     }
   });
-};
+}
 
 adapterManager.getBidAdapter = function(bidder) {
   return _bidderRegistry[bidder];
 };
+
+adapterManager.getAnalyticsAdapter = function(code) {
+  return _analyticsRegistry[code];
+}
 
 // the s2sTesting module is injected when it's loaded rather than being imported
 // importing it causes the packager to include it even when it's not explicitly included in the build
@@ -600,6 +612,10 @@ adapterManager.callBidWonBidder = function(bidder, bid, adUnits) {
 
 adapterManager.callSetTargetingBidder = function(bidder, bid) {
   tryCallBidderMethod(bidder, 'onSetTargeting', bid);
+};
+
+adapterManager.callBidViewableBidder = function(bidder, bid) {
+  tryCallBidderMethod(bidder, 'onBidViewable', bid);
 };
 
 export default adapterManager;

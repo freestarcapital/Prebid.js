@@ -85,10 +85,10 @@ userIdAsEids = [
     },
 
     {
-        source: 'digitru.st',
+        source: 'hcn.health',
         uids: [{
             id: 'some-random-id-value',
-            atype: 1
+            atype: 3
         }]
     },
 
@@ -128,6 +128,14 @@ userIdAsEids = [
     },
 
     {
+        source: 'nextroll.com',
+        uids: [{
+            id: 'some-random-id-value',
+            atype: 1
+        }]
+    },
+
+    {
         source: 'audigent.com',
         uids: [{
             id: 'some-random-id-value',
@@ -151,10 +159,45 @@ userIdAsEids = [
         }]
     },
     {
+        source: 'mediawallahscript.com',
+        uids: [{
+            id: 'some-random-id-value',
+            atype: 1
+        }]
+    },
+    {
         source: 'tapad.com',
         uids: [{
             id: 'some-random-id-value',
             atype: 1
+        }]
+    },
+    {
+        source: 'novatiq.com',
+        uids: [{
+            id: 'some-random-id-value',
+            atype: 1
+        }]
+    },
+    {
+        source: 'uidapi.com',
+        uids: [{
+            id: 'some-random-id-value',
+             atype: 3
+        }]
+    },
+    {
+        source: 'admixer.net',
+        uids: [{
+            id: 'some-random-id-value',
+            atype: 3
+        }]
+    },
+    {
+        source: 'deepintent.com',
+        uids: [{
+            id: 'some-random-id-value',
+            atype: 3
         }]
     }
 ]
