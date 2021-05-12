@@ -46,5 +46,6 @@
     "synacormediaBidAdapter",
     "identityLinkIdSystem",
     "unifiedIdSystem",
-    "medianetBidAdapter"
+    "medianetBidAdapter",
+    "gptPreAuction"
 ]
