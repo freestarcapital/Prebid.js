@@ -47,7 +47,6 @@
     "identityLinkIdSystem",
     "unifiedIdSystem",
     "medianetBidAdapter",
-    "gptPreAuction",
     "apacdexBidAdapter",
     "adprimeBidAdapter"
 ]
