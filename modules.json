@@ -3,7 +3,6 @@
     "aardvarkBidAdapter",
     "aolBidAdapter",
     "appnexusBidAdapter",
-    "audienceNetworkBidAdapter", // PENDING
     "consentManagement",
     "consentManagementUsp",
     "conversantBidAdapter",
@@ -30,8 +29,6 @@
     "tripleliftBidAdapter",
     "undertoneBidAdapter",
     "yieldmoBidAdapter",
-    "yieldoneBidAdapter", // PENDING
-    "synacormediaBidAdapter", // PENDING
     "identityLinkIdSystem",
     "unifiedIdSystem",
     "medianetBidAdapter",
