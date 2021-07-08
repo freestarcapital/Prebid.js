@@ -3,6 +3,7 @@
     "aardvarkBidAdapter",
     "aolBidAdapter",
     "appnexusBidAdapter",
+    "atsAnalyticsAdapter",
     "consentManagement",
     "consentManagementUsp",
     "conversantBidAdapter",
