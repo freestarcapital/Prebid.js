@@ -33,6 +33,7 @@
     "schain",
     "sharedIdSystem",
     "sharethroughBidAdapter",
+    "sortableBidAdapter",
     "sovrnBidAdapter",
     "teadsBidAdapter",
     "tripleliftBidAdapter",
