@@ -45,5 +45,6 @@
     "medianetBidAdapter",
     "gptPreAuction",
     "apacdexBidAdapter",
-    "adprimeBidAdapter"
+    "adprimeBidAdapter",
+    "intentIqIdSystem"
 ]
