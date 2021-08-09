@@ -47,5 +47,6 @@
     "apacdexBidAdapter",
     "adprimeBidAdapter",
     "intentIqIdSystem",
+    "verizonMediaIdSystem",
     "yieldmoBidAdapter"
 ]
