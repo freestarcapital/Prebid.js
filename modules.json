@@ -47,5 +47,7 @@
     "apacdexBidAdapter",
     "adprimeBidAdapter",
     "intentIqIdSystem",
-    "yieldmoBidAdapter"
+    "yieldmoBidAdapter",
+    "verizonMediaIdSystem",
+    "enrichmentFpdModule"
 ]
