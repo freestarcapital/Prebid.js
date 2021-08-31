@@ -49,5 +49,6 @@
     "intentIqIdSystem",
     "yieldmoBidAdapter",
     "verizonMediaIdSystem",
-    "enrichmentFpdModule"
+    "enrichmentFpdModule",
+    "fabrickIdSystem"
 ]
