@@ -60,43 +60,71 @@ var adUnits = [{
 ```
 
 
-# Ad Unit and Setup: For Testing (Native)
+```html
+<!-- Prebid Config section -->
+ <script>
+var videoAdUnit = {
+  code: 'video1',
+  mediaTypes: {
+    video: {
+      context: "instream",
+      playerSize: [640, 480],
+      mimes: ['video/mp4'],
+      placement: 1
+    }
+  },
+  bids: [{
+    bidder: 'medianet',
+    params: {
+      cid: '8CUX0H51C',
+      crid: '776755783', 
+      // Site member is to be used only for testing
+      site: {
+        page: 'http://smoketesting.net/prebidtest/',
+        domain: 'smoketesting.net',
+        ref: 'http://smoketesting.net/prebidtest/'
+      }
+    }
+  }]
+};
+</script>
+<!-- End Prebid Config section -->
+```
+# Ad Unit and Setup: For Testing (Video Outstream)
 
 ```html
  <!-- Prebid Config section -->
  <script>
-    var PREBID_TIMEOUT = 2000;
-    var adUnits = [
-        {
-            code: 'div-gpt-ad-1544091247692-0',
-            mediaTypes: {
-                native: {
-                    image: {
-                        required: true,
-                        sizes: [300, 250],
-                        wmin: 50,
-                    },
-                    title: {
-                        required: true,
-                        len: 80
-                    }
-                }
-            },
-            bids: [
-                {
-                    bidder: 'medianet',
-                    params: {
-                        cid: '8CUX0H51C',
-                        crid: '776755783',
-                        // Site member is to be used only for testing
-                        site: {
-                            page: 'http://smoketesting.net/prebidtest/',
-                            domain: 'smoketesting.net',
-                            ref: 'http://smoketesting.net/prebidtest/'
-                        }
-                    }
-                }
-            ]
+var videoAdUnit = {
+    code: 'video1',
+    mediaTypes: {
+        video: {
+             context: "outstream",
+             playerSize: [640, 480],
+             mimes: ['video/mp4'],
+             placement: 1
+        }
+    },
+    /**
+     *  At this time, since not all demand partners return a renderer with their video bid responses,
+     *  we recommend that publishers associate a renderer with their Prebid video adUnits, if possible.
+     *  By doing so, any Prebid adapter that supports video will be able to provide demand for a given outstream slot.
+     */
+    renderer: {
+        url: '<Points to a URL containing the renderer script>',
+        render: '<A function that tells Prebid.js how to invoke the renderer script>'
+    },
+    bids: [{
+        bidder: 'medianet',
+        params: {
+            cid: '8CUX0H51C',
+            crid: '776755783', 
+            // Site member is to be used only for testing
+            site: {
+                page: 'http://smoketesting.net/prebidtest/',
+                domain: 'smoketesting.net',
+                ref: 'http://smoketesting.net/prebidtest/'
+            }
         }
     ];        
 </script>

@@ -145,7 +145,7 @@ export const spec = {
             currency: bidRes.currency,
             netRevenue: bidRes.netRevenue,
             ttl: bidRes.ttl || 360,
-            ad: bidRes.ad
+            meta: { advertiserDomains: bidRes.adomain ? bidRes.adomain : [] }
           };
           bids.push(bid);
         }

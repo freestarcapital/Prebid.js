@@ -77,18 +77,6 @@ export function nativeBidIsValid(bid, bidRequests) {
     return false;
   }
 
-  if (deepAccess(bid, 'native.image')) {
-    if (!deepAccess(bid, 'native.image.height') || !deepAccess(bid, 'native.image.width')) {
-      return false;
-    }
-  }
-
-  if (deepAccess(bid, 'native.icon')) {
-    if (!deepAccess(bid, 'native.icon.height') || !deepAccess(bid, 'native.icon.width')) {
-      return false;
-    }
-  }
-
   const requestedAssets = bidRequest.nativeParams;
   if (!requestedAssets) {
     return true;
@@ -165,15 +153,23 @@ export function getNativeTargeting(bid, bidReq) {
     `nativeParams.sendTargetingKeys`
   ) !== false;
 
-  Object.keys(bid['native']).forEach(asset => {
-    if (asset !== 'adTemplate') {
-      const key = CONSTANTS.NATIVE_KEYS[asset];
-      let value = getAssetValue(bid['native'][asset]);
+  const nativeKeys = getNativeKeys(bidReq);
 
-      const sendPlaceholder = deepAccess(
-        bidReq,
-        `mediaTypes.native.${asset}.sendId`
-      );
+  const flatBidNativeKeys = { ...bid.native, ...bid.native.ext };
+  delete flatBidNativeKeys.ext;
+
+  Object.keys(flatBidNativeKeys).forEach(asset => {
+    const key = nativeKeys[asset];
+    let value = getAssetValue(bid.native[asset]) || getAssetValue(deepAccess(bid, `native.ext.${asset}`));
+
+    if (asset === 'adTemplate' || !key || !value) {
+      return;
+    }
+
+    let sendPlaceholder = deepAccess(bidReq, `nativeParams.${asset}.sendId`);
+    if (typeof sendPlaceholder !== 'boolean') {
+      sendPlaceholder = deepAccess(bidReq, `nativeParams.ext.${asset}.sendId`);
+    }
 
       if (sendPlaceholder) {
         const placeholder = `${key}:${bid.adId}`;
@@ -184,11 +180,15 @@ export function getNativeTargeting(bid, bidReq) {
         bidReq,
         `nativeParams.${asset}.sendTargetingKeys`);
 
-      const sendTargeting = typeof assetSendTargetingKeys === 'boolean' ? assetSendTargetingKeys : globalSendTargetingKeys;
+    let assetSendTargetingKeys = deepAccess(bidReq, `nativeParams.${asset}.sendTargetingKeys`)
+    if (typeof assetSendTargetingKeys !== 'boolean') {
+      assetSendTargetingKeys = deepAccess(bidReq, `nativeParams.ext.${asset}.sendTargetingKeys`);
+    }
 
-      if (key && value && sendTargeting) {
-        keyValues[key] = value;
-      }
+    const sendTargeting = typeof assetSendTargetingKeys === 'boolean' ? assetSendTargetingKeys : globalSendTargetingKeys;
+
+    if (sendTargeting) {
+      keyValues[key] = value;
     }
   });
 
@@ -234,6 +234,13 @@ export function getAllAssetsMessage(data, adObject) {
       message.adTemplate = getAssetValue(adObject.native[key]);
     } else if (key === 'rendererUrl' && adObject.native[key]) {
       message.rendererUrl = getAssetValue(adObject.native[key]);
+    } else if (key === 'ext') {
+      Object.keys(adObject.native[key]).forEach(extKey => {
+        if (adObject.native[key][extKey]) {
+          const value = getAssetValue(adObject.native[key][extKey]);
+          message.assets.push({ key: extKey, value });
+        }
+      })
     } else if (adObject.native[key] && CONSTANTS.NATIVE_KEYS.hasOwnProperty(key)) {
       const value = getAssetValue(adObject.native[key]);
 
@@ -254,4 +261,19 @@ function getAssetValue(value) {
   }
 
   return value;
+}
+
+function getNativeKeys(bidReq) {
+  const extraNativeKeys = {}
+
+  if (deepAccess(bidReq, 'nativeParams.ext')) {
+    Object.keys(bidReq.nativeParams.ext).forEach(extKey => {
+      extraNativeKeys[extKey] = `hb_native_${extKey}`;
+    })
+  }
+
+  return {
+    ...CONSTANTS.NATIVE_KEYS,
+    ...extraNativeKeys
+  }
 }

@@ -5,12 +5,12 @@ categories:
   - title: '🚀 New Features'
     label: 'feature'
   - title: '🛠 Maintenance'
-    label: 'maintenance'    
+    label: 'maintenance'
   - title: '🐛 Bug Fixes'
     labels:
       - 'fix'
       - 'bugfix'
-      - 'bug'      
+      - 'bug'
 change-template: '- $TITLE (#$NUMBER)'
 version-resolver:
   major:
@@ -22,7 +22,7 @@ version-resolver:
   patch:
     labels:
       - 'patch'
-  default: patch
+  default: minor
 template: |
   ## In This Release
   $CHANGES

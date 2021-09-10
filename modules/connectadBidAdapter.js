@@ -70,72 +70,9 @@ export const spec = {
       utils.deepSetValue(data, 'user.ext.us_privacy', bidderRequest.uspConsent);
     }
 
-    // Digitrust Support
-    const bidRequestDigitrust = utils.deepAccess(validBidRequests[0], 'userId.digitrustid.data');
-    if (bidRequestDigitrust && (!bidRequestDigitrust.privacy || !bidRequestDigitrust.privacy.optout)) {
-      digitrust = {
-        id: bidRequestDigitrust.id,
-        keyv: bidRequestDigitrust.keyv
-      }
-    }
-
-    if (digitrust) {
-      utils.deepSetValue(data, 'user.ext.digitrust', {
-        id: digitrust.id,
-        keyv: digitrust.keyv
-      })
-    }
-
-    if (validBidRequests[0].userId && typeof validBidRequests[0].userId === 'object' && (validBidRequests[0].userId.tdid || validBidRequests[0].userId.pubcid || validBidRequests[0].userId.lipb || validBidRequests[0].userId.id5id || validBidRequests[0].userId.parrableid)) {
-      utils.deepSetValue(data, 'user.ext.eids', []);
-
-      if (validBidRequests[0].userId.tdid) {
-        data.user.ext.eids.push({
-          source: 'adserver.org',
-          uids: [{
-            id: validBidRequests[0].userId.tdid,
-            ext: {
-              rtiPartner: 'TDID'
-            }
-          }]
-        });
-      }
-
-      if (validBidRequests[0].userId.pubcid) {
-        data.user.ext.eids.push({
-          source: 'pubcommon',
-          uids: [{
-            id: validBidRequests[0].userId.pubcid,
-          }]
-        });
-      }
-
-      if (validBidRequests[0].userId.id5id) {
-        data.user.ext.eids.push({
-          source: 'id5-sync.com',
-          uids: [{
-            id: validBidRequests[0].userId.id5id,
-          }]
-        });
-      }
-
-      if (validBidRequests[0].userId.parrableid) {
-        data.user.ext.eids.push({
-          source: 'parrable.com',
-          uids: [{
-            id: validBidRequests[0].userId.parrableid,
-          }]
-        });
-      }
-
-      if (validBidRequests[0].userId.lipb && validBidRequests[0].userId.lipb.lipbid) {
-        data.user.ext.eids.push({
-          source: 'liveintent.com',
-          uids: [{
-            id: validBidRequests[0].userId.lipb.lipbid
-          }]
-        });
-      }
+    // EIDS Support
+    if (validBidRequests[0].userId) {
+      utils.deepSetValue(data, 'user.ext.eids', createEidsArray(validBidRequests[0].userId));
     }
 
     validBidRequests.map(bid => {
@@ -186,6 +123,7 @@ export const spec = {
           bid.width = decision.width;
           bid.height = decision.height;
           bid.dealid = decision.dealid || null;
+          bid.meta = { advertiserDomains: decision && decision.adomain ? decision.adomain : [] };
           bid.ad = retrieveAd(decision);
           bid.currency = 'USD';
           bid.creativeId = decision.adId;
