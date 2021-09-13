@@ -281,27 +281,6 @@ function createNewVideoBid(response, bidRequest) {
 }
 
 /**
- * creates a new video bid with response information
- * @param response openRTB server response
- * @param bidRequest server request
- */
-function createNewVideoBid(response, bidRequest) {
-  const imp = find((utils.deepAccess(bidRequest, 'data.imp') || []), imp => imp.id === response.impid);
-  return {
-    requestId: imp.id,
-    cpm: response.price,
-    width: imp.video.w,
-    height: imp.video.h,
-    creativeId: response.crid || response.adid,
-    currency: CURRENCY,
-    netRevenue: NET_REVENUE,
-    mediaType: VIDEO,
-    ttl: TIME_TO_LIVE,
-    vastXml: response.adm
-  };
-}
-
-/**
  * Detects whether dnt is true
  * @returns true if user enabled dnt
  */
@@ -553,7 +532,7 @@ function validateVideoParams(bid) {
 
     validate('video.playerSize', val => utils.isArrayOfNums(val, 2) ||
       (utils.isArray(val) && val.every(v => utils.isArrayOfNums(v, 2))),
-    paramInvalid, 'array of 2 integers, ex: [640,480] or [[640,480]]');
+      paramInvalid, 'array of 2 integers, ex: [640,480] or [[640,480]]');
 
     validate('video.mimes', val => isDefined(val), paramRequired);
     validate('video.mimes', val => utils.isArray(val) && val.every(v => utils.isStr(v)), paramInvalid,

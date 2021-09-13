@@ -79,12 +79,6 @@ export const sharedIdSystemSubmodule = {
    * @type {Number}
    */
   gvlid: GVLID,
-
-  /**
-   * Vendor id of Prebid
-   * @type {Number}
-   */
-  gvlid: GVLID,
   /**
    * decode the stored id value for passing to bid requests
    * @function

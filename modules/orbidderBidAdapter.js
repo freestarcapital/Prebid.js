@@ -3,7 +3,7 @@ import { getStorageManager } from '../src/storageManager.js';
 import { BANNER, NATIVE } from '../src/mediaTypes.js';
 import * as utils from '../src/utils.js';
 
-const storage = getStorageManager();
+const storageManager = getStorageManager();
 
 /**
  * Determines whether or not the given bid response is valid.
@@ -51,11 +51,11 @@ export const spec = {
   getHostname() {
     let ret = this.hostname;
     try {
-      ret = storage.getDataFromLocalStorage('ov_orbidder_host') || ret;
+      ret = storageManager.getDataFromLocalStorage('ov_orbidder_host') || ret;
     } catch (e) {
     }
     return ret;
-  })(),
+  },
 
   /**
    * Determines whether or not the given bid request is valid.
@@ -78,6 +78,7 @@ export const spec = {
    * @return The requests for the orbidder /bid endpoint, i.e. the server.
    */
   buildRequests(validBidRequests, bidderRequest) {
+    const hostname = this.getHostname();
     return validBidRequests.map((bidRequest) => {
       let referer = '';
       if (bidderRequest && bidderRequest.refererInfo) {

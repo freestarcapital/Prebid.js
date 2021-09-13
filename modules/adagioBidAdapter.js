@@ -55,35 +55,6 @@ export const ORTB_VIDEO_PARAMS = {
   'api': (value) => Array.isArray(value) && value.every(v => [1, 2, 3, 4, 5, 6].indexOf(v) !== -1)
 };
 
-// This provide a whitelist and a basic validation
-// of OpenRTB 2.5 options used by the Adagio SSP.
-// https://www.iab.com/wp-content/uploads/2016/03/OpenRTB-API-Specification-Version-2-5-FINAL.pdf
-export const ORTB_VIDEO_PARAMS = {
-  'mimes': (value) => Array.isArray(value) && value.length > 0 && value.every(v => typeof v === 'string'),
-  'minduration': (value) => utils.isInteger(value),
-  'maxduration': (value) => utils.isInteger(value),
-  'protocols': (value) => Array.isArray(value) && value.every(v => [1, 2, 3, 4, 5, 6, 7, 8, 9, 10].indexOf(v) !== -1),
-  'w': (value) => utils.isInteger(value),
-  'h': (value) => utils.isInteger(value),
-  'startdelay': (value) => utils.isInteger(value),
-  'placement': (value) => Array.isArray(value) && value.every(v => [1, 2, 3, 4, 5].indexOf(v) !== -1),
-  'linearity': (value) => [1, 2].indexOf(value) !== -1,
-  'skip': (value) => [0, 1].indexOf(value) !== -1,
-  'skipmin': (value) => utils.isInteger(value),
-  'skipafter': (value) => utils.isInteger(value),
-  'sequence': (value) => utils.isInteger(value),
-  'battr': (value) => Array.isArray(value) && value.every(v => Array.from({length: 17}, (_, i) => i + 1).indexOf(v) !== -1),
-  'maxextended': (value) => utils.isInteger(value),
-  'minbitrate': (value) => utils.isInteger(value),
-  'maxbitrate': (value) => utils.isInteger(value),
-  'boxingallowed': (value) => [0, 1].indexOf(value) !== -1,
-  'playbackmethod': (value) => Array.isArray(value) && value.every(v => [1, 2, 3, 4, 5, 6].indexOf(v) !== -1),
-  'playbackend': (value) => [1, 2, 3].indexOf(value) !== -1,
-  'delivery': (value) => [1, 2, 3].indexOf(value) !== -1,
-  'pos': (value) => [0, 1, 2, 3, 4, 5, 6, 7].indexOf(value) !== -1,
-  'api': (value) => Array.isArray(value) && value.every(v => [1, 2, 3, 4, 5, 6].indexOf(v) !== -1)
-};
-
 let currentWindow;
 
 export const GlobalExchange = (function() {

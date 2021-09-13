@@ -41,9 +41,7 @@ export const spec = {
   },
   getUserSyncs: function (syncOptions) {
     if (syncOptions.iframeEnabled) {
-      handlePostMessage();
       const syncUrl = buildSyncUrl();
-
       return {
         type: 'iframe',
         url: syncUrl
@@ -94,13 +92,11 @@ function buildRequest(bidRequests, bidderRequest) {
     _userId = _userId || bidRequest.userId;
   });
 
+  invibes.optIn = invibes.optIn || readGdprConsent(bidderRequest.gdprConsent);
+
   invibes.visitId = invibes.visitId || generateRandomId();
-
-  cookieDomain = detectTopmostCookieDomain();
   invibes.noCookies = invibes.noCookies || invibes.getCookie('ivNoCookie');
-  invibes.optIn = invibes.optIn || invibes.getCookie('ivOptIn') || readGdprConsent(bidderRequest.gdprConsent);
-
-  initDomainId(invibes.domainOptions);
+  let lid = initDomainId(invibes.domainOptions);
 
   const currentQueryStringParams = parseQueryStringParams();
   let userIdModel = getUserIds(_userId);
@@ -126,17 +122,17 @@ function buildRequest(bidRequests, bidderRequest) {
     width: topWin.innerWidth,
     height: topWin.innerHeight,
 
-    noc: !cookieDomain,
     oi: invibes.optIn,
 
     kw: keywords,
     purposes: invibes.purposes.toString(),
     li: invibes.legitimateInterests.toString(),
+
     tc: invibes.gdpr_consent
   };
 
-  if (invibes.dom.id) {
-    data.lId = invibes.dom.id;
+  if (lid) {
+    data.lId = lid;
   }
 
   const parametersToPassForward = 'videoaddebug,advs,bvci,bvid,istop,trybvid,trybvci'.split(',');
@@ -406,25 +402,10 @@ function buildSyncUrl() {
   return syncUrl;
 }
 
-function handlePostMessage() {
-  try {
-    if (window.addEventListener) {
-      window.addEventListener('message', acceptPostMessage);
-    }
-  } catch (e) { }
-}
-
-function acceptPostMessage(e) {
-  let msg = e.data || {};
-  if (msg.ivbscd === 1) {
-    invibes.setCookie(msg.name, msg.value, msg.exdays, msg.domain);
-  } else if (msg.ivbscd === 2) {
-    invibes.dom.graduate();
-  }
-}
-
 function readGdprConsent(gdprConsent) {
   if (gdprConsent && gdprConsent.vendorData) {
+    invibes.gdpr_consent = getVendorConsentData(gdprConsent.vendorData);
+
     if (!gdprConsent.vendorData.gdprApplies || gdprConsent.vendorData.hasGlobalConsent) {
       var index;
       for (index = 0; index < invibes.purposes.length; ++index) {
@@ -569,7 +550,6 @@ invibes.Uid = {
   }
 };
 
-let cookieDomain;
 invibes.getCookie = function (name) {
   if (!storage.cookiesAreEnabled()) {
     return;
@@ -579,28 +559,10 @@ invibes.getCookie = function (name) {
     return;
   }
 
-let detectTopmostCookieDomain = function () {
-  let testCookie = invibes.Uid.generate();
-  let hostParts = location.hostname.split('.');
-  if (hostParts.length === 1) {
-    return location.hostname;
-  }
-  for (let i = hostParts.length - 1; i >= 0; i--) {
-    let domain = '.' + hostParts.slice(i).join('.');
-    invibes.setCookie(testCookie, testCookie, 1, domain);
-    let val = invibes.getCookie(testCookie);
-    if (val === testCookie) {
-      invibes.setCookie(testCookie, testCookie, -1, domain);
-      return domain;
-    }
-  }
+  return storage.getCookie(name);
 };
 
 let initDomainId = function (options) {
-  if (invibes.dom) { return; }
-
-  options = options || {};
-
   let cookiePersistence = {
     cname: 'ivbsdid',
     load: function () {
@@ -612,69 +574,13 @@ let initDomainId = function (options) {
     }
   };
 
-  let persistence = options.persistence || cookiePersistence;
-  let state;
-  let minHC = 2;
+  options = options || {};
 
-  let validGradTime = function (state) {
-    if (!state.cr) { return false; }
-    let min = 151 * 10e9;
-    if (state.cr < min) {
-      return false;
-    }
-    let now = new Date().getTime();
-    let age = now - state.cr;
-    let minAge = 24 * 60 * 60 * 1000;
-    return age > minAge;
-  };
+  var persistence = options.persistence || cookiePersistence;
 
-  state = persistence.load() || {
-    id: invibes.Uid.generate(),
-    cr: new Date().getTime(),
-    hc: 1,
-  };
+  let state = persistence.load();
 
-  if (state.id.match(/\./)) {
-    state.id = invibes.Uid.generate();
-  }
-
-  let graduate = function () {
-    if (!state.cr) { return; }
-    delete state.cr;
-    delete state.hc;
-    persistence.save(state);
-    setId();
-  };
-
-  let regenerateId = function () {
-    state.id = invibes.Uid.generate();
-    persistence.save(state);
-  };
-
-  let setId = function () {
-    invibes.dom = {
-      get id() {
-        return (!state.cr && invibes.optIn > 0) ? state.id : undefined;
-      },
-      get tempId() {
-        return (invibes.optIn > 0) ? state.id : undefined;
-      },
-      graduate: graduate,
-      regen: regenerateId
-    };
-  };
-
-  if (state.cr && !options.noVisit) {
-    if (state.hc < minHC) {
-      state.hc++;
-    }
-    if ((state.hc >= minHC && validGradTime(state)) || options.skipGraduation) {
-      graduate();
-    }
-  }
-  persistence.save(state);
-  setId();
-  ivLogger.info('Did=' + invibes.dom.id);
+  return state ? (state.id || state.tempId) : undefined;
 };
 
 let keywords = (function () {
