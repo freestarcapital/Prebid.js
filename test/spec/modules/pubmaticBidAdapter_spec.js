@@ -930,6 +930,7 @@ describe('PubMatic adapter', function () {
         delete bid.params.video.mimes; // Undefined
         expect(spec.isBidRequestValid(bid)).to.equal(false);
       });
+<<<<<<< HEAD
 
       it('checks on bid.params.outstreamAU & bid.renderer & bid.mediaTypes.video.renderer', function() {
         const getThebid = function() {
@@ -1013,6 +1014,8 @@ describe('PubMatic adapter', function () {
         bid.mediaTypes.native = {}
         expect(spec.isBidRequestValid(bid)).to.equal(true);
       });
+=======
+>>>>>>> main
     });
 
   	describe('Request formation', function () {
@@ -1565,6 +1568,7 @@ describe('PubMatic adapter', function () {
         expect(data2.regs).to.equal(undefined);// USP/CCPAs
       });
 
+<<<<<<< HEAD
       it('Request params check with JW player params', function() {
         let bidRequests = [
           {
@@ -1628,6 +1632,8 @@ describe('PubMatic adapter', function () {
         expect(data.imp[0].ext.key_val).to.exist.and.to.equal(key_val_output);
       });
 
+=======
+>>>>>>> main
       describe('FPD', function() {
         let newRequest;
 

@@ -33,6 +33,7 @@ const createOpenRtbRequest = (validBidRequests, bidderRequest) => {
     id: bidderRequest.auctionId,
     validBidRequests,
     cur: [DEFAULT_CURRENCY],
+<<<<<<< HEAD
     imp: [],
     source: {tid: bidderRequest.auctionId}
   };
@@ -51,6 +52,14 @@ const createOpenRtbRequest = (validBidRequests, bidderRequest) => {
   let eids = createEidsArray(bidUserId);
   if (eids.length) {
     utils.deepSetValue(request, 'user.ext.eids', eids);
+=======
+    imp: []
+  };
+
+  // Force impactify debugging parameter
+  if (window.localStorage.getItem('_im_db_bidder') == 3) {
+    request.test = 3;
+>>>>>>> main
   }
 
   // Set device/user/site
@@ -141,7 +150,6 @@ export const spec = {
 
     return true;
   },
-
   /**
    * Make a server request from the list of BidRequests.
    *
@@ -159,7 +167,6 @@ export const spec = {
       data: JSON.stringify(request),
     };
   },
-
   /**
    * Unpack the response from the server into a list of bids.
    *

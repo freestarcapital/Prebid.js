@@ -128,6 +128,7 @@ export const spec = {
         payload.gdpr.consentString = bidderRequest.gdprConsent.consentString;
       }
     }
+
     // Apply us_privacy.
     if (bidderRequest && bidderRequest.uspConsent) {
       payload.us_privacy = bidderRequest.uspConsent;

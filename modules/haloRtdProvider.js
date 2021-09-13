@@ -152,6 +152,7 @@ export function getRealTimeData(bidConfig, onDone, rtdConfig, userConsent) {
 
     if (jsonData) {
       let data = JSON.parse(jsonData);
+
       if (data.rtd) {
         addRealTimeData(bidConfig, data.rtd, rtdConfig);
         onDone();

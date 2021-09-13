@@ -308,6 +308,19 @@ describe('BeachfrontAdapter', function () {
             }
           ]
         };
+<<<<<<< HEAD
+=======
+        const bidRequest = bidRequests[0];
+        bidRequest.mediaTypes = { video: {} };
+        bidRequest.schain = schain;
+        const requests = spec.buildRequests([ bidRequest ]);
+        const data = requests[0].data;
+        expect(data.source.ext.schain).to.deep.equal(schain);
+      });
+
+      it('must add the Trade Desk User ID to the request', () => {
+        const tdid = '4321';
+>>>>>>> main
         const bidRequest = bidRequests[0];
         bidRequest.mediaTypes = { video: {} };
         bidRequest.schain = schain;
@@ -364,6 +377,24 @@ describe('BeachfrontAdapter', function () {
             }]
           }
         ]);
+      });
+
+      it('must add the Unified ID 2.0 to the request', () => {
+        const uid2 = { id: '4321' };
+        const bidRequest = bidRequests[0];
+        bidRequest.mediaTypes = { video: {} };
+        bidRequest.userId = { uid2 };
+        const requests = spec.buildRequests([ bidRequest ]);
+        const data = requests[0].data;
+        expect(data.user.ext.eids[0]).to.deep.equal({
+          source: 'uidapi.com',
+          uids: [{
+            id: uid2.id,
+            ext: {
+              rtiPartner: 'UID2'
+            }
+          }]
+        });
       });
     });
 
@@ -529,6 +560,19 @@ describe('BeachfrontAdapter', function () {
             }
           ]
         };
+<<<<<<< HEAD
+=======
+        const bidRequest = bidRequests[0];
+        bidRequest.mediaTypes = { banner: {} };
+        bidRequest.schain = schain;
+        const requests = spec.buildRequests([ bidRequest ]);
+        const data = requests[0].data;
+        expect(data.schain).to.deep.equal(schain);
+      });
+
+      it('must add the Trade Desk User ID to the request', () => {
+        const tdid = '4321';
+>>>>>>> main
         const bidRequest = bidRequests[0];
         bidRequest.mediaTypes = { banner: {} };
         bidRequest.schain = schain;
@@ -553,6 +597,16 @@ describe('BeachfrontAdapter', function () {
         expect(data.idl).to.equal(userId.idl_env);
         expect(data.uid2).to.equal(userId.uid2.id);
         expect(data.haloid).to.equal(userId.haloId);
+      });
+
+      it('must add the Unified ID 2.0 to the request', () => {
+        const uid2 = { id: '4321' };
+        const bidRequest = bidRequests[0];
+        bidRequest.mediaTypes = { banner: {} };
+        bidRequest.userId = { uid2 };
+        const requests = spec.buildRequests([ bidRequest ]);
+        const data = requests[0].data;
+        expect(data.uid2).to.equal(uid2.id);
       });
     });
 

@@ -1,4 +1,5 @@
 import * as utils from '../../../src/utils.js';
+<<<<<<< HEAD
 import { server } from 'test/mocks/xhr.js';
 import { dmdIdSubmodule } from 'modules/dmdIdSystem.js';
 
@@ -10,6 +11,13 @@ describe('Dmd ID System', function () {
       api_url: 'https://aix.hcn.health/api/v1/auths'
     }
   };
+=======
+
+import {dmdIdSubmodule} from 'modules/dmdIdSystem.js';
+
+describe('Dmd ID System', function() {
+  let logErrorStub;
+>>>>>>> main
 
   beforeEach(function () {
     logErrorStub = sinon.stub(utils, 'logError');
@@ -51,6 +59,7 @@ describe('Dmd ID System', function () {
     let data = { 'dmdId': 'U12345' };
     expect(dmdIdSubmodule.decode('U12345')).to.deep.equal(data);
   });
+<<<<<<< HEAD
 
   it('should return cacheObj if cacheObj is passed into getId', function () {
     let data = { 'dmdId': 'U12345' };
@@ -93,4 +102,6 @@ describe('Dmd ID System', function () {
     request.error();
     expect(logErrorStub.calledOnce).to.be.true;
   });
+=======
+>>>>>>> main
 });

@@ -20,6 +20,7 @@ function init (moduleConfig, userConsent) {
 }
 
 /**
+<<<<<<< HEAD
  * Set segment targeting from cache and then try to wait for Permutive
  * to initialise to get realtime segment targeting
  * @param {Object} reqBidsConfigObj
@@ -50,12 +51,21 @@ export function initSegments (reqBidsConfigObj, callback, customModuleConfig) {
  */
 function getModuleConfig (customModuleConfig) {
   return mergeDeep({
+=======
+* Set segment targeting from cache and then try to wait for Permutive
+* to initialise to get realtime segment targeting
+*/
+export function initSegments (reqBidsConfigObj, callback, customConfig) {
+  const permutiveOnPage = isPermutiveOnPage()
+  const config = mergeDeep({
+>>>>>>> main
     waitForIt: false,
     params: {
       maxSegs: 500,
       acBidders: [],
       overwrites: {}
     }
+<<<<<<< HEAD
   }, customModuleConfig)
 }
 
@@ -135,6 +145,38 @@ function setSegments (reqBidsConfigObj, moduleConfig, segmentData) {
         customFn(bid, segmentData, acEnabled, utils, defaultFn)
       } else if (defaultFn) {
         defaultFn(bid, segmentData, acEnabled)
+=======
+  }, customConfig)
+
+  setSegments(reqBidsConfigObj, config)
+
+  if (config.waitForIt && permutiveOnPage) {
+    window.permutive.ready(function () {
+      setSegments(reqBidsConfigObj, config)
+      callback()
+    }, 'realtime')
+  } else {
+    callback()
+  }
+}
+
+function setSegments (reqBidsConfigObj, config) {
+  const adUnits = reqBidsConfigObj.adUnits || getGlobal().adUnits
+  const data = getSegments(config.params.maxSegs)
+  const utils = { deepSetValue, deepAccess, isFn, mergeDeep }
+
+  adUnits.forEach(adUnit => {
+    adUnit.bids.forEach(bid => {
+      const { bidder } = bid
+      const acEnabled = isAcEnabled(config, bidder)
+      const customFn = getCustomBidderFn(config, bidder)
+      const defaultFn = getDefaultBidderFn(bidder)
+
+      if (customFn) {
+        customFn(bid, data, acEnabled, utils, defaultFn)
+      } else if (defaultFn) {
+        defaultFn(bid, data, acEnabled)
+>>>>>>> main
       }
     })
   })
@@ -163,6 +205,7 @@ function getCustomBidderFn (moduleConfig, bidder) {
 }
 
 /**
+<<<<<<< HEAD
  * Returns a function that receives a `bid` object, a `data` object and a `acEnabled` boolean
  * and which will set the right segment targeting keys for `bid` based on `data` and `acEnabled`
  * @param {string} bidder - Bidder name
@@ -170,6 +213,15 @@ function getCustomBidderFn (moduleConfig, bidder) {
  */
 function getDefaultBidderFn (bidder) {
   const bidderMap = {
+=======
+* Returns a function that receives a `bid` object, a `data` object and a `acEnabled` boolean
+* and which will set the right segment targeting keys for `bid` based on `data` and `acEnabled`
+* @param {string} bidder
+* @param {object} data
+*/
+function getDefaultBidderFn (bidder) {
+  const bidderMapper = {
+>>>>>>> main
     appnexus: function (bid, data, acEnabled) {
       if (acEnabled && data.ac && data.ac.length) {
         deepSetValue(bid, 'params.keywords.p_standard', data.ac)
@@ -196,6 +248,7 @@ function getDefaultBidderFn (bidder) {
       }
 
       return bid
+<<<<<<< HEAD
     }
   }
 
@@ -217,6 +270,26 @@ export function isAcEnabled (moduleConfig, bidder) {
  * Check whether Permutive is on page
  * @return {boolean}
  */
+=======
+    },
+    trustx: function (bid, data, acEnabled) {
+      if (acEnabled && data.ac && data.ac.length) {
+        deepSetValue(bid, 'params.keywords.p_standard', data.ac)
+      }
+
+      return bid
+    }
+  }
+
+  return bidderMapper[bidder]
+}
+
+export function isAcEnabled (config, bidder) {
+  const acBidders = deepAccess(config, 'params.acBidders') || []
+  return includes(acBidders, bidder)
+}
+
+>>>>>>> main
 export function isPermutiveOnPage () {
   return typeof window.permutive !== 'undefined' && typeof window.permutive.ready === 'function'
 }

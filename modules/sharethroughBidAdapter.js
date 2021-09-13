@@ -278,4 +278,18 @@ function nullish(input, def) {
   return input === null || input === undefined ? def : input;
 }
 
+function getFloor(bid) {
+  if (utils.isFn(bid.getFloor)) {
+    const floorInfo = bid.getFloor({
+      currency: 'USD',
+      mediaType: 'banner',
+      size: bid.sizes.map(size => ({ w: size[0], h: size[1] }))
+    });
+    if (utils.isPlainObject(floorInfo) && !isNaN(floorInfo.floor) && floorInfo.currency === 'USD') {
+      return parseFloat(floorInfo.floor);
+    }
+  }
+  return null;
+}
+
 registerBidder(sharethroughAdapterSpec);

@@ -277,6 +277,7 @@ const RESPONSE_OPENRTB = {
                 'dchain': { 'ver': '1.0', 'complete': 0, 'nodes': [ { 'asi': 'magnite.com', 'bsid': '123456789', } ] }
               }
             },
+            'dchain': { 'ver': '1.0', 'complete': 0, 'nodes': [ { 'asi': 'magnite.com', 'bsid': '123456789', } ] },
             'bidder': {
               'appnexus': {
                 'brand_id': 1,
@@ -1140,6 +1141,7 @@ describe('S2S Adapter', function () {
         targeting: {
           includebidderkeys: false,
           includewinners: true
+<<<<<<< HEAD
         }
       });
     });
@@ -1205,6 +1207,93 @@ describe('S2S Adapter', function () {
             name: 'pbjs',
             version: 'v$prebid.version$'
           }
+=======
+>>>>>>> main
+        }
+      });
+    });
+
+    it('skips dynamic aliases to request when skipPbsAliasing enabled', function () {
+      const s2sConfig = Object.assign({}, CONFIG, {
+        endpoint: {
+          p1Consent: 'https://prebid.adnxs.com/pbs/v1/openrtb2/auction'
+        }
+      });
+      config.setConfig({ s2sConfig: s2sConfig });
+
+      const alias = 'foobar_1';
+      const aliasBidder = {
+        bidder: alias,
+        params: { aid: 123456 }
+      };
+
+      const request = utils.deepClone(REQUEST);
+      request.ad_units[0].bids = [aliasBidder];
+
+      // TODO: stub this
+      $$PREBID_GLOBAL$$.aliasBidder('appnexus', alias, { skipPbsAliasing: true });
+      adapter.callBids(request, BID_REQUESTS, addBidResponse, done, ajax);
+
+      const requestBid = JSON.parse(server.requests[0].requestBody);
+<<<<<<< HEAD
+
+      expect(requestBid.ext).to.deep.equal({
+        prebid: {
+          auctiontimestamp: 1510852447530,
+          targeting: {
+            includebidderkeys: false,
+            includewinners: true
+          },
+          channel: {
+            name: 'pbjs',
+            version: 'v$prebid.version$'
+          }
+=======
+      expect(requestBid.ext).to.haveOwnProperty('prebid');
+      expect(requestBid.ext.prebid).to.deep.include({
+        aliases: {
+          [alias]: 'appnexus'
+        },
+        auctiontimestamp: 1510852447530,
+        targeting: {
+          includebidderkeys: false,
+          includewinners: true
+>>>>>>> main
+        }
+      });
+    });
+
+    it('skips pbs alias when skipPbsAliasing is enabled in adapter', function() {
+      const s2sConfig = Object.assign({}, CONFIG, {
+        endpoint: {
+          p1Consent: 'https://prebid.adnxs.com/pbs/v1/openrtb2/auction'
+        }
+      });
+      config.setConfig({ s2sConfig: s2sConfig });
+
+      const aliasBidder = {
+        bidder: 'mediafuse',
+        params: { aid: 123 }
+      };
+
+      const request = utils.deepClone(REQUEST);
+      request.ad_units[0].bids = [aliasBidder];
+
+      adapter.callBids(request, BID_REQUESTS, addBidResponse, done, ajax);
+
+      const requestBid = JSON.parse(server.requests[0].requestBody);
+
+      expect(requestBid.ext).to.deep.equal({
+        prebid: {
+          auctiontimestamp: 1510852447530,
+          targeting: {
+            includebidderkeys: false,
+            includewinners: true
+          },
+          channel: {
+            name: 'pbjs',
+            version: 'v$prebid.version$'
+          }
         }
       });
     });
@@ -1242,67 +1331,6 @@ describe('S2S Adapter', function () {
           channel: {
             name: 'pbjs',
             version: 'v$prebid.version$'
-          }
-        }
-      });
-    });
-
-    it('skips pbs alias when skipPbsAliasing is enabled in adapter', function() {
-      const s2sConfig = Object.assign({}, CONFIG, {
-        endpoint: 'https://prebid.adnxs.com/pbs/v1/openrtb2/auction'
-      });
-      config.setConfig({ s2sConfig: s2sConfig });
-
-      const aliasBidder = {
-        bidder: 'mediafuse',
-        params: { aid: 123 }
-      };
-
-      const request = utils.deepClone(REQUEST);
-      request.ad_units[0].bids = [aliasBidder];
-
-      adapter.callBids(request, BID_REQUESTS, addBidResponse, done, ajax);
-
-      const requestBid = JSON.parse(server.requests[0].requestBody);
-
-      expect(requestBid.ext).to.deep.equal({
-        prebid: {
-          auctiontimestamp: 1510852447530,
-          targeting: {
-            includebidderkeys: false,
-            includewinners: true
-          }
-        }
-      });
-    });
-
-    it('skips dynamic aliases to request when skipPbsAliasing enabled', function () {
-      const s2sConfig = Object.assign({}, CONFIG, {
-        endpoint: 'https://prebid.adnxs.com/pbs/v1/openrtb2/auction'
-      });
-      config.setConfig({ s2sConfig: s2sConfig });
-
-      const alias = 'foobar_1';
-      const aliasBidder = {
-        bidder: alias,
-        params: { aid: 123456 }
-      };
-
-      const request = utils.deepClone(REQUEST);
-      request.ad_units[0].bids = [aliasBidder];
-
-      // TODO: stub this
-      $$PREBID_GLOBAL$$.aliasBidder('appnexus', alias, { skipPbsAliasing: true });
-      adapter.callBids(request, BID_REQUESTS, addBidResponse, done, ajax);
-
-      const requestBid = JSON.parse(server.requests[0].requestBody);
-
-      expect(requestBid.ext).to.deep.equal({
-        prebid: {
-          auctiontimestamp: 1510852447530,
-          targeting: {
-            includebidderkeys: false,
-            includewinners: true
           }
         }
       });
@@ -1832,9 +1860,13 @@ describe('S2S Adapter', function () {
                   interests: ['cars']
                 }
               }
+<<<<<<< HEAD
             },
             bcat: ['IAB25', 'IAB7-39'],
             badv: ['blockedAdv-1.com', 'blockedAdv-2.com']
+=======
+            }
+>>>>>>> main
           }
         }
       }));
@@ -1847,8 +1879,11 @@ describe('S2S Adapter', function () {
       expect(parsedRequestBody.ext.prebid.bidderconfig).to.deep.equal(expected);
       expect(parsedRequestBody.site).to.deep.equal(commonContextExpected);
       expect(parsedRequestBody.user).to.deep.equal(commonUser);
+<<<<<<< HEAD
       expect(parsedRequestBody.badv).to.deep.equal(badv);
       expect(parsedRequestBody.bcat).to.deep.equal(bcat);
+=======
+>>>>>>> main
     });
 
     describe('pbAdSlot config', function () {
@@ -2644,6 +2679,7 @@ describe('S2S Adapter', function () {
       expect(vendorConfig.enabled).to.be.true;
       expect(vendorConfig.endpoint).to.deep.equal({p1Consent: 'https://prebid.adnxs.com/pbs/v1/openrtb2/auction', noP1Consent: 'https://prebid.adnxs-simple.com/pbs/v1/openrtb2/auction'});
       expect(vendorConfig.syncEndpoint).to.deep.equal({p1Consent: 'https://prebid.adnxs.com/pbs/v1/cookie_sync', noP1Consent: 'https://prebid.adnxs-simple.com/pbs/v1/cookie_sync'});
+<<<<<<< HEAD
       expect(vendorConfig).to.have.property('timeout', 750);
     });
 
@@ -2665,6 +2701,8 @@ describe('S2S Adapter', function () {
       expect(vendorConfig.enabled).to.be.true;
       expect(vendorConfig.endpoint).to.deep.equal({p1Consent: 'https://ib.adnxs.com/openrtb2/prebid', noP1Consent: 'https://ib.adnxs-simple.com/openrtb2/prebid'});
       expect(vendorConfig.syncEndpoint).to.be.undefined;
+=======
+>>>>>>> main
       expect(vendorConfig).to.have.property('timeout', 750);
     });
 
@@ -2873,6 +2911,7 @@ describe('S2S Adapter', function () {
 
       expect(requestBid.coopSync).to.be.undefined;
     });
+<<<<<<< HEAD
 
     it('adds debug flag', function () {
       config.setConfig({debug: true});
@@ -2884,5 +2923,7 @@ describe('S2S Adapter', function () {
 
       expect(requestBid.ext.prebid.debug).is.equal(true);
     });
+=======
+>>>>>>> main
   });
 });

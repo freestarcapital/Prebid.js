@@ -135,6 +135,7 @@ describe('ImpactifyAdapter', function () {
         bidId: '123456789',
         bidderRequestId: '987654321',
         auctionId: '19ab94a9-b0d7-4ed7-9f80-ad0c033cf1b1',
+<<<<<<< HEAD
         transactionId: 'f7b2c372-7a7b-11eb-9439-0242ac130002',
         userId: {
           pubcid: '87a0327b-851c-4bb3-a925-0c7be94548f5'
@@ -150,6 +151,9 @@ describe('ImpactifyAdapter', function () {
             ]
           }
         ]
+=======
+        transactionId: 'f7b2c372-7a7b-11eb-9439-0242ac130002'
+>>>>>>> main
       }
     ];
     let videoBidderRequest = {
@@ -185,14 +189,23 @@ describe('ImpactifyAdapter', function () {
                 price: 3.40,
                 adm: '<script type="text/javascript" src="https://ad.impactify.io/static/ad/tag.js"></script>',
                 adid: '97517771',
+<<<<<<< HEAD
+=======
+                adomain: [
+                  ''
+                ],
+>>>>>>> main
                 iurl: 'https://fra1-ib.adnxs.com/cr?id=97517771',
                 cid: '9325',
                 crid: '97517771',
                 w: 1,
                 h: 1,
+<<<<<<< HEAD
                 hash: 'test',
                 expiry: 166192938,
                 meta: {'advertiserDomains': ['testdomain.com']},
+=======
+>>>>>>> main
                 ext: {
                   prebid: {
                     'type': 'video'
@@ -268,7 +281,10 @@ describe('ImpactifyAdapter', function () {
           height: 1,
           hash: 'test',
           expiry: 166192938,
+<<<<<<< HEAD
           meta: {'advertiserDomains': ['testdomain.com']},
+=======
+>>>>>>> main
           ttl: 300,
           creativeId: '97517771'
         }
@@ -323,14 +339,23 @@ describe('ImpactifyAdapter', function () {
               price: 3.40,
               adm: '<script type="text/javascript" src="https://ad.impactify.io/static/ad/tag.js"></script>',
               adid: '97517771',
+<<<<<<< HEAD
+=======
+              adomain: [
+                ''
+              ],
+>>>>>>> main
               iurl: 'https://fra1-ib.adnxs.com/cr?id=97517771',
               cid: '9325',
               crid: '97517771',
               w: 1,
               h: 1,
+<<<<<<< HEAD
               hash: 'test',
               expiry: 166192938,
               meta: {'advertiserDomains': ['testdomain.com']},
+=======
+>>>>>>> main
               ext: {
                 prebid: {
                   'type': 'video'

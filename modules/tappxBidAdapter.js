@@ -162,13 +162,9 @@ function validMediaType(bid) {
   const video = utils.deepAccess(bid, 'mediaTypes.video');
 
   // Video validations
-  if (typeof video !== 'undefined') {
+  if (typeof video != 'undefined') {
     if (VIDEO_SUPPORT.indexOf(video.context) === -1) {
-      utils.logWarn(LOG_PREFIX, 'Please review the mandatory Tappx parameters for Video. Video context not supported.');
-      return false;
-    }
-    if (typeof video.mimes == 'undefined') {
-      utils.logWarn(LOG_PREFIX, 'Please review the mandatory Tappx parameters for Video. Mimes param is mandatory.');
+      utils.logWarn(`[TAPPX]: Please review the mandatory Tappx parameters for Video. Only "instream" is suported.`);
       return false;
     }
   }
@@ -351,6 +347,7 @@ function buildOneRequest(validBidRequests, bidderRequest) {
   }
 
   let bidder = {};
+  bidder.tappxkey = TAPPXKEY;
   bidder.endpoint = ENDPOINT;
   bidder.host = hostInfo.url;
   bidder.bidfloor = BIDFLOOR;

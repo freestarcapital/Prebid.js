@@ -1,5 +1,5 @@
 import {registerBidder} from '../src/adapters/bidderFactory.js';
-import { getAdUnitSizes, parseSizesInput } from '../src/utils.js';
+import { getAdUnitSizes, parseSizesInput, deepAccess } from '../src/utils.js';
 import { getRefererInfo } from '../src/refererDetection.js';
 
 const BIDDER_CODE = 'between';
@@ -38,6 +38,8 @@ export const spec = {
         tz: getTz(),
         fl: getFl(),
         rr: getRr(),
+        shid: getSharedId(i)('id'),
+        shid3: getSharedId(i)('third'),
         s: i.params.s,
         bidid: i.bidId,
         transactionid: i.transactionId,

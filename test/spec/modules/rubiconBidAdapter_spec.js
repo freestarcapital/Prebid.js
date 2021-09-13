@@ -884,6 +884,7 @@ describe('the rubicon adapter', function () {
                   'ext': { 'segtax': 1 },
                   'segment': [
                     { 'id': '987' }
+<<<<<<< HEAD
 		    ]
 		  }, {
 		    'name': 'www.dataprovider1.com',
@@ -905,12 +906,26 @@ describe('the rubicon adapter', function () {
                   ]
                 }
                 ]
+=======
+                  ]
+                }, {
+                  'name': 'www.dataprovider1.com',
+                  'ext': { 'segtax': 2 },
+                  'segment': [
+                    { 'id': '432' }
+                  ]
+                }]
+>>>>>>> main
               }
             };
             const user = {
               data: [{
                 'name': 'www.dataprovider1.com',
+<<<<<<< HEAD
                 'ext': { 'segtax': 4 },
+=======
+                'ext': { 'segtax': 3 },
+>>>>>>> main
                 'segment': [
                   { 'id': '687' },
                   { 'id': '123' }
@@ -945,7 +960,11 @@ describe('the rubicon adapter', function () {
               'tg_v.gender': 'M',
               'tg_v.age': '40',
               'tg_v.iab': '687,123',
+<<<<<<< HEAD
               'tg_i.iab': '987,432,55,66',
+=======
+              'tg_i.iab': '987,432',
+>>>>>>> main
               'tg_v.yob': '1984',
               'tg_i.rating': '4-star,5-star',
               'tg_i.page': 'home',
@@ -1561,6 +1580,14 @@ describe('the rubicon adapter', function () {
           expect(post.user.ext.eids[1].source).to.equal('liveramp.com');
           expect(post.user.ext.eids[1].uids[0].id).to.equal('1111-2222-3333-4444');
           expect(post.user.ext.eids[1].uids[0].atype).to.equal(3);
+<<<<<<< HEAD
+=======
+          // SharedId should exist
+          expect(post.user.ext.eids[2].source).to.equal('sharedid.org');
+          expect(post.user.ext.eids[2].uids[0].id).to.equal('1111');
+          expect(post.user.ext.eids[2].uids[0].atype).to.equal(1);
+          expect(post.user.ext.eids[2].uids[0].ext.third).to.equal('2222');
+>>>>>>> main
           // UnifiedId should exist
           expect(post.user.ext.eids[2].source).to.equal('adserver.org');
           expect(post.user.ext.eids[2].uids[0].atype).to.equal(1);
@@ -3230,7 +3257,11 @@ describe('the rubicon adapter', function () {
             width: 640
           });
           // cleanup
+<<<<<<< HEAD
           adUnit.parentNode.removeChild(adUnit);
+=======
+          adUnit.remove();
+>>>>>>> main
         });
       });
 

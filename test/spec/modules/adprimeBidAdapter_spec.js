@@ -300,7 +300,11 @@ describe('AdprimebBidAdapter', function () {
       expect(userSync[0].type).to.exist;
       expect(userSync[0].url).to.exist;
       expect(userSync[0].type).to.be.equal('image');
+<<<<<<< HEAD
       expect(userSync[0].url).to.be.equal('https://delta.adprime.com');
+=======
+      expect(userSync[0].url).to.be.equal('https://delta.adprime.com/?c=rtb&m=sync');
+>>>>>>> main
     });
   });
 });

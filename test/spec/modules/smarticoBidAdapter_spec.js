@@ -71,6 +71,7 @@ describe('smarticoBidAdapter', function () {
         placementId: 'testPlacementId',
       }]
     };
+<<<<<<< HEAD
     let serverResponse = {
       body: [{
         bidId: '22499d052045',
@@ -86,12 +87,24 @@ describe('smarticoBidAdapter', function () {
         title: 'Advertiser'
       }]
     };
+=======
+    let serverResponse = [{
+      bidId: '22499d052045',
+      id: 987654,
+      cpm: 10,
+      ttl: 30,
+      bannerFormatWidth: 300,
+      bannerFormatHeight: 250,
+      bannerFormatAlias: 'medium_rectangle'
+    }];
+>>>>>>> main
     let expectedResponse = [{
       requestId: bid.bidId,
       cpm: 10,
       width: 300,
       height: 250,
       creativeId: 987654,
+<<<<<<< HEAD
       currency: 'EUR',
       netRevenue: false, // gross
       ttl: 30,
@@ -100,6 +113,11 @@ describe('smarticoBidAdapter', function () {
         advertiserDomains: ['www.advertiser.com'],
         advertiserName: 'Advertiser'
       }}];
+=======
+      netRevenue: false, // gross
+      ttl: 30,
+      ad: '<script id="smartico-widget-testPlacementId-0" async defer type="text/javascript" src="https://trmads.eu/get?token=FNVzUGZn9ebpIOoheh3kEJ2GQ6H6IyMH39sHXaya&auction-id=5kaj89l8-3456-2s56-c455-4g6h78jsdfgf&from-auction-buffer=1&own_session=1&ad=987654&scriptid=smartico-widget-testPlacementId-0&banner-format=medium_rectangle"><\/script>'}];
+>>>>>>> main
     let result = spec.interpretResponse(serverResponse, bidRequest);
     it('should contain correct creativeId', function () {
 	  expect(result[0].creativeId).to.equal(expectedResponse[0].creativeId)
@@ -122,6 +140,7 @@ describe('smarticoBidAdapter', function () {
     it('should contain correct netRevenue', function () {
 	  expect(result[0].netRevenue).to.equal(expectedResponse[0].netRevenue)
     });
+<<<<<<< HEAD
     it('should contain correct netRevenue', function () {
 	  expect(result[0].currency).to.equal(expectedResponse[0].currency)
     });
@@ -131,5 +150,10 @@ describe('smarticoBidAdapter', function () {
     it('should contain correct meta content', function () {
 	  expect(result[0].meta).to.deep.equal(expectedResponse[0].meta)
     });
+=======
+    it('should contain correct ad content', function () {
+	  expect(result[0].ad).to.equal(expectedResponse[0].ad)
+    });
+>>>>>>> main
   });
 });

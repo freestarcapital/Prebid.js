@@ -78,6 +78,7 @@ describe('OneVideoBidAdapter', function () {
         mimes: ['video/mp4', 'application/javascript'],
       }
       bidRequest.params.video = {};
+<<<<<<< HEAD
       expect(spec.isBidRequestValid(bidRequest)).to.equal(true);
     });
 
@@ -116,6 +117,46 @@ describe('OneVideoBidAdapter', function () {
       expect(spec.isBidRequestValid(bidRequest)).to.equal(true);
     });
 
+=======
+      expect(spec.isBidRequestValid(bidRequest)).to.equal(true);
+    });
+
+    it('should return true when params.video has all override params instead of mediaTypes.video', function () {
+      bidRequest.mediaTypes.video = {
+        context: 'instream'
+      };
+      bidRequest.params.video = {
+        playerWidth: 640,
+        playerHeight: 480,
+        mimes: ['video/mp4', 'application/javascript']
+      };
+      expect(spec.isBidRequestValid(bidRequest)).to.equal(true);
+    });
+
+    it('should return true when playerWidth & playerHeight are passed in params.video', function () {
+      bidRequest.mediaTypes.video = {
+        context: 'instream',
+        mimes: ['video/mp4', 'application/javascript']
+      };
+      bidRequest.params.video = {
+        playerWidth: 640,
+        playerHeight: 480,
+      };
+      expect(spec.isBidRequestValid(bidRequest)).to.equal(true);
+    });
+
+    it('should return true when mimes is passed in params.video', function () {
+      bidRequest.mediaTypes.video = {
+        context: 'instream',
+        playerSizes: [640, 480]
+      };
+      bidRequest.video = {
+        mimes: ['video/mp4', 'application/javascript']
+      };
+      expect(spec.isBidRequestValid(bidRequest)).to.equal(true);
+    });
+
+>>>>>>> main
     it('should return false when both mediaTypes.video and params.video Objects are missing', function () {
       bidRequest.mediaTypes = {};
       bidRequest.params = {
@@ -280,7 +321,11 @@ describe('OneVideoBidAdapter', function () {
       const placement = bidRequest.params.video.placement;
       const rewarded = bidRequest.params.video.rewarded;
       const inventoryid = bidRequest.params.video.inventoryid;
+<<<<<<< HEAD
       const VERSION = '3.1.2';
+=======
+      const VERSION = '3.1.1';
+>>>>>>> main
       expect(data.imp[0].video.w).to.equal(width);
       expect(data.imp[0].video.h).to.equal(height);
       expect(data.imp[0].bidfloor).to.equal(bidRequest.params.bidfloor);

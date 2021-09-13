@@ -117,6 +117,13 @@ function _assignSegments(bid) {
   };
 }
 
+function _assignSegments(bid) {
+  if (bid.ortb2 && bid.ortb2.user && bid.ortb2.user.ext && bid.ortb2.user.ext.data) {
+    return bid.ortb2.user.ext.data || {segments: [], contextual_categories: {}};
+  }
+  return {segments: [], contextual_categories: {}};
+}
+
 function _createBidResponse(response) {
   return {
     requestId: response.requestId,
@@ -154,7 +161,6 @@ function isBidRequestValid(bid) {
 
 function buildRequests(bidRequests, bidderRequest) {
   var request = _createServerRequest(bidRequests, bidderRequest);
-
   return request;
 }
 /**

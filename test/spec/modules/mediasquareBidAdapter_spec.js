@@ -139,6 +139,7 @@ describe('MediaSquare bid adapter tests', function () {
     expect(bid.meta).to.exist;
     expect(bid.meta.advertiserDomains).to.exist;
     expect(bid.meta.advertiserDomains).to.have.lengthOf(1);
+<<<<<<< HEAD
   });
   it('Verifies match', function () {
     const request = spec.buildRequests(DEFAULT_PARAMS, DEFAULT_OPTIONS);
@@ -147,6 +148,8 @@ describe('MediaSquare bid adapter tests', function () {
     const bid = response[0];
     expect(bid.mediasquare.match).to.exist;
     expect(bid.mediasquare.match).to.equal(true);
+=======
+>>>>>>> main
   });
   it('Verifies bidder code', function () {
     expect(spec.code).to.equal('mediasquare');

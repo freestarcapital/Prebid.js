@@ -41,6 +41,8 @@ export const spec = {
     var userIds;
 
     utils._each(validBidRequests, function (bid) {
+      userIds = bid.userId;
+
       if (bid.params.cid) {
         adUnits.push({
           cid: bid.params.cid,

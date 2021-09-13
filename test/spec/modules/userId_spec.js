@@ -923,10 +923,6 @@ describe('User ID', function () {
                 uids: [{id: 'testpubcid', atype: 1}]
               });
             });
-
-            // verify no sharedid was added
-            expect(bid.userId).to.not.have.property('sharedid');
-            expect(findEid(bid.userIdAsEids, 'sharedid.org')).to.be.undefined;
           });
           coreStorage.setCookie('pubcid', '', EXPIRED_COOKIE_DATE);
           done();

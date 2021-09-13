@@ -116,7 +116,6 @@ export const id5IdSubmodule = {
       'rf': referer.referer,
       'top': referer.reachedTop ? 1 : 0,
       'u': referer.stack[0] || window.location.href,
-      'us_privacy': uspDataHandler.getConsentData() || '',
       'v': '$prebid.version$'
     };
 

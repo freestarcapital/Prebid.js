@@ -308,6 +308,12 @@ describe('native.js', function () {
         sponsoredBy: {
           required: false,
           sendTargetingKeys: false
+        },
+        ext: {
+          foo: {
+            required: false,
+            sendTargetingKeys: true
+          }
         }
       }
 
@@ -318,7 +324,8 @@ describe('native.js', function () {
       CONSTANTS.NATIVE_KEYS.title,
       CONSTANTS.NATIVE_KEYS.body,
       CONSTANTS.NATIVE_KEYS.image,
-      CONSTANTS.NATIVE_KEYS.clickUrl
+      CONSTANTS.NATIVE_KEYS.clickUrl,
+      'hb_native_foo'
     ]);
   });
 

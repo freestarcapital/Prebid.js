@@ -694,6 +694,18 @@ describe('emx_digital Adapter', function () {
         body: badAdmServerResponse
       }));
     });
+<<<<<<< HEAD
+=======
+
+    it('returns valid advertiser domain', function () {
+      const bidResponse = utils.deepClone(serverResponse);
+      let result = spec.interpretResponse({body: bidResponse});
+      expect(result[0].meta.advertiserDomains).to.deep.equal(expectedResponse[0].meta.advertiserDomains);
+      // case where adomains are not in request
+      expect(result[1].meta).to.not.exist;
+    });
+  });
+>>>>>>> main
 
     it('returns valid advertiser domain', function () {
       const bidResponse = utils.deepClone(serverResponse);

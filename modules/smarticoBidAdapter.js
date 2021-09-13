@@ -66,8 +66,14 @@ export const spec = {
       method: SMARTICO_CONFIG.method,
       url: SMARTICO_CONFIG.bidRequestUrl,
       bids: validBidRequests,
+<<<<<<< HEAD
       data: {bidParams: bidParams, auctionId: bidderRequest.auctionId}
     }
+=======
+      data: {bidParams: bidParams, auctionId: bidderRequest.auctionId, origin: window.location.origin}
+    }
+
+>>>>>>> main
     return ServerRequestObjects;
   },
   interpretResponse: function (serverResponse, bidRequest) {
@@ -77,14 +83,23 @@ export const spec = {
     var url
     var html
     var ad
+<<<<<<< HEAD
     var ads
+=======
+>>>>>>> main
     var token
     var language
     var scriptId
     var bidResponses = []
+<<<<<<< HEAD
     ads = serverResponse.body
     for (i = 0; i < ads.length; i++) {
       ad = ads[i]
+=======
+
+    for (i = 0; i < serverResponse.length; i++) {
+      ad = serverResponse[i];
+>>>>>>> main
       bid = find(bidRequest.bids, bid => bid.bidId === ad.bidId)
       if (bid) {
         token = bid.params.token || ''
@@ -103,6 +118,7 @@ export const spec = {
           width: parseInt(ad.bannerFormatWidth),
           height: parseInt(ad.bannerFormatHeight),
           creativeId: ad.id,
+<<<<<<< HEAD
           netRevenue: !!ad.netRevenue,
           currency: ad.currency,
           ttl: ad.ttl,
@@ -111,6 +127,11 @@ export const spec = {
             advertiserDomains: ad.domains,
             advertiserName: ad.title
           }
+=======
+          netRevenue: false, // gross
+          ttl: ad.ttl,
+          ad: html
+>>>>>>> main
         }
         bidResponses.push(bidObject);
       }

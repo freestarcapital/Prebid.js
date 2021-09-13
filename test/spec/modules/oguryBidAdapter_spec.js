@@ -141,7 +141,6 @@ describe('OguryBidAdapter', function () {
       expect(spec.getUserSyncs(syncOptions, [], gdprConsent)).to.have.lengthOf(0);
     });
   });
-
   describe('buildRequests', function () {
     const defaultTimeout = 1000;
     const expectedRequestObject = {

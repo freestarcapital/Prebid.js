@@ -309,6 +309,7 @@ describe('the first party data validation module', function () {
       validated = validateFpd(duplicate);
       expect(validated).to.deep.equal(expected);
     });
+<<<<<<< HEAD
 
     it('filters bcat, badv for invalid data type', function () {
       const duplicate = utils.deepClone(ortb2);
@@ -391,5 +392,7 @@ describe('the first party data validation module', function () {
       const validated = validateFpd(duplicate);
       expect(validated).to.deep.equal(expected);
     });
+=======
+>>>>>>> main
   });
 });

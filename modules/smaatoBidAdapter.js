@@ -5,6 +5,7 @@ import {ADPOD, BANNER, VIDEO} from '../src/mediaTypes.js';
 
 const BIDDER_CODE = 'smaato';
 const SMAATO_ENDPOINT = 'https://prebid.ad.smaato.net/oapi/prebid';
+<<<<<<< HEAD
 const SMAATO_CLIENT = 'prebid_js_$prebid.version$_1.4'
 const CURRENCY = 'USD';
 
@@ -13,6 +14,19 @@ const buildOpenRtbBidRequest = (bidRequest, bidderRequest) => {
     id: bidderRequest.auctionId,
     at: 1,
     cur: [CURRENCY],
+=======
+const SMAATO_CLIENT = 'prebid_js_$prebid.version$_1.2'
+
+const buildOpenRtbBidRequest = (bidRequest, bidderRequest) => {
+  const request = {
+    id: bidderRequest.auctionId,
+    at: 1,
+    imp: [{
+      id: bidRequest.bidId,
+      tagid: utils.deepAccess(bidRequest, 'params.adspaceId')
+    }],
+    cur: ['USD'],
+>>>>>>> main
     tmax: bidderRequest.timeout,
     site: {
       id: window.location.hostname,
@@ -42,9 +56,44 @@ const buildOpenRtbBidRequest = (bidRequest, bidderRequest) => {
     }
   };
 
+<<<<<<< HEAD
   let ortb2 = config.getConfig('ortb2') || {};
   Object.assign(requestTemplate.user, ortb2.user);
   Object.assign(requestTemplate.site, ortb2.site);
+=======
+  if (utils.deepAccess(bidRequest, 'mediaTypes.banner')) {
+    const sizes = utils.getAdUnitSizes(bidRequest).map((size) => ({w: size[0], h: size[1]}));
+    request.imp[0].banner = {
+      w: sizes[0].w,
+      h: sizes[0].h,
+      format: sizes
+    }
+  }
+
+  const videoMediaType = utils.deepAccess(bidRequest, 'mediaTypes.video');
+  if (videoMediaType) {
+    request.imp[0].video = {
+      mimes: videoMediaType.mimes,
+      minduration: videoMediaType.minduration,
+      startdelay: videoMediaType.startdelay,
+      linearity: videoMediaType.linearity,
+      w: videoMediaType.playerSize[0][0],
+      h: videoMediaType.playerSize[0][1],
+      maxduration: videoMediaType.maxduration,
+      skip: videoMediaType.skip,
+      protocols: videoMediaType.protocols,
+      ext: {
+        rewarded: videoMediaType.ext && videoMediaType.ext.rewarded ? videoMediaType.ext.rewarded : 0
+      },
+      skipmin: videoMediaType.skipmin,
+      api: videoMediaType.api
+    }
+  }
+
+  let ortb2 = config.getConfig('ortb2') || {};
+  Object.assign(request.user, ortb2.user);
+  Object.assign(request.site, ortb2.site);
+>>>>>>> main
 
   if (bidderRequest.gdprConsent && bidderRequest.gdprConsent.gdprApplies === true) {
     utils.deepSetValue(requestTemplate, 'regs.ext.gdpr', bidderRequest.gdprConsent.gdprApplies ? 1 : 0);
@@ -57,9 +106,15 @@ const buildOpenRtbBidRequest = (bidRequest, bidderRequest) => {
 
   if (utils.deepAccess(bidRequest, 'params.app')) {
     const geo = utils.deepAccess(bidRequest, 'params.app.geo');
+<<<<<<< HEAD
     utils.deepSetValue(requestTemplate, 'device.geo', geo);
     const ifa = utils.deepAccess(bidRequest, 'params.app.ifa')
     utils.deepSetValue(requestTemplate, 'device.ifa', ifa);
+=======
+    utils.deepSetValue(request, 'device.geo', geo);
+    const ifa = utils.deepAccess(bidRequest, 'params.app.ifa')
+    utils.deepSetValue(request, 'device.ifa', ifa);
+>>>>>>> main
   }
 
   const eids = utils.deepAccess(bidRequest, 'userIdAsEids');
@@ -67,6 +122,7 @@ const buildOpenRtbBidRequest = (bidRequest, bidderRequest) => {
     utils.deepSetValue(requestTemplate, 'user.ext.eids', eids);
   }
 
+<<<<<<< HEAD
   let requests = [];
 
   if (utils.deepAccess(bidRequest, 'mediaTypes.banner')) {
@@ -100,6 +156,9 @@ const buildServerRequest = (validBidRequest, data) => {
       crossOrigin: true,
     }
   };
+=======
+  return request
+>>>>>>> main
 }
 
 export const spec = {
@@ -113,6 +172,7 @@ export const spec = {
    * @return boolean True if this is a valid bid, and false otherwise.
    */
   isBidRequestValid: (bid) => {
+<<<<<<< HEAD
     if (typeof bid.params !== 'object') {
       utils.logError('[SMAATO] Missing params object');
       return false;
@@ -151,15 +211,36 @@ export const spec = {
 
     utils.logInfo('[SMAATO] Verification done, all good');
     return true;
+=======
+    return typeof bid.params === 'object' &&
+      typeof bid.params.publisherId === 'string' &&
+      typeof bid.params.adspaceId === 'string';
+>>>>>>> main
   },
 
   buildRequests: (validBidRequests, bidderRequest) => {
     utils.logInfo('[SMAATO] Client version:', SMAATO_CLIENT);
 
     return validBidRequests.map((validBidRequest) => {
+<<<<<<< HEAD
       const openRtbBidRequests = buildOpenRtbBidRequest(validBidRequest, bidderRequest);
       return openRtbBidRequests.map((openRtbBidRequest) => buildServerRequest(validBidRequest, openRtbBidRequest));
     }).reduce((acc, item) => item != null && acc.concat(item), []);
+=======
+      const openRtbBidRequest = buildOpenRtbBidRequest(validBidRequest, bidderRequest);
+      utils.logInfo('[SMAATO] OpenRTB Request:', openRtbBidRequest);
+
+      return {
+        method: 'POST',
+        url: validBidRequest.params.endpoint || SMAATO_ENDPOINT,
+        data: JSON.stringify(openRtbBidRequest),
+        options: {
+          withCredentials: true,
+          crossOrigin: true,
+        }
+      };
+    });
+>>>>>>> main
   },
   /**
    * Unpack the response from the server into a list of bids.

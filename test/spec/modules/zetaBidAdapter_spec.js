@@ -24,7 +24,11 @@ describe('Zeta Bid Adapter', function() {
           country: 'USA'
         }
       },
+<<<<<<< HEAD
       definerId: '44253',
+=======
+      definerId: '0',
+>>>>>>> main
       test: 1
     }
   }];

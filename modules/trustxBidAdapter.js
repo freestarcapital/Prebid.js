@@ -5,7 +5,12 @@ import { VIDEO, BANNER } from '../src/mediaTypes.js';
 import { config } from '../src/config.js';
 
 const BIDDER_CODE = 'trustx';
+<<<<<<< HEAD
 const ENDPOINT_URL = 'https://grid.bidswitch.net/hbjson?sp=trustx';
+=======
+const ENDPOINT_URL = 'https://sofia.trustx.org/hb';
+const NEW_ENDPOINT_URL = 'https://grid.bidswitch.net/hbjson?sp=trustx';
+>>>>>>> main
 const ADDITIONAL_SYNC_URL = 'https://x.bidswitch.net/sync?ssp=themediagrid';
 const TIME_TO_LIVE = 360;
 const ADAPTER_SYNC_URL = 'https://sofia.trustx.org/push_sync';
@@ -42,6 +47,7 @@ export const spec = {
    * @return ServerRequest Info describing the request to the server.
    */
   buildRequests: function(validBidRequests, bidderRequest) {
+<<<<<<< HEAD
     if (!validBidRequests.length) {
       return null;
     }
@@ -232,9 +238,33 @@ export const spec = {
     if (uspConsent) {
       if (!request.regs) {
         request.regs = {ext: {}};
+=======
+    const bids = validBidRequests || [];
+    const newFormatBids = [];
+    const oldFormatBids = [];
+    const requests = [];
+    bids.forEach(bid => {
+      if (bid.params.useNewFormat) {
+        newFormatBids.push(bid);
+      } else {
+        oldFormatBids.push(bid);
+      }
+    });
+    if (newFormatBids.length) {
+      const newFormatRequests = newFormatRequest(newFormatBids, bidderRequest);
+      if (newFormatRequests) {
+        requests.push(newFormatRequests);
+      }
+    }
+    if (oldFormatBids.length) {
+      const oldFormatRequests = oldFormatRequest(oldFormatBids, bidderRequest);
+      if (oldFormatRequests) {
+        requests.push(oldFormatRequests);
+>>>>>>> main
       }
       request.regs.ext.us_privacy = uspConsent;
     }
+<<<<<<< HEAD
 
     return {
       method: 'POST',
@@ -242,6 +272,9 @@ export const spec = {
       data: JSON.stringify(request),
       bidsMap
     };
+=======
+    return requests;
+>>>>>>> main
   },
   /**
    * Unpack the response from the server into a list of bids.
@@ -317,8 +350,28 @@ function _addBidResponse(serverBid, bidRequest, bidResponses, RendererConst) {
   if (!serverBid.auid) errorMessage = LOG_ERROR_MESS.noAuid + JSON.stringify(serverBid);
   if (!serverBid.adm) errorMessage = LOG_ERROR_MESS.noAdm + JSON.stringify(serverBid);
   else {
+<<<<<<< HEAD
     const { bidsMap } = bidRequest;
     const bid = bidsMap[serverBid.impid];
+=======
+    const { bidsMap, priceType, newFormat } = bidRequest;
+    let bid;
+    let slot;
+    if (newFormat) {
+      bid = bidsMap[serverBid.impid];
+    } else {
+      const awaitingBids = bidsMap[serverBid.auid];
+      if (awaitingBids) {
+        const sizeId = `${serverBid.w}x${serverBid.h}`;
+        if (awaitingBids[sizeId]) {
+          slot = awaitingBids[sizeId][0];
+          bid = slot.bids.shift();
+        }
+      } else {
+        errorMessage = LOG_ERROR_MESS.noPlacementCode + serverBid.auid;
+      }
+    }
+>>>>>>> main
 
     if (!errorMessage && bid) {
       const bidResponse = {
@@ -328,7 +381,11 @@ function _addBidResponse(serverBid, bidRequest, bidResponses, RendererConst) {
         height: serverBid.h,
         creativeId: serverBid.auid, // bid.bidId,
         currency: 'USD',
+<<<<<<< HEAD
         netRevenue: false,
+=======
+        netRevenue: newFormat ? false : priceType !== 'gross',
+>>>>>>> main
         ttl: TIME_TO_LIVE,
         dealId: serverBid.dealid,
         meta: {
@@ -353,6 +410,24 @@ function _addBidResponse(serverBid, bidRequest, bidResponses, RendererConst) {
       }
 
       bidResponses.push(bidResponse);
+<<<<<<< HEAD
+=======
+    }
+
+    if (slot && !slot.bids.length) {
+      slot.parents.forEach(({parent, key, uid}) => {
+        const index = parent[key].indexOf(slot);
+        if (index > -1) {
+          parent[key].splice(index, 1);
+        }
+        if (!parent[key].length) {
+          delete parent[key];
+          if (!utils.getKeys(parent).length) {
+            delete bidsMap[uid];
+          }
+        }
+      });
+>>>>>>> main
     }
   }
   if (errorMessage) {
@@ -421,6 +496,7 @@ function createBannerRequest(bid, mediaType) {
   return result;
 }
 
+<<<<<<< HEAD
 function addSegments(name, segName, segments, data, bidConfigName) {
   if (segments && segments.length) {
     data.push({
@@ -494,6 +570,8 @@ function reformatKeywords(pageKeywords) {
   return Object.keys(formatedPageKeywords).length && formatedPageKeywords;
 }
 
+=======
+>>>>>>> main
 /**
  * Gets bidfloor
  * @param {Object} mediaTypes
@@ -521,4 +599,283 @@ function _getFloor (mediaTypes, bid) {
   return floor;
 }
 
+<<<<<<< HEAD
+=======
+function newFormatRequest(validBidRequests, bidderRequest) {
+  if (!validBidRequests.length) {
+    return null;
+  }
+  let pageKeywords = null;
+  let jwpseg = null;
+  let content = null;
+  let schain = null;
+  let userId = null;
+  let userIdAsEids = null;
+  let user = null;
+  let userExt = null;
+  let {bidderRequestId, auctionId, gdprConsent, uspConsent, timeout, refererInfo} = bidderRequest || {};
+
+  const referer = refererInfo ? encodeURIComponent(refererInfo.referer) : '';
+  const imp = [];
+  const bidsMap = {};
+
+  validBidRequests.forEach((bid) => {
+    if (!bidderRequestId) {
+      bidderRequestId = bid.bidderRequestId;
+    }
+    if (!auctionId) {
+      auctionId = bid.auctionId;
+    }
+    if (!schain) {
+      schain = bid.schain;
+    }
+    if (!userId) {
+      userId = bid.userId;
+    }
+    if (!userIdAsEids) {
+      userIdAsEids = bid.userIdAsEids;
+    }
+    const {params: {uid, keywords}, mediaTypes, bidId, adUnitCode, rtd} = bid;
+    bidsMap[bidId] = bid;
+    if (!pageKeywords && !utils.isEmpty(keywords)) {
+      pageKeywords = utils.transformBidderParamKeywords(keywords);
+    }
+    const bidFloor = _getFloor(mediaTypes || {}, bid);
+    const jwTargeting = rtd && rtd.jwplayer && rtd.jwplayer.targeting;
+    if (jwTargeting) {
+      if (!jwpseg && jwTargeting.segments) {
+        jwpseg = jwTargeting.segments;
+      }
+      if (!content && jwTargeting.content) {
+        content = jwTargeting.content;
+      }
+    }
+    let impObj = {
+      id: bidId,
+      tagid: uid.toString(),
+      ext: {
+        divid: adUnitCode
+      }
+    };
+
+    if (bidFloor) {
+      impObj.bidfloor = bidFloor;
+    }
+
+    if (!mediaTypes || mediaTypes[BANNER]) {
+      const banner = createBannerRequest(bid, mediaTypes ? mediaTypes[BANNER] : {});
+      if (banner) {
+        impObj.banner = banner;
+      }
+    }
+    if (mediaTypes && mediaTypes[VIDEO]) {
+      const video = createVideoRequest(bid, mediaTypes[VIDEO]);
+      if (video) {
+        impObj.video = video;
+      }
+    }
+
+    if (impObj.banner || impObj.video) {
+      imp.push(impObj);
+    }
+  });
+
+  const source = {
+    tid: auctionId,
+    ext: {
+      wrapper: 'Prebid_js',
+      wrapper_version: '$prebid.version$'
+    }
+  };
+
+  if (schain) {
+    source.ext.schain = schain;
+  }
+
+  const bidderTimeout = config.getConfig('bidderTimeout') || timeout;
+  const tmax = timeout ? Math.min(bidderTimeout, timeout) : bidderTimeout;
+
+  let request = {
+    id: bidderRequestId,
+    site: {
+      page: referer
+    },
+    tmax,
+    source,
+    imp
+  };
+
+  if (content) {
+    request.site.content = content;
+  }
+
+  if (jwpseg && jwpseg.length) {
+    user = {
+      data: [{
+        name: 'iow_labs_pub_data',
+        segment: jwpseg.map((seg) => {
+          return {name: 'jwpseg', value: seg};
+        })
+      }]
+    };
+  }
+
+  if (gdprConsent && gdprConsent.consentString) {
+    userExt = {consent: gdprConsent.consentString};
+  }
+
+  if (userIdAsEids && userIdAsEids.length) {
+    userExt = userExt || {};
+    userExt.eids = [...userIdAsEids];
+  }
+
+  if (userExt && Object.keys(userExt).length) {
+    user = user || {};
+    user.ext = userExt;
+  }
+
+  if (user) {
+    request.user = user;
+  }
+
+  const configKeywords = utils.transformBidderParamKeywords({
+    'user': utils.deepAccess(config.getConfig('ortb2.user'), 'keywords') || null,
+    'context': utils.deepAccess(config.getConfig('ortb2.site'), 'keywords') || null
+  });
+
+  if (configKeywords.length) {
+    pageKeywords = (pageKeywords || []).concat(configKeywords);
+  }
+
+  if (pageKeywords && pageKeywords.length > 0) {
+    pageKeywords.forEach(deleteValues);
+  }
+
+  if (pageKeywords) {
+    request.ext = {
+      keywords: pageKeywords
+    };
+  }
+
+  if (gdprConsent && gdprConsent.gdprApplies) {
+    request.regs = {
+      ext: {
+        gdpr: gdprConsent.gdprApplies ? 1 : 0
+      }
+    }
+  }
+
+  if (uspConsent) {
+    if (!request.regs) {
+      request.regs = {ext: {}};
+    }
+    request.regs.ext.us_privacy = uspConsent;
+  }
+
+  return {
+    method: 'POST',
+    url: NEW_ENDPOINT_URL,
+    data: JSON.stringify(request),
+    newFormat: true,
+    bidsMap
+  };
+}
+
+function oldFormatRequest(validBidRequests, bidderRequest) {
+  const auids = [];
+  const bidsMap = {};
+  const slotsMapByUid = {};
+  const sizeMap = {};
+  const bids = validBidRequests || [];
+  let priceType = 'net';
+  let pageKeywords;
+  let reqId;
+
+  bids.forEach(bid => {
+    if (bid.params.priceType === 'gross') {
+      priceType = 'gross';
+    }
+    reqId = bid.bidderRequestId;
+    const {params: {uid}, adUnitCode} = bid;
+    auids.push(uid);
+    const sizesId = utils.parseSizesInput(bid.sizes);
+
+    if (!pageKeywords && !utils.isEmpty(bid.params.keywords)) {
+      const keywords = utils.transformBidderParamKeywords(bid.params.keywords);
+
+      if (keywords.length > 0) {
+        keywords.forEach(deleteValues);
+      }
+      pageKeywords = keywords;
+    }
+
+    if (!slotsMapByUid[uid]) {
+      slotsMapByUid[uid] = {};
+    }
+    const slotsMap = slotsMapByUid[uid];
+    if (!slotsMap[adUnitCode]) {
+      slotsMap[adUnitCode] = {adUnitCode, bids: [bid], parents: []};
+    } else {
+      slotsMap[adUnitCode].bids.push(bid);
+    }
+    const slot = slotsMap[adUnitCode];
+
+    sizesId.forEach((sizeId) => {
+      sizeMap[sizeId] = true;
+      if (!bidsMap[uid]) {
+        bidsMap[uid] = {};
+      }
+
+      if (!bidsMap[uid][sizeId]) {
+        bidsMap[uid][sizeId] = [slot];
+      } else {
+        bidsMap[uid][sizeId].push(slot);
+      }
+      slot.parents.push({parent: bidsMap[uid], key: sizeId, uid});
+    });
+  });
+
+  const payload = {
+    pt: priceType,
+    auids: auids.join(','),
+    sizes: utils.getKeys(sizeMap).join(','),
+    r: reqId,
+    wrapperType: 'Prebid_js',
+    wrapperVersion: '$prebid.version$'
+  };
+
+  if (pageKeywords) {
+    payload.keywords = JSON.stringify(pageKeywords);
+  }
+
+  if (bidderRequest) {
+    if (bidderRequest.refererInfo && bidderRequest.refererInfo.referer) {
+      payload.u = bidderRequest.refererInfo.referer;
+    }
+    if (bidderRequest.timeout) {
+      payload.wtimeout = bidderRequest.timeout;
+    }
+    if (bidderRequest.gdprConsent) {
+      if (bidderRequest.gdprConsent.consentString) {
+        payload.gdpr_consent = bidderRequest.gdprConsent.consentString;
+      }
+      payload.gdpr_applies =
+        (typeof bidderRequest.gdprConsent.gdprApplies === 'boolean')
+          ? Number(bidderRequest.gdprConsent.gdprApplies) : 1;
+    }
+    if (bidderRequest.uspConsent) {
+      payload.us_privacy = bidderRequest.uspConsent;
+    }
+  }
+
+  return {
+    method: 'GET',
+    url: ENDPOINT_URL,
+    data: utils.parseQueryStringParameters(payload).replace(/\&$/, ''),
+    bidsMap,
+    priceType
+  };
+}
+
+>>>>>>> main
 registerBidder(spec);

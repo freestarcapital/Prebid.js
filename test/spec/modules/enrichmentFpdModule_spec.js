@@ -1,6 +1,12 @@
 import { expect } from 'chai';
+<<<<<<< HEAD
 import { getRefererInfo } from 'src/refererDetection.js';
 import { initSubmodule, coreStorage } from 'modules/enrichmentFpdModule.js';
+=======
+import * as utils from 'src/utils.js';
+import { getRefererInfo } from 'src/refererDetection.js';
+import { initSubmodule } from 'modules/enrichmentFpdModule.js';
+>>>>>>> main
 
 describe('the first party data enrichment module', function() {
   let width;
@@ -8,7 +14,10 @@ describe('the first party data enrichment module', function() {
   let height;
   let heightStub;
   let querySelectorStub;
+<<<<<<< HEAD
   let coreStorageStub;
+=======
+>>>>>>> main
   let canonical;
   let keywords;
 
@@ -29,19 +38,25 @@ describe('the first party data enrichment module', function() {
     heightStub = sinon.stub(window.top, 'innerHeight').get(function() {
       return height;
     });
+<<<<<<< HEAD
     coreStorageStub = sinon.stub(coreStorage, 'getCookie');
     coreStorageStub
       .onFirstCall()
       .returns(null) // co.uk
       .onSecondCall()
       .returns('writeable'); // domain.co.uk
+=======
+>>>>>>> main
   });
 
   afterEach(function() {
     widthStub.restore();
     heightStub.restore();
     querySelectorStub.restore();
+<<<<<<< HEAD
     coreStorageStub.restore();
+=======
+>>>>>>> main
     canonical = document.createElement('link');
     canonical.rel = 'canonical';
     keywords = document.createElement('meta');
@@ -61,17 +76,29 @@ describe('the first party data enrichment module', function() {
     expect(validated.site.keywords).to.be.undefined;
   });
 
+<<<<<<< HEAD
   it('adds page domain values if canonical url exists', function() {
     width = 800;
     height = 500;
     canonical.href = 'https://www.subdomain.domain.co.uk/path?query=12345';
+=======
+  it('adds page and domain values if canonical url exists', function() {
+    width = 800;
+    height = 500;
+    canonical.href = 'https://www.domain.com/path?query=12345';
+>>>>>>> main
 
     let validated = initSubmodule({}, {});
 
     expect(validated.site.ref).to.equal(getRefererInfo().referer);
+<<<<<<< HEAD
     expect(validated.site.page).to.equal('https://www.subdomain.domain.co.uk/path?query=12345');
     expect(validated.site.domain).to.equal('subdomain.domain.co.uk');
     expect(validated.site.publisher.domain).to.equal('domain.co.uk');
+=======
+    expect(validated.site.page).to.equal('https://www.domain.com/path?query=12345');
+    expect(validated.site.domain).to.equal('domain.com');
+>>>>>>> main
     expect(validated.device).to.deep.equal({ w: 800, h: 500 });
     expect(validated.site.keywords).to.be.undefined;
   });

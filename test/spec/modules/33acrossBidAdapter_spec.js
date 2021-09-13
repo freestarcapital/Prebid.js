@@ -1214,6 +1214,7 @@ describe('33acrossBidAdapter:', function () {
           .withData(ttxRequest)
           .build();
         const [ builtServerRequest ] = spec.buildRequests(bidRequests, {});
+<<<<<<< HEAD
 
         validateBuiltServerRequest(builtServerRequest, serverRequest);
       });
@@ -1374,6 +1375,10 @@ describe('33acrossBidAdapter:', function () {
 
           expect(JSON.parse(builtServerRequest.data)).to.deep.equal(ttxRequest);
         });
+=======
+
+        validateBuiltServerRequest(builtServerRequest, serverRequest);
+>>>>>>> main
       });
     });
 
@@ -1392,9 +1397,9 @@ describe('33acrossBidAdapter:', function () {
           .withProduct()
           .build();
 
-        const builtServerRequests = spec.buildRequests(bidRequests, {});
+        const [ builtServerRequest ] = spec.buildRequests(bidRequests, {});
 
-        expect(JSON.parse(builtServerRequests[0].data)).to.deep.equal(ttxRequest);
+        expect(JSON.parse(builtServerRequest.data)).to.deep.equal(ttxRequest);
       });
 
       it('sets bidfloors in video if there is a floor', function() {
@@ -1420,9 +1425,118 @@ describe('33acrossBidAdapter:', function () {
           .withFloors('video', [ 1.0 ])
           .build();
 
-        const builtServerRequests = spec.buildRequests(bidRequests, {});
+        const [ builtServerRequest ] = spec.buildRequests(bidRequests, {});
 
-        expect(JSON.parse(builtServerRequests[0].data)).to.deep.equal(ttxRequest);
+        expect(JSON.parse(builtServerRequest.data)).to.deep.equal(ttxRequest);
+      });
+    });
+
+    context('when user ID data exists as userIdAsEids Array in bidRequest', function() {
+      it('passes userIds in eids field in ORTB request', function() {
+        const eids = [
+          {
+            'source': 'x-device-vendor-x.com',
+            'uids': [
+              {
+                'id': 'yyy',
+                'atype': 1
+              },
+              {
+                'id': 'zzz',
+                'atype': 1
+              },
+              {
+                'id': 'DB700403-9A24-4A4B-A8D5-8A0B4BE777D2',
+                'atype': 2
+              }
+            ],
+            'ext': {
+              'foo': 'bar'
+            }
+          }
+        ];
+
+        const bidRequests = (
+          new BidRequestsBuilder()
+            .withUserIds(eids)
+            .build()
+        );
+
+        const ttxRequest = new TtxRequestBuilder()
+          .withUserIds(eids)
+          .withProduct()
+          .build();
+
+        const [ builtServerRequest ] = spec.buildRequests(bidRequests, {});
+
+        expect(JSON.parse(builtServerRequest.data)).to.deep.equal(ttxRequest);
+      });
+
+      it('does not validate eids ORTB', function() {
+        const eids = [1, 2, 3];
+
+        const bidRequests = (
+          new BidRequestsBuilder()
+            .withUserIds(eids)
+            .build()
+        );
+
+        const ttxRequest = new TtxRequestBuilder()
+          .withUserIds(eids)
+          .withProduct()
+          .build();
+
+        const [ builtServerRequest ] = spec.buildRequests(bidRequests, {});
+
+        expect(JSON.parse(builtServerRequest.data)).to.deep.equal(ttxRequest);
+      });
+    });
+
+    context('when user IDs do not exist under the userIdAsEids field in bidRequest as a non-empty Array', function() {
+      it('does not pass user IDs in the bidRequest ORTB', function() {
+        const eidsScenarios = [
+          'foo',
+          [],
+          {foo: 1}
+        ];
+
+        eidsScenarios.forEach((eids) => {
+          const bidRequests = (
+            new BidRequestsBuilder()
+              .withUserIds(eids)
+              .build()
+          );
+          bidRequests.userId = {
+            'vendorx': {
+              'source': 'x-device-vendor-x.com',
+              'uids': [
+                {
+                  'id': 'yyy',
+                  'atype': 1
+                },
+                {
+                  'id': 'zzz',
+                  'atype': 1
+                },
+                {
+                  'id': 'DB700403-9A24-4A4B-A8D5-8A0B4BE777D2',
+                  'atype': 2
+                }
+              ],
+              'ext': {
+                'foo': 'bar'
+              }
+            }
+          };
+
+          const ttxRequest = new TtxRequestBuilder()
+            .withProduct()
+            .build();
+
+          const [ builtServerRequest ] = spec.buildRequests(bidRequests, {});
+
+          expect(JSON.parse(builtServerRequest.data)).to.deep.equal(ttxRequest);
+        });
       });
     });
   });

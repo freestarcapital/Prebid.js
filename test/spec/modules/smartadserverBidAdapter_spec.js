@@ -335,6 +335,27 @@ describe('Smart bid adapter tests', function () {
     expect(syncs).to.have.lengthOf(0);
   });
 
+  it('Verifies user sync using dspPixels', function () {
+    var syncs = spec.getUserSyncs({
+      iframeEnabled: false,
+      pixelEnabled: true
+    }, [BID_RESPONSE_IMAGE_SYNC]);
+    expect(syncs).to.have.lengthOf(3);
+    expect(syncs[0].type).to.equal('image');
+
+    syncs = spec.getUserSyncs({
+      iframeEnabled: false,
+      pixelEnabled: false
+    }, [BID_RESPONSE_IMAGE_SYNC]);
+    expect(syncs).to.have.lengthOf(0);
+
+    syncs = spec.getUserSyncs({
+      iframeEnabled: false,
+      pixelEnabled: true
+    }, []);
+    expect(syncs).to.have.lengthOf(0);
+  });
+
   describe('gdpr tests', function () {
     afterEach(function () {
       config.resetConfig();

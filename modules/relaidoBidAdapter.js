@@ -6,7 +6,11 @@ import { getStorageManager } from '../src/storageManager.js';
 
 const BIDDER_CODE = 'relaido';
 const BIDDER_DOMAIN = 'api.relaido.jp';
+<<<<<<< HEAD
 const ADAPTER_VERSION = '1.0.5';
+=======
+const ADAPTER_VERSION = '1.0.4';
+>>>>>>> main
 const DEFAULT_TTL = 300;
 const UUID_KEY = 'relaido_uuid';
 
@@ -70,16 +74,6 @@ function buildRequests(validBidRequests, bidderRequest) {
       width: width,
       height: height
     };
-
-    if (hasVideoMediaType(bidRequest)) {
-      const playerSize = getValidSizes(utils.deepAccess(bidRequest, 'mediaTypes.video.playerSize'));
-      payload.width = playerSize[0][0];
-      payload.height = playerSize[0][1];
-    } else if (hasBannerMediaType(bidRequest)) {
-      const sizes = getValidSizes(utils.deepAccess(bidRequest, 'mediaTypes.banner.sizes'));
-      payload.width = sizes[0][0];
-      payload.height = sizes[0][1];
-    }
 
     // It may not be encoded, so add it at the end of the payload
     payload.ref = bidderRequest.refererInfo.referer;

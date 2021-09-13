@@ -12,6 +12,7 @@ import { Renderer } from '../src/Renderer.js';
 import { OUTSTREAM } from '../src/video.js';
 const BIDDER_CODE = 'adagio';
 const LOG_PREFIX = 'Adagio:';
+export const VERSION = '2.11.0';
 const FEATURES_VERSION = '1';
 export const ENDPOINT = 'https://mp.4dex.io/prebid';
 const SUPPORTED_MEDIA_TYPES = [BANNER, NATIVE, VIDEO];
@@ -190,6 +191,37 @@ function getCurrentWindow() {
 function isSafeFrameWindow() {
   const ws = utils.getWindowSelf();
   return !!(ws.$sf && ws.$sf.ext);
+}
+
+// Get localStorage "adagio" data to be passed to the request
+export function prepareExchange(storageValue) {
+  const adagioStorage = JSON.parse(storageValue, function(name, value) {
+    if (!name.startsWith('_') || name === '') {
+      return value;
+    }
+  });
+  let random = utils.deepAccess(adagioStorage, 'session.rnd');
+  let newSession = false;
+
+  if (internal.isNewSession(adagioStorage)) {
+    newSession = true;
+    random = Math.random();
+  }
+
+  const data = {
+    session: {
+      new: newSession,
+      rnd: random
+    }
+  }
+
+  utils.mergeDeep(EXT_DATA, adagioStorage, data);
+
+  internal.enqueue({
+    action: 'session',
+    ts: Date.now(),
+    data: EXT_DATA
+  });
 }
 
 function initAdagio() {
@@ -921,6 +953,9 @@ export const spec = {
           adUnitCode: bidRequest.adUnitCode
         }
       });
+
+      // Handle priceFloors module
+      bidRequest.floors = _getFloors(bidRequest);
 
       // Handle priceFloors module
       bidRequest.floors = _getFloors(bidRequest);

@@ -99,6 +99,7 @@ export const spec = {
         user: {
           ext: {}
         },
+<<<<<<< HEAD
         ext: {
           ts: Date.now()
         },
@@ -124,6 +125,11 @@ export const spec = {
       if (connection && connection.effectiveType) {
         data.device.connectiontype = connection.effectiveType;
       }
+=======
+        tmax: bidRequest.timeout,
+        imp: [impObject],
+      };
+>>>>>>> main
       if (bidRequest) {
         if (bidRequest.gdprConsent && bidRequest.gdprConsent.gdprApplies) {
           utils.deepSetValue(data, 'regs.ext.gdpr', bidRequest.gdprConsent.gdprApplies ? 1 : 0);

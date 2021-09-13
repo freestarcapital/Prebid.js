@@ -66,6 +66,7 @@ describe('haloRtdProvider', function() {
           site: {
             content: {
               data: [setConfigSiteObj1]
+<<<<<<< HEAD
             }
           }
         }
@@ -458,11 +459,14 @@ describe('haloRtdProvider', function() {
               content: {
                 data: [siteObj2]
               }
+=======
+>>>>>>> main
             }
           }
         }
       });
 
+<<<<<<< HEAD
       const rtd = {
         ortb2b: {
           adbuzz: {
@@ -509,6 +513,58 @@ describe('haloRtdProvider', function() {
 
       expect(ortb2Config.user.data).to.have.lengthOf(2);
       expect(ortb2Config.site.content.data).to.have.lengthOf(2);
+=======
+      const rtdUserObj1 = {
+        name: 'www.dataprovider4.com',
+        ext: {
+          taxonomyname: 'iab_audience_taxonomy'
+        },
+        segment: [
+          {
+            id: '1918'
+          },
+          {
+            id: '1939'
+          }
+        ]
+      };
+
+      const rtdSiteObj1 = {
+        name: 'www.dataprovider5.com',
+        ext: {
+          taxonomyname: 'iab_audience_taxonomy'
+        },
+        segment: [
+          {
+            id: '1945'
+          },
+          {
+            id: '2003'
+          }
+        ]
+      };
+
+      const rtd = {
+        ortb2: {
+          user: {
+            data: [rtdUserObj1]
+          },
+          site: {
+            content: {
+              data: [rtdSiteObj1]
+            }
+          }
+        }
+      };
+
+      let pbConfig = config.getConfig();
+      addRealTimeData(bidConfig, rtd, rtdConfig);
+
+      let ortb2Config = config.getConfig().ortb2;
+
+      expect(ortb2Config.user.data).to.deep.include.members([setConfigUserObj1, setConfigUserObj2, rtdUserObj1]);
+      expect(ortb2Config.site.content.data).to.deep.include.members([setConfigSiteObj1, rtdSiteObj1]);
+>>>>>>> main
     });
 
     it('allows publisher defined rtd ortb2 logic', function() {
@@ -648,6 +704,7 @@ describe('haloRtdProvider', function() {
       };
 
       const bidConfig = {};
+<<<<<<< HEAD
 
       const rtdUserObj1 = {
         name: 'www.dataprovider3.com',
@@ -676,6 +733,36 @@ describe('haloRtdProvider', function() {
 
       getDataFromLocalStorageStub.withArgs(RTD_LOCAL_NAME).returns(JSON.stringify(cachedRtd));
 
+=======
+
+      const rtdUserObj1 = {
+        name: 'www.dataprovider3.com',
+        ext: {
+          taxonomyname: 'iab_audience_taxonomy'
+        },
+        segment: [
+          {
+            id: '1918'
+          },
+          {
+            id: '1939'
+          }
+        ]
+      };
+
+      const cachedRtd = {
+        rtd: {
+          ortb2: {
+            user: {
+              data: [rtdUserObj1]
+            }
+          }
+        }
+      };
+
+      getDataFromLocalStorageStub.withArgs(RTD_LOCAL_NAME).returns(JSON.stringify(cachedRtd));
+
+>>>>>>> main
       expect(config.getConfig().ortb2).to.be.undefined;
       getRealTimeData(bidConfig, () => {}, rtdConfig, {});
       expect(config.getConfig().ortb2.user.data).to.deep.include.members([rtdUserObj1]);

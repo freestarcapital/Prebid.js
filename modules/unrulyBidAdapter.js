@@ -23,6 +23,7 @@ function notifyRenderer(bidResponseBid) {
   parent.window.unruly['native'].prebid.uq.push(['render', bidResponseBid]);
 }
 
+<<<<<<< HEAD
 const addBidFloorInfo = (validBid) => {
   Object.keys(validBid.mediaTypes).forEach((key) => {
     let floor;
@@ -49,6 +50,59 @@ const RemoveDuplicateSizes = (validBid) => {
       if (!seenSizes[size.toString()]) {
         seenSizes[size.toString()] = true;
         newSizesArray.push(size);
+=======
+const serverResponseToBid = (bid, rendererInstance) => ({
+  requestId: bid.bidId,
+  cpm: bid.cpm,
+  width: bid.width,
+  height: bid.height,
+  vastUrl: bid.vastUrl,
+  netRevenue: true,
+  creativeId: bid.bidId,
+  ttl: 360,
+  meta: { advertiserDomains: bid && bid.adomain ? bid.adomain : [] },
+  currency: 'USD',
+  renderer: rendererInstance,
+  mediaType: VIDEO
+});
+
+const buildPrebidResponseAndInstallRenderer = bids =>
+  bids
+    .filter(serverBid => {
+      const hasConfig = !!utils.deepAccess(serverBid, 'ext.renderer.config');
+      const hasSiteId = !!utils.deepAccess(serverBid, 'ext.renderer.config.siteId');
+
+      if (!hasConfig) utils.logError(new Error('UnrulyBidAdapter: Missing renderer config.'));
+      if (!hasSiteId) utils.logError(new Error('UnrulyBidAdapter: Missing renderer siteId.'));
+
+      return hasSiteId
+    })
+    .map(serverBid => {
+      const exchangeRenderer = utils.deepAccess(serverBid, 'ext.renderer');
+
+      configureUniversalTag(exchangeRenderer);
+      configureRendererQueue();
+
+      const rendererInstance = Renderer.install(Object.assign({}, exchangeRenderer, { callback: () => {} }));
+      return { rendererInstance, serverBid };
+    })
+    .map(
+      ({rendererInstance, serverBid}) => {
+        const prebidBid = serverResponseToBid(serverBid, rendererInstance);
+
+        const rendererConfig = Object.assign(
+          {},
+          prebidBid,
+          {
+            renderer: rendererInstance,
+            adUnitCode: serverBid.ext.adUnitCode
+          }
+        );
+
+        rendererInstance.setRender(() => { notifyRenderer(rendererConfig) });
+
+        return prebidBid;
+>>>>>>> main
       }
     });
 

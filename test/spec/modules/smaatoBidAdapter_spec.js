@@ -169,8 +169,8 @@ describe('smaatoBidAdapterTest', () => {
         const singleBannerBidRequestWithFloor = Object.assign({}, singleBannerBidRequest);
         singleBannerBidRequestWithFloor.getFloor = function(arg) {
           if (arg.currency === 'USD' &&
-              arg.mediaType === 'banner' &&
-              JSON.stringify(arg.size) === JSON.stringify([300, 50])) {
+            arg.mediaType === 'banner' &&
+            JSON.stringify(arg.size) === JSON.stringify([300, 50])) {
             return {
               currency: 'USD',
               floor: 0.123
@@ -421,8 +421,8 @@ describe('smaatoBidAdapterTest', () => {
         const singleVideoBidRequestWithFloor = Object.assign({}, singleVideoBidRequest);
         singleVideoBidRequestWithFloor.getFloor = function(arg) {
           if (arg.currency === 'USD' &&
-              arg.mediaType === 'video' &&
-              JSON.stringify(arg.size) === JSON.stringify([768, 1024])) {
+            arg.mediaType === 'video' &&
+            JSON.stringify(arg.size) === JSON.stringify([768, 1024])) {
             return {
               currency: 'USD',
               floor: 0.456
@@ -520,8 +520,8 @@ describe('smaatoBidAdapterTest', () => {
             const longFormVideoBidRequestWithFloor = Object.assign({}, longFormVideoBidRequest);
             longFormVideoBidRequestWithFloor.getFloor = function(arg) {
               if (arg.currency === 'USD' &&
-                  arg.mediaType === 'video' &&
-                  JSON.stringify(arg.size) === JSON.stringify([640, 480])) {
+                arg.mediaType === 'video' &&
+                JSON.stringify(arg.size) === JSON.stringify([640, 480])) {
                 return {
                   currency: 'USD',
                   floor: 0.789
@@ -853,35 +853,6 @@ describe('smaatoBidAdapterTest', () => {
         expect(req.user.ext.eids).to.exist;
         expect(req.user.ext.eids).to.have.length(2);
       });
-    });
-  });
-
-  describe('in-app requests', () => {
-    it('add geo and ifa info to device object', () => {
-      let req = JSON.parse(spec.buildRequests([inAppBidRequest], defaultBidderRequest).data);
-      expect(req.device.geo).to.deep.equal({'lat': 33.3, 'lon': -88.8});
-      expect(req.device.ifa).to.equal('aDeviceId');
-    });
-    it('add only ifa to device object', () => {
-      let inAppBidRequestWithoutGeo = utils.deepClone(inAppBidRequest);
-      delete inAppBidRequestWithoutGeo.params.app.geo
-      let req = JSON.parse(spec.buildRequests([inAppBidRequestWithoutGeo], defaultBidderRequest).data);
-
-      expect(req.device.geo).to.not.exist;
-      expect(req.device.ifa).to.equal('aDeviceId');
-    });
-    it('add no specific device info if param does not exist', () => {
-      let req = JSON.parse(spec.buildRequests([singleBannerBidRequest], defaultBidderRequest).data);
-      expect(req.device.geo).to.not.exist;
-      expect(req.device.ifa).to.not.exist;
-    });
-  });
-
-  describe('user ids in requests', () => {
-    it('user ids are added to user.ext.eids', () => {
-      let req = JSON.parse(spec.buildRequests([userIdBidRequest], defaultBidderRequest).data);
-      expect(req.user.ext.eids).to.exist;
-      expect(req.user.ext.eids).to.have.length(2);
     });
   });
 

@@ -146,4 +146,4 @@ export const ORTB_MAP = {
     isArray: true,
     childType: TYPES.string
   }
-}
+};

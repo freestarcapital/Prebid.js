@@ -13,6 +13,7 @@ const TIME_TO_LIVE = 360;
 const DEFAULT_CUR = 'EUR';
 const ADAPTER_SYNC_PATH = '/push_sync';
 const TRACK_TIMEOUT_PATH = '/track/bid_timeout';
+
 const LOG_ERROR_MESS = {
   noAuid: 'Bid from response has no auid parameter - ',
   noAdm: 'Bid from response has no adm parameter - ',
@@ -30,6 +31,7 @@ const LOG_ERROR_MESS = {
   videoMissing: 'Bid request videoType property is missing - '
 };
 const currencyWhiteList = ['EUR', 'USD', 'GBP', 'PLN'];
+const RE_EMPTY_OR_ONLY_COMMAS = /^,*$/;
 export const spec = {
   code: BIDDER_CODE,
   gvlid: GVLID,

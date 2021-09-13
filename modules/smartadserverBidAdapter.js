@@ -221,8 +221,12 @@ export const spec = {
           currency: response.currency,
           netRevenue: response.isNetCpm,
           ttl: response.ttl,
+<<<<<<< HEAD
           dspPixels: response.dspPixels,
           meta: { advertiserDomains: response.adomain ? response.adomain : [] }
+=======
+          dspPixels: response.dspPixels
+>>>>>>> main
         };
 
         if (bidRequest.mediaType === VIDEO) {

@@ -3,6 +3,7 @@
  * @module modules/firstPartyData
  */
 import * as utils from '../src/utils.js';
+<<<<<<< HEAD
 import { submodule } from '../src/hook.js';
 import { getRefererInfo } from '../src/refererDetection.js';
 import { getCoreStorageManager } from '../src/storageManager.js';
@@ -64,6 +65,13 @@ export function findRootDomain(fullDomain = window.location.hostname) {
   } while (continueSearching);
   return rootDomain;
 }
+=======
+import { submodule } from '../src/hook.js'
+import { getRefererInfo } from '../src/refererDetection.js'
+
+let ortb2 = {};
+let win = (window === window.top) ? window : window.top;
+>>>>>>> main
 
 /**
  * Checks for referer and if exists merges into ortb2 global data

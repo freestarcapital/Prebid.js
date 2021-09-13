@@ -36,7 +36,11 @@ function deserializeParrableId(parrableIdStr) {
 
   values.forEach(function(value) {
     const pair = value.split(':');
+<<<<<<< HEAD
     if (pair[0] === 'ccpaOptout' || pair[0] === 'ibaOptout') { // unpack a value of 0 or 1 as boolean
+=======
+    if (+pair[1] === 1 || (pair[1] !== null && +pair[1] === 0)) { // unpack a value of 0 or 1 as boolean
+>>>>>>> main
       parrableId[pair[0]] = Boolean(+pair[1]);
     } else if (!isNaN(pair[1])) { // convert to number if is a number
       parrableId[pair[0]] = +pair[1]
@@ -66,10 +70,13 @@ function serializeParrableId(parrableIdAndParams) {
     components.push(tpcSupportComponent);
     components.push(tpcUntil);
   }
+<<<<<<< HEAD
   if (parrableIdAndParams.filteredUntil) {
     components.push(`filteredUntil:${parrableIdAndParams.filteredUntil}`);
     components.push(`filterHits:${parrableIdAndParams.filterHits}`);
   }
+=======
+>>>>>>> main
 
   return components.join(',');
 }
@@ -102,12 +109,17 @@ function readCookie() {
   const parrableIdStr = storage.getCookie(PARRABLE_COOKIE_NAME);
   if (parrableIdStr) {
     const parsedCookie = deserializeParrableId(decodeURIComponent(parrableIdStr));
+<<<<<<< HEAD
     const { tpc, tpcUntil, filteredUntil, filterHits, ...parrableId } = parsedCookie;
+=======
+    const { tpc, tpcUntil, ...parrableId } = parsedCookie;
+>>>>>>> main
     let { eid, ibaOptout, ccpaOptout, ...params } = parsedCookie;
 
     if ((Date.now() / 1000) >= tpcUntil) {
       params.tpc = undefined;
     }
+<<<<<<< HEAD
 
     if ((Date.now() / 1000) < filteredUntil) {
       params.shouldFilter = true;
@@ -116,6 +128,8 @@ function readCookie() {
       params.shouldFilter = false;
       params.filterHits = filterHits;
     }
+=======
+>>>>>>> main
     return { parrableId, params };
   }
   return null;
@@ -205,6 +219,7 @@ function shouldFilterImpression(configParams, parrableId) {
   }
 
   return isBlocked() || !isAllowed();
+<<<<<<< HEAD
 }
 
 function epochFromTtl(ttl) {
@@ -214,6 +229,12 @@ function epochFromTtl(ttl) {
 function incrementFilterHits(parrableId, params) {
   params.filterHits += 1;
   writeCookie({ ...parrableId, ...params })
+=======
+}
+
+function epochFromTtl(ttl) {
+  return Math.floor((Date.now() / 1000) + ttl);
+>>>>>>> main
 }
 
 function fetchId(configParams, gdprConsentData) {
@@ -231,8 +252,12 @@ function fetchId(configParams, gdprConsentData) {
 
   const eid = parrableId ? parrableId.eid : null;
   const refererInfo = getRefererInfo();
+<<<<<<< HEAD
   const tpcSupport = params ? params.tpc : null;
   const shouldFilter = params ? params.shouldFilter : null;
+=======
+  const tpcSupport = params ? params.tpc : null
+>>>>>>> main
   const uspString = uspDataHandler.getConsentData();
   const gdprApplies = (gdprConsentData && typeof gdprConsentData.gdprApplies === 'boolean' && gdprConsentData.gdprApplies);
   const gdprConsentString = (gdprConsentData && gdprApplies && gdprConsentData.consentString) || '';
@@ -295,10 +320,13 @@ function fetchId(configParams, gdprConsentData) {
                 newParams.tpcSupport = responseObj.tpcSupport;
                 newParams.tpcUntil = epochFromTtl(responseObj.tpcSupportTtl);
               }
+<<<<<<< HEAD
               if (responseObj.filterTtl) {
                 newParams.filteredUntil = epochFromTtl(responseObj.filterTtl);
                 newParams.filterHits = 0;
               }
+=======
+>>>>>>> main
             }
           } catch (error) {
             utils.logError(error);

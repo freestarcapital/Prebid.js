@@ -107,7 +107,7 @@ describe('IdentityLinkId tests', function () {
     expect(request).to.be.eq(undefined);
   });
 
-  it('should call the LiveRamp envelope endpoint if cookie _lr_retry_request does not exist', function () {
+  it('should call the LiveRamp envelope endpoint if cookie _lr_retry_request does not exist and notUse3P config property was not set', function () {
     let callBackSpy = sinon.spy();
     let submoduleCallback = identityLinkSubmodule.getId(defaultConfigParams).callback;
     submoduleCallback(callBackSpy);
@@ -121,6 +121,7 @@ describe('IdentityLinkId tests', function () {
     expect(callBackSpy.calledOnce).to.be.true;
   });
 
+<<<<<<< HEAD
   it('should not call the LiveRamp envelope endpoint if cookie _lr_retry_request exist', function () {
     let now = new Date();
     now.setTime(now.getTime() + 3000);
@@ -146,6 +147,8 @@ describe('IdentityLinkId tests', function () {
     expect(callBackSpy.calledOnce).to.be.true;
   });
 
+=======
+>>>>>>> main
   it('should not call the LiveRamp envelope endpoint if config property notUse3P is set to true', function () {
     defaultConfigParams.params.notUse3P = true;
     let callBackSpy = sinon.spy();

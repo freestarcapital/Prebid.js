@@ -250,6 +250,7 @@ describe('VisxAdapter', function () {
         'site': {'page': referrer}
       });
 
+
       getConfigStub.restore();
     });
 
@@ -465,6 +466,17 @@ describe('VisxAdapter', function () {
         },
         'site': {'page': referrer}
       });
+    });
+
+    it('should pass grouped video bid\'s params in payload', function () {
+      const request = spec.buildRequests(bidRequests, bidderRequest);
+      const payload = request.data;
+      expect(payload).to.have.property('protocols', ',,,3|6');
+      expect(payload).to.have.property('mimes', ',,,video/mp4|video/mpeg');
+      expect(payload).to.have.property('playerSize', ',,,400x300');
+      expect(payload).to.have.property('minduration', ',,,5');
+      expect(payload).to.have.property('maxduration', ',,,30');
+      expect(payload).to.not.have.property('skip');
     });
   });
 

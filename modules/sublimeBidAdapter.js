@@ -9,16 +9,26 @@ const DEFAULT_CURRENCY = 'EUR';
 const DEFAULT_PROTOCOL = 'https';
 const DEFAULT_TTL = 600;
 const SUBLIME_ANTENNA = 'antenna.ayads.co';
+<<<<<<< HEAD
 const SUBLIME_VERSION = '0.8.0';
+=======
+const SUBLIME_VERSION = '0.7.2';
+>>>>>>> main
 
 /**
  * Identify the current device type
  * @returns {string}
  */
 function detectDevice() {
+<<<<<<< HEAD
   const isMobile = /(?:phone|windows\s+phone|ipod|blackberry|Galaxy Nexus|SM-G892A|(?:android|bbd+|meego|silk|googlebot) .+?mobile|palm|windows\s+ce|opera mini|avantgo|docomo)/i;
 
   const isTablet = /(?:ipad|playbook|Tablet|(?:android|bb\d+|meego|silk)(?! .+? mobile))/i;
+=======
+  const isMobile = /(?:phone|windowss+phone|ipod|blackberry|Galaxy Nexus|SM-G892A|(?:android|bbd+|meego|silk|googlebot) .+?mobile|palm|windowss+ce|opera mini|avantgo|docomo)/i;
+
+  const isTablet = /(?:ipad|playbook|Tablet|(?:android|bb\\d+|meego|silk)(?! .+? mobile))/i;
+>>>>>>> main
 
   return (
     (isMobile.test(navigator.userAgent) && 'm') || // mobile
@@ -26,6 +36,7 @@ function detectDevice() {
     'd' // desktop
   );
 }
+<<<<<<< HEAD
 
 const UUID_V4_RE = /^[0-9A-F]{8}-[0-9A-F]{4}-[4][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0-9A-F]{12}$/i;
 /**
@@ -36,6 +47,8 @@ const UUID_V4_RE = /^[0-9A-F]{8}-[0-9A-F]{4}-[4][0-9A-F]{3}-[89AB][0-9A-F]{3}-[0
 function isValidNotifyId(value) {
   return UUID_V4_RE.test(value);
 }
+=======
+>>>>>>> main
 
 /**
  * Debug log message
@@ -99,7 +112,11 @@ export function sendEvent(eventName, sspName) {
     puid: state.transactionId || state.notifyId,
     notid: state.notifyId || '',
     pbav: SUBLIME_VERSION,
+<<<<<<< HEAD
     pubtimeout: state.timeout,
+=======
+    pubtimeout: config.getConfig('bidderTimeout'),
+>>>>>>> main
     pubpbv: '$prebid.version$',
     device: detectDevice(),
   };

@@ -15,7 +15,6 @@ const HOST_GETTERS = {
       return 'ghb' + subdomainSuffixes[num++ % subdomainSuffixes.length] + '.adtelligent.com';
     }
   }()),
-
   navelix: () => 'ghb.hb.navelix.com',
   appaloosa: () => 'ghb.hb.appaloosa.media',
   onefiftytwomedia: () => 'ghb.ads.152media.com',

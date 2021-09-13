@@ -192,8 +192,13 @@ function sendMessage(auctionId, bidWonId, trigger) {
           'transactionId',
           'mediaTypes',
           'dimensions',
+<<<<<<< HEAD
           'adserverTargeting', () => !utils.isEmpty(cache.targeting[bid.adUnit.adUnitCode]) ? stringProperties(cache.targeting[bid.adUnit.adUnitCode]) : undefined,
           'gam', gam => !utils.isEmpty(gam) ? gam : undefined,
+=======
+          'adserverTargeting', () => stringProperties(cache.targeting[bid.adUnit.adUnitCode] || {}),
+          'gam',
+>>>>>>> main
           'pbAdSlot',
           'pattern'
         ]);
@@ -511,9 +516,15 @@ function subscribeToGamSlots() {
         clearTimeout(cache.timeouts[auctionId]);
         delete cache.timeouts[auctionId];
         if (rubiConf.analyticsEventDelay > 0) {
+<<<<<<< HEAD
           setTimeout(() => sendMessage.call(rubiconAdapter, auctionId, undefined, 'delayedGam'), rubiConf.analyticsEventDelay)
         } else {
           sendMessage.call(rubiconAdapter, auctionId, undefined, 'gam')
+=======
+          setTimeout(() => sendMessage.call(rubiconAdapter, auctionId), rubiConf.analyticsEventDelay)
+        } else {
+          sendMessage.call(rubiconAdapter, auctionId)
+>>>>>>> main
         }
       }
     });

@@ -612,6 +612,7 @@ describe('gumgumAdapter', function () {
       expect(result.length).to.equal(0);
     });
 
+<<<<<<< HEAD
     describe('bidResponse width and height', function () {
       it('uses response maxw and maxh for when found in bidresponse', function () {
         const maxSlotAdResponse = { ...serverResponse.ad, maxw: 300, maxh: 600 };
@@ -630,6 +631,36 @@ describe('gumgumAdapter', function () {
             pi: 5,
             t: 'ggumtest'
           }
+=======
+    it('uses response width and height', function () {
+      const result = spec.interpretResponse({ body: serverResponse }, bidRequest)[0];
+      expect(result.width).to.equal(serverResponse.ad.width.toString());
+      expect(result.height).to.equal(serverResponse.ad.height.toString());
+    });
+
+    it('defaults to use bidRequest sizes when width and height are not found', function () {
+      const { ad, jcsi, pag, thms, meta } = serverResponse
+      const noAdSizes = { ...ad }
+      delete noAdSizes.width
+      delete noAdSizes.height
+      const responseWithoutSizes = { jcsi, pag, thms, meta, ad: noAdSizes }
+      const request = { ...bidRequest, sizes: [[100, 200]] }
+      const result = spec.interpretResponse({ body: responseWithoutSizes }, request)[0];
+
+      expect(result.width).to.equal(request.sizes[0][0].toString())
+      expect(result.height).to.equal(request.sizes[0][1].toString())
+    });
+
+    it('returns 1x1 when eligible product and size available', function () {
+      let inscreenBidRequest = {
+        id: 12346,
+        sizes: [[300, 250], [1, 1]],
+        url: ENDPOINT,
+        method: 'GET',
+        data: {
+          pi: 2,
+          t: 'ggumtest'
+>>>>>>> main
         }
         let serverResponse = {
           'ad': {

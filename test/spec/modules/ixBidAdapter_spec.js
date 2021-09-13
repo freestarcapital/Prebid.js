@@ -1319,7 +1319,6 @@ describe('IndexexchangeAdapter', function () {
           }
         }
       });
-
       const bid = utils.deepClone(DEFAULT_BANNER_VALID_BID[0]);
       bid.mediaTypes.banner.sizes = LARGE_SET_OF_SIZES;
 
@@ -2181,7 +2180,8 @@ describe('IndexexchangeAdapter', function () {
         expect(diagObj.ou).to.equal(1);
         expect(diagObj.ren).to.equal(false);
         expect(diagObj.mfu).to.equal(1);
-        expect(diagObj.allU).to.equal(1);
+        expect(diagObj.allu).to.equal(1);
+        expect(diagObj.version).to.equal('$prebid.version$');
       });
     });
   });
@@ -2342,6 +2342,34 @@ describe('IndexexchangeAdapter', function () {
         }
       ];
       const result = spec.interpretResponse({ body: bidResponse }, { data: DEFAULT_BIDDER_REQUEST_DATA, validBidRequests: [] });
+      expect(result[0].dealId).to.deep.equal(expectedParse[0].dealId);
+    });
+
+    it('should use set bid[].ext.dealid if bid[].dealid is not present', function () {
+      const bidResponse = utils.deepClone(DEFAULT_BANNER_BID_RESPONSE);
+      bidResponse.seatbid[0].bid[0].ext.dealid = 'ext-deal';
+      const expectedParse = [
+        {
+          requestId: '1a2b3c4d',
+          cpm: 1,
+          creativeId: '12345',
+          width: 300,
+          height: 250,
+          mediaType: 'banner',
+          ad: '<a target="_blank" href="https://www.indexexchange.com"></a>',
+          currency: 'USD',
+          ttl: 300,
+          dealId: 'ext-deal',
+          netRevenue: true,
+          meta: {
+            networkId: 50,
+            brandId: 303325,
+            brandName: 'OECTA',
+            advertiserDomains: ['www.abc.com']
+          }
+        }
+      ];
+      const result = spec.interpretResponse({ body: bidResponse }, { data: DEFAULT_BIDDER_REQUEST_DATA });
       expect(result[0].dealId).to.deep.equal(expectedParse[0].dealId);
     });
 
