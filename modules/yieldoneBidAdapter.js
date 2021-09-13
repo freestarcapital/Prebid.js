@@ -51,6 +51,12 @@ export const spec = {
         payload.h = size.split('x')[1];
       }
 
+      // LiveRampID
+      const idlEnv = utils.deepAccess(bidRequest, 'userId.idl_env');
+      if (utils.isStr(idlEnv) && !utils.isEmpty(idlEnv)) {
+        payload.lr_env = idlEnv;
+      }
+
       return {
         method: 'GET',
         url: ENDPOINT_URL,
@@ -81,7 +87,10 @@ export const spec = {
         currency: currency,
         netRevenue: netRevenue,
         ttl: config.getConfig('_bidderTimeout'),
-        referrer: referrer
+        referrer: referrer,
+        meta: {
+          advertiserDomains: response.adomain ? response.adomain : []
+        },
       };
 
       if (response.adTag && renderId === 'ViewableRendering') {

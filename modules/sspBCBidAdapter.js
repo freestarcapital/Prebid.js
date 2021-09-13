@@ -9,10 +9,11 @@ const BIDDER_URL = 'https://ssp.wp.pl/bidder/';
 const SYNC_URL = 'https://ssp.wp.pl/bidder/usersync';
 const NOTIFY_URL = 'https://ssp.wp.pl/bidder/notify';
 const TMAX = 450;
-const BIDDER_VERSION = '4.7';
+const BIDDER_VERSION = '5.0';
 const W = window;
 const { navigator } = W;
 const oneCodeDetection = {};
+const adSizesCalled = {};
 var consentApiVersion;
 
 /**
@@ -69,7 +70,7 @@ const cookieSupport = () => {
 };
 
 const applyClientHints = ortbRequest => {
-  const connection = navigator.connection || false;
+  const { connection = {}, deviceMemory, userAgentData = {} } = navigator;
   const viewport = W.visualViewport || false;
   const segments = [];
   const hints = {
@@ -77,9 +78,11 @@ const applyClientHints = ortbRequest => {
     'CH-Rtt': connection.rtt,
     'CH-SaveData': connection.saveData,
     'CH-Downlink': connection.downlink,
-    'CH-DeviceMemory': navigator.deviceMemory,
+    'CH-DeviceMemory': deviceMemory,
     'CH-Dpr': W.devicePixelRatio,
     'CH-ViewportWidth': viewport.width,
+    'CH-BrowserBrands': JSON.stringify(userAgentData.brands),
+    'CH-isMobile': userAgentData.mobile,
   };
 
   Object.keys(hints).forEach(key => {
@@ -150,18 +153,38 @@ function mapBanner(slot) {
   }
 }
 
-function mapImpression(slot) {
+const mapImpression = slot => {
+  const { adUnitCode, bidId, params = {}, ortb2Imp = {} } = slot;
+  const { id, siteId } = params;
+  const { ext = {} } = ortb2Imp;
+
+  /*
+     check max size for this imp, and check/store number this size was called (for current view)
+     send this info as ext.pbsize
+  */
+  const slotSize = slot.sizes.length ? slot.sizes.reduce((prev, next) => prev[0] * prev[1] <= next[0] * next[1] ? next : prev).join('x') : '1x1';
+  adSizesCalled[slotSize] = adSizesCalled[slotSize] ? adSizesCalled[slotSize] + 1 : 1;
+  ext.data = Object.assign({ pbsize: `${slotSize}_${adSizesCalled[slotSize]}` }, ext.data);
+
   const imp = {
     id: (slot.params && slot.params.id) ? slot.params.id : 'bidid-' + slot.bidId,
     banner: mapBanner(slot),
-    /* native: mapNative(slot), */
-    tagid: slot.adUnitCode,
+    // native: mapNative(slot),
+    tagid: adUnitCode,
+    ext,
   };
 
-  const bidfloor = (slot.params && slot.params.bidFloor) ? parseFloat(slot.params.bidFloor) : undefined;
-
-  if (bidfloor) {
-    imp.bidfloor = bidfloor;
+  // Check floorprices for this imp
+  if (typeof slot.getFloor === 'function') {
+    let bannerFloor = 0;
+    // sspBC adapter accepts only floor per imp - check for maximum value for requested ad types and sizes
+    if (slot.sizes.length) {
+      bannerFloor = slot.sizes.reduce((prev, next) => {
+        const currentFloor = slot.getFloor({ mediaType: 'banner', size: next }).floor;
+        return prev > currentFloor ? prev : currentFloor;
+      }, 0);
+    }
+    imp.bidfloor = bannerFloor;
   }
 
   return imp;

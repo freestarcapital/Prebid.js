@@ -1,6 +1,7 @@
-import { VIDEO } from '../src/mediaTypes.js';
+import { VIDEO, BANNER } from '../src/mediaTypes.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { Renderer } from '../src/Renderer.js';
+import * as utils from '../src/utils.js';
 
 const BIDDER_CODE = 'aniview';
 const TTL = 600;
@@ -153,6 +154,22 @@ function getCpmData(xml) {
   }
   return ret;
 }
+function buildBanner(xmlStr, bidRequest, bidResponse) {
+  var rendererData = JSON.stringify({
+    id: bidRequest.adUnitCode,
+    debug: window.location.href.indexOf('pbjsDebug') >= 0,
+    placement: bidRequest.bidRequest.adUnitCode,
+    width: bidResponse.width,
+    height: bidResponse.height,
+    vastXml: xmlStr,
+    bid: bidResponse,
+    config: bidRequest.bidRequest.params.rendererConfig
+  });
+  var playerDomain = bidRequest.bidRequest.params.playerDomain || 'player.aniview.com';
+  var ad = '<script src="https://' + playerDomain + '/script/6.1/prebidRenderer.js"></script>';
+  ad += '<script> window.aniviewRenderer.renderAd(' + rendererData + ') </script>'
+  return ad;
+}
 function interpretResponse(serverResponse, bidRequest) {
   let bidResponses = [];
   if (serverResponse && serverResponse.body) {
@@ -162,6 +179,10 @@ function interpretResponse(serverResponse, bidRequest) {
       try {
         let bidResponse = {};
         if (bidRequest && bidRequest.data && bidRequest.data.bidId && bidRequest.data.bidId !== '') {
+          let mediaType = VIDEO;
+          if (bidRequest.bidRequest && bidRequest.bidRequest.mediaTypes && !bidRequest.bidRequest.mediaTypes[VIDEO]) {
+            mediaType = BANNER;
+          }
           let xmlStr = serverResponse.body;
           let xml = new window.DOMParser().parseFromString(xmlStr, 'text/xml');
           if (xml && xml.getElementsByTagName('parsererror').length == 0) {
@@ -176,17 +197,26 @@ function interpretResponse(serverResponse, bidRequest) {
               bidResponse.creativeId = xml.getElementsByTagName('Ad') && xml.getElementsByTagName('Ad')[0] && xml.getElementsByTagName('Ad')[0].getAttribute('id') ? xml.getElementsByTagName('Ad')[0].getAttribute('id') : 'creativeId';
               bidResponse.currency = cpmData.currency;
               bidResponse.netRevenue = true;
-              var blob = new Blob([xmlStr], {
-                type: 'application/xml'
-              });
-              bidResponse.vastUrl = window.URL.createObjectURL(blob);
-              bidResponse.vastXml = xmlStr;
-              bidResponse.mediaType = VIDEO;
+              bidResponse.mediaType = mediaType;
+              if (mediaType === VIDEO) {
+                try {
+                  var blob = new Blob([xmlStr], {
+                    type: 'application/xml'
+                  });
+                  bidResponse.vastUrl = window.URL.createObjectURL(blob);
+                } catch (ex) {
+                  utils.logError('Aniview Debug create vastXml error:\n\n' + ex);
+                }
+                bidResponse.vastXml = xmlStr;
+                if (bidRequest.bidRequest && bidRequest.bidRequest.mediaTypes && bidRequest.bidRequest.mediaTypes.video && bidRequest.bidRequest.mediaTypes.video.context === 'outstream') {
+                  bidResponse.renderer = newRenderer(bidRequest);
+                }
+              } else {
+                bidResponse.ad = buildBanner(xmlStr, bidRequest, bidResponse);
+              }
               bidResponse.meta = {
                 advertiserDomains: []
               };
-
-              if (bidRequest.bidRequest && bidRequest.bidRequest.mediaTypes && bidRequest.bidRequest.mediaTypes.video && bidRequest.bidRequest.mediaTypes.video.context === 'outstream') { bidResponse.renderer = newRenderer(bidRequest); }
 
               bidResponses.push(bidResponse);
             }
@@ -259,8 +289,9 @@ function getUserSyncs(syncOptions, serverResponses) {
 
 export const spec = {
   code: BIDDER_CODE,
-  aliases: ['selectmediavideo'],
-  supportedMediaTypes: [VIDEO],
+  gvlid: GVLID,
+  aliases: ['avantisvideo', 'selectmediavideo', 'vidcrunch', 'openwebvideo'],
+  supportedMediaTypes: [VIDEO, BANNER],
   isBidRequestValid,
   buildRequests,
   interpretResponse,
