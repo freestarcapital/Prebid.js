@@ -385,44 +385,7 @@ describe('OpenxAdapter', function () {
   });
 
   describe('buildRequests for banner ads', function () {
-<<<<<<< HEAD
     const bidRequestsWithMediaTypes = BANNER_BID_REQUESTS_WITH_MEDIA_TYPES;
-=======
-    const bidRequestsWithMediaTypes = [{
-      'bidder': 'openx',
-      'params': {
-        'unit': '11',
-        'delDomain': 'test-del-domain'
-      },
-      'adUnitCode': '/adunit-code/test-path',
-      mediaTypes: {
-        banner: {
-          sizes: [[300, 250], [300, 600]]
-        }
-      },
-      'bidId': 'test-bid-id-1',
-      'bidderRequestId': 'test-bid-request-1',
-      'auctionId': 'test-auction-1',
-      'ortb2Imp': { ext: { data: { pbadslot: '/12345/my-gpt-tag-0' } } }
-    }, {
-      'bidder': 'openx',
-      'params': {
-        'unit': '22',
-        'delDomain': 'test-del-domain'
-      },
-      'adUnitCode': 'adunit-code',
-      mediaTypes: {
-        banner: {
-          sizes: [[728, 90]]
-        }
-      },
-      'bidId': 'test-bid-id-2',
-      'bidderRequestId': 'test-bid-request-2',
-      'auctionId': 'test-auction-2',
-      'ortb2Imp': { ext: { data: { pbadslot: '/12345/my-gpt-tag-1' } } }
-    }];
->>>>>>> main
-
     const bidRequestsWithPlatform = [{
       'bidder': 'openx',
       'params': {
@@ -1126,7 +1089,6 @@ describe('OpenxAdapter', function () {
         parrableId: { eid: 'eidVersion.encryptionKeyReference.encryptedValue' },
         pubcid: '1111-pubcid',
         quantcastId: '1111-quantcastid',
-<<<<<<< HEAD
         tapadId: '111-tapadid',
         tdid: '1111-tdid',
         uid2: {id: '1111-uid2'},
@@ -1139,12 +1101,6 @@ describe('OpenxAdapter', function () {
         mwOpenLinkId: '1111-mwopenlinkid',
         dapId: '1111-dapId',
         amxId: '1111-amxid',
-=======
-        sharedId: '1111-sharedid',
-        tapadId: '111-tapadid',
-        tdid: '1111-tdid',
-        verizonMediaId: '1111-verizonmediaid',
->>>>>>> main
       };
 
       // generates the same set of tests for each id provider
@@ -1182,15 +1138,12 @@ describe('OpenxAdapter', function () {
             let userIdValue;
             // handle cases where userId key refers to an object
             switch (userIdProviderKey) {
-<<<<<<< HEAD
               case 'flocId':
                 userIdValue = EXAMPLE_DATA_BY_ATTR.flocId.id;
                 break;
               case 'uid2':
                 userIdValue = EXAMPLE_DATA_BY_ATTR.uid2.id;
                 break;
-=======
->>>>>>> main
               case 'lipb':
                 userIdValue = EXAMPLE_DATA_BY_ATTR.lipb.lipbid;
                 break;
@@ -1318,29 +1271,7 @@ describe('OpenxAdapter', function () {
   });
 
   describe('buildRequests for video', function () {
-<<<<<<< HEAD
     const bidRequestsWithMediaTypes = VIDEO_BID_REQUESTS_WITH_MEDIA_TYPES;
-=======
-    const bidRequestsWithMediaTypes = [{
-      'bidder': 'openx',
-      'mediaTypes': {
-        video: {
-          playerSize: [640, 480]
-        }
-      },
-      'params': {
-        'unit': '12345678',
-        'delDomain': 'test-del-domain'
-      },
-      'adUnitCode': 'adunit-code',
-
-      'bidId': '30b31c1838de1e',
-      'bidderRequestId': '22edbae2733bf6',
-      'auctionId': '1d1a030790a475',
-      'transactionId': '4008d88a-8137-410b-aa35-fbfdabcb478e',
-      'ortb2Imp': { ext: { data: { pbadslot: '/12345/my-gpt-tag-0' } } }
-    }];
->>>>>>> main
     const mockBidderRequest = {refererInfo: {}};
 
     it('should send bid request to openx url via GET, with mediaTypes having video parameter', function () {
@@ -1456,8 +1387,6 @@ describe('OpenxAdapter', function () {
 
         it('should parse legacy video.openrtb', function () {
           let myOpenRTBObject = {mimes: ['application/javascript']};
-<<<<<<< HEAD
-=======
           videoBidRequest.params.video = {
             openrtb: myOpenRTBObject
           };
@@ -1469,7 +1398,6 @@ describe('OpenxAdapter', function () {
 
         it('should omit filtered values for legacy', function () {
           let myOpenRTBObject = {mimes: ['application/javascript'], dont: 'use'};
->>>>>>> main
           videoBidRequest.params.video = {
             openrtb: myOpenRTBObject
           };
@@ -1479,20 +1407,6 @@ describe('OpenxAdapter', function () {
           expect(request[0].data.openrtb).to.equal(JSON.stringify(expected));
         });
 
-<<<<<<< HEAD
-        it('should omit filtered values for legacy', function () {
-          let myOpenRTBObject = {mimes: ['application/javascript'], dont: 'use'};
-          videoBidRequest.params.video = {
-            openrtb: myOpenRTBObject
-          };
-          const expected = {imp: [{video: {w: 640, h: 480, mimes: ['application/javascript']}}]}
-          const request = spec.buildRequests([videoBidRequest], mockBidderRequest);
-
-          expect(request[0].data.openrtb).to.equal(JSON.stringify(expected));
-        });
-
-=======
->>>>>>> main
         it('should parse mediatypes.video', function () {
           videoBidRequest.mediaTypes.video.mimes = ['application/javascript']
           videoBidRequest.mediaTypes.video.minduration = 15

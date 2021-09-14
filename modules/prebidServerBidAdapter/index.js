@@ -133,7 +133,6 @@ function formatUrlParams(option) {
       let temp = option[prop];
       option[prop] = { p1Consent: temp, noP1Consent: temp };
     }
-<<<<<<< HEAD
     if (utils.isPlainObject(option[prop]) && (!option[prop].p1Consent || !option[prop].noP1Consent)) {
       ['p1Consent', 'noP1Consent'].forEach((conUrl) => {
         if (!option[prop][conUrl]) {
@@ -141,8 +140,6 @@ function formatUrlParams(option) {
         }
       });
     }
-=======
->>>>>>> main
   });
 }
 
@@ -367,17 +364,7 @@ function addBidderFirstPartyDataToRequest(request) {
   const fpdConfigs = Object.keys(bidderConfig).reduce((acc, bidder) => {
     const currBidderConfig = bidderConfig[bidder];
     if (currBidderConfig.ortb2) {
-<<<<<<< HEAD
       const ortb2 = utils.mergeDeep({}, currBidderConfig.ortb2);
-=======
-      const ortb2 = {};
-      if (currBidderConfig.ortb2.site) {
-        ortb2.site = currBidderConfig.ortb2.site;
-      }
-      if (currBidderConfig.ortb2.user) {
-        ortb2.user = currBidderConfig.ortb2.user;
-      }
->>>>>>> main
 
       acc.push({
         bidders: [ bidder ],
@@ -621,11 +608,7 @@ const OPEN_RTB_PROTOCOL = {
       }
 
       if (!utils.isEmpty(videoParams)) {
-<<<<<<< HEAD
         if (videoParams.context === 'outstream' && !videoParams.renderer && !adUnit.renderer) {
-=======
-        if (videoParams.context === 'outstream' && (!videoParams.renderer || !adUnit.renderer)) {
->>>>>>> main
           // Don't push oustream w/o renderer to request object.
           utils.logError('Outstream bid without renderer cannot be sent to Prebid Server.');
         } else {
@@ -678,11 +661,7 @@ const OPEN_RTB_PROTOCOL = {
         return acc;
       }, {...utils.deepAccess(adUnit, 'ortb2Imp.ext')});
 
-<<<<<<< HEAD
       const imp = { id: impressionId, ext, secure: s2sConfig.secure };
-=======
-      const imp = { id: adUnit.code, ext, secure: s2sConfig.secure };
->>>>>>> main
 
       const ortb2 = {...utils.deepAccess(adUnit, 'ortb2Imp.ext.data')};
       Object.keys(ortb2).forEach(prop => {
@@ -771,14 +750,11 @@ const OPEN_RTB_PROTOCOL = {
     // Sets pbjs version, can be overwritten below if channel exists in s2sConfig.extPrebid
     request.ext.prebid = Object.assign(request.ext.prebid, {channel: {name: 'pbjs', version: $$PREBID_GLOBAL$$.version}})
 
-<<<<<<< HEAD
     // set debug flag if in debug mode
     if (getConfig('debug')) {
       request.ext.prebid = Object.assign(request.ext.prebid, {debug: true})
     }
 
-=======
->>>>>>> main
     // s2sConfig video.ext.prebid is passed through openrtb to PBS
     if (s2sConfig.extPrebid && typeof s2sConfig.extPrebid === 'object') {
       request.ext.prebid = Object.assign(request.ext.prebid, s2sConfig.extPrebid);
@@ -862,17 +838,8 @@ const OPEN_RTB_PROTOCOL = {
     }
 
     const commonFpd = getConfig('ortb2') || {};
-<<<<<<< HEAD
     utils.mergeDeep(request, commonFpd);
 
-=======
-    if (commonFpd.site) {
-      utils.mergeDeep(request, {site: commonFpd.site});
-    }
-    if (commonFpd.user) {
-      utils.mergeDeep(request, {user: commonFpd.user});
-    }
->>>>>>> main
     addBidderFirstPartyDataToRequest(request);
 
     return request;
@@ -1032,14 +999,9 @@ const OPEN_RTB_PROTOCOL = {
           bidObject.creativeId = bid.crid;
           if (bid.burl) { bidObject.burl = bid.burl; }
           bidObject.currency = (response.cur) ? response.cur : DEFAULT_S2S_CURRENCY;
-<<<<<<< HEAD
           bidObject.meta = {};
           let extPrebidMeta = utils.deepAccess(bid, 'ext.prebid.meta');
           if (extPrebidMeta && utils.isPlainObject(extPrebidMeta)) { bidObject.meta = utils.deepClone(extPrebidMeta); }
-=======
-          bidObject.meta = bidObject.meta || {};
-          if (bid.ext && bid.ext.dchain) { bidObject.meta.dchain = utils.deepClone(bid.ext.dchain); }
->>>>>>> main
           if (bid.adomain) { bidObject.meta.advertiserDomains = bid.adomain; }
 
           // the OpenRTB location for "TTL" as understood by Prebid.js is "exp" (expiration).
@@ -1128,16 +1090,10 @@ export function PrebidServer() {
       const request = OPEN_RTB_PROTOCOL.buildRequest(s2sBidRequest, bidRequests, validAdUnits, s2sBidRequest.s2sConfig, requestedBidders);
       const requestJson = request && JSON.stringify(request);
       utils.logInfo('BidRequest: ' + requestJson);
-<<<<<<< HEAD
       const endpointUrl = getMatchingConsentUrl(s2sBidRequest.s2sConfig.endpoint, gdprConsent);
       if (request && requestJson && endpointUrl) {
         ajax(
           endpointUrl,
-=======
-      if (request && requestJson) {
-        ajax(
-          getMatchingConsentUrl(s2sBidRequest.s2sConfig.endpoint, gdprConsent),
->>>>>>> main
           {
             success: response => handleResponse(response, requestedBidders, bidRequests, addBidResponse, done, s2sBidRequest.s2sConfig),
             error: done

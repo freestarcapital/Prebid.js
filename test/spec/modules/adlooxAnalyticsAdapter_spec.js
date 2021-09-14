@@ -35,11 +35,7 @@ describe('Adloox Analytics Adapter', function () {
     tagid: 0,
     params: {
       dummy1: '%%client%%',
-<<<<<<< HEAD
       dummy2: '%%pbadslot%%',
-=======
-      dummy2: '%%pbAdSlot%%',
->>>>>>> main
       dummy3: function(bid) { throw new Error(esplode) }
     }
   };
@@ -182,7 +178,6 @@ describe('Adloox Analytics Adapter', function () {
 
         done();
       });
-<<<<<<< HEAD
 
       it('should not inject verification JS on BID_WON when handled via Ad Server module', function (done) {
         const bidIgnore = utils.deepClone(bid);
@@ -207,8 +202,6 @@ describe('Adloox Analytics Adapter', function () {
 
         done();
       });
-=======
->>>>>>> main
     });
 
     describe('command', function () {

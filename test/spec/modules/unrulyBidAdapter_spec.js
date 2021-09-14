@@ -697,14 +697,10 @@ describe('UnrulyAdapter', function () {
           netRevenue: true,
           creativeId: 'mockBidId',
           ttl: 360,
-<<<<<<< HEAD
           'meta': {
             'mediaType': 'video',
             'videoContext': 'outstream'
           },
-=======
-          meta: { advertiserDomains: [] },
->>>>>>> main
           currency: 'USD',
           renderer: fakeRenderer,
           mediaType: 'video'

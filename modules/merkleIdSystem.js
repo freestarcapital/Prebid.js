@@ -8,41 +8,25 @@
 import * as utils from '../src/utils.js'
 import {ajax} from '../src/ajax.js';
 import {submodule} from '../src/hook.js'
-<<<<<<< HEAD
 import {getStorageManager} from '../src/storageManager.js';
 
 const MODULE_NAME = 'merkleId';
 const ID_URL = 'https://id2.sv.rkdms.com/identity/';
 const DEFAULT_REFRESH = 7 * 3600;
 const SESSION_COOKIE_NAME = '_svsid';
-=======
-import { getStorageManager } from '../src/storageManager.js';
-
-const MODULE_NAME = 'merkleId';
-const SESSION_COOKIE_NAME = '_svsid';
-const ID_URL = 'https://id2.sv.rkdms.com/identity/';
->>>>>>> main
 
 export const storage = getStorageManager();
 
 function getSession(configParams) {
   let session = null;
-<<<<<<< HEAD
   if (typeof configParams.sv_session === 'string') {
     session = configParams.sv_session;
   } else {
     session = storage.getCookie(SESSION_COOKIE_NAME);
-=======
-  if (typeof configParams.sv_session !== 'string') {
-    session = configParams.sv_session;
-  } else {
-    session = readCookie() || readFromLocalStorage();
->>>>>>> main
   }
   return session;
 }
 
-<<<<<<< HEAD
 function setCookie(name, value, expires) {
   let expTime = new Date();
   expTime.setTime(expTime.getTime() + expires * 1000 * 60);
@@ -54,30 +38,17 @@ function setSession(storage, response) {
   if (response && response.c && response.c.value && typeof response.c.value === 'string') {
     setCookie(SESSION_COOKIE_NAME, response.c.value, storage.expires);
   }
-=======
-function readCookie() {
-  return storage.cookiesAreEnabled() ? storage.getCookie(SESSION_COOKIE_NAME) : null;
-}
-
-function readFromLocalStorage() {
-  return storage.localStorageIsEnabled() ? storage.getDataFromLocalStorage(SESSION_COOKIE_NAME) : null;
->>>>>>> main
 }
 
 function constructUrl(configParams) {
   const session = getSession(configParams);
   let url = ID_URL + `?vendor=${configParams.vendor}&sv_cid=${configParams.sv_cid}&sv_domain=${configParams.sv_domain}&sv_pubid=${configParams.sv_pubid}`;
   if (session) {
-<<<<<<< HEAD
     url = `${url}&sv_session=${session}`;
-=======
-    url.append(`&sv_session=${session}`);
->>>>>>> main
   }
   utils.logInfo('Merkle url :' + url);
   return url;
 }
-<<<<<<< HEAD
 
 function generateId(configParams, configStorage) {
   const url = constructUrl(configParams);
@@ -110,8 +81,6 @@ function generateId(configParams, configStorage) {
   };
   return resp;
 }
-=======
->>>>>>> main
 
 /** @type {Submodule} */
 export const merkleIdSubmodule = {
@@ -129,11 +98,7 @@ export const merkleIdSubmodule = {
   decode(value) {
     const id = (value && value.pam_id && typeof value.pam_id.id === 'string') ? value.pam_id : undefined;
     utils.logInfo('Merkle id ' + JSON.stringify(id));
-<<<<<<< HEAD
     return id ? {'merkleId': id} : undefined;
-=======
-    return id ? { 'merkleId': id } : undefined;
->>>>>>> main
   },
   /**
    * performs action to obtain id and return a value in the callback's response argument
@@ -146,10 +111,6 @@ export const merkleIdSubmodule = {
     utils.logInfo('User ID - merkleId generating id');
 
     const configParams = (config && config.params) || {};
-<<<<<<< HEAD
-
-=======
->>>>>>> main
     if (!configParams || typeof configParams.vendor !== 'string') {
       utils.logError('User ID - merkleId submodule requires a valid vendor to be defined');
       return;
@@ -157,19 +118,6 @@ export const merkleIdSubmodule = {
 
     if (typeof configParams.sv_cid !== 'string') {
       utils.logError('User ID - merkleId submodule requires a valid sv_cid string to be defined');
-<<<<<<< HEAD
-=======
-      return;
-    }
-
-    if (typeof configParams.sv_pubid !== 'string') {
-      utils.logError('User ID - merkleId submodule requires a valid sv_pubid string to be defined');
-      return;
-    }
-
-    if (typeof configParams.sv_domain !== 'string') {
-      utils.logError('User ID - merkleId submodule requires a valid sv_domain string to be defined');
->>>>>>> main
       return;
     }
 
@@ -181,7 +129,6 @@ export const merkleIdSubmodule = {
       utils.logError('User ID - merkleId submodule does not currently handle consent strings');
       return;
     }
-<<<<<<< HEAD
 
     if (typeof configParams.sv_domain !== 'string') {
       configParams.sv_domain = merkleIdSubmodule.findRootDomain();
@@ -189,31 +136,6 @@ export const merkleIdSubmodule = {
 
     const configStorage = (config && config.storage) || {};
     const resp = generateId(configParams, configStorage)
-=======
-    const url = constructUrl(configParams);
-
-    const resp = function (callback) {
-      const callbacks = {
-        success: response => {
-          let responseObj;
-          if (response) {
-            try {
-              responseObj = JSON.parse(response);
-              utils.logInfo('Merkle responseObj ' + JSON.stringify(responseObj));
-            } catch (error) {
-              utils.logError(error);
-            }
-          }
-          callback(responseObj);
-        },
-        error: error => {
-          utils.logError(`${MODULE_NAME}: merkleId fetch encountered an error`, error);
-          callback();
-        }
-      };
-      ajax(url, callbacks, undefined, {method: 'GET', withCredentials: true});
-    };
->>>>>>> main
     return {callback: resp};
   },
   extendId: function (config = {}, consentData, storedId) {

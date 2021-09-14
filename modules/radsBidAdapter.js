@@ -58,12 +58,8 @@ export const spec = {
           payload.alt_ad_sizes.push(sizes[i].width + 'x' + sizes[i].height);
         }
       }
-<<<<<<< HEAD
 
       prepareExtraParams(params, payload, bidderRequest, bidRequest);
-=======
-      prepareExtraParams(params, payload, bidderRequest);
->>>>>>> main
 
       return {
         method: 'GET',
@@ -123,7 +119,6 @@ export const spec = {
       }
     }
 
-<<<<<<< HEAD
     if (serverResponses.length > 0 && serverResponses[0].body.userSync) {
       if (syncOptions.iframeEnabled) {
         serverResponses[0].body.userSync.iframeUrl.forEach((url) => syncs.push({
@@ -137,19 +132,6 @@ export const spec = {
           url: appendToUrl(url, gdprParams)
         }));
       }
-=======
-    if (syncOptions.iframeEnabled) {
-      serverResponses[0].body.userSync.iframeUrl.forEach((url) => syncs.push({
-        type: 'iframe',
-        url: appendToUrl(url, gdprParams)
-      }));
-    }
-    if (syncOptions.pixelEnabled && serverResponses.length > 0) {
-      serverResponses[0].body.userSync.imageUrl.forEach((url) => syncs.push({
-        type: 'image',
-        url: appendToUrl(url, gdprParams)
-      }));
->>>>>>> main
     }
     return syncs;
   }
@@ -184,15 +166,7 @@ function objectToQueryString(obj, prefix) {
  * @param bidderRequest
  * @param {BidRequest} bidRequest - Bid request generated from ad slots
  */
-<<<<<<< HEAD
 function prepareExtraParams(params, payload, bidderRequest, bidRequest) {
-=======
-function isVideoRequest(bid) {
-  return bid.mediaType === 'video' || !!utils.deepAccess(bid, 'mediaTypes.video');
-}
-
-function prepareExtraParams(params, payload, bidderRequest) {
->>>>>>> main
   if (params.pfilter !== undefined) {
     payload.pfilter = params.pfilter;
   }

@@ -179,10 +179,6 @@ describe('LogicadAdapter', function () {
       expect(request.method).to.equal('POST');
       expect(request.url).to.equal('https://pb.ladsp.com/adrequest/prebid');
       expect(request.data).to.exist;
-<<<<<<< HEAD
-=======
-
->>>>>>> main
       const data = JSON.parse(request.data);
       expect(data.auctionId).to.equal('18fd8b8b0bd757');
       expect(data.eids[0].source).to.equal('sharedid.org');

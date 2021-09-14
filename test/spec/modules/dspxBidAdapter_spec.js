@@ -358,7 +358,6 @@ describe('dspxAdapter', function () {
       expect(userSync[2].type).to.be.equal('image');
     });
   });
-<<<<<<< HEAD
 
   describe(`getUserSyncs test usage in passback response`, function () {
     let serverResponses;
@@ -382,6 +381,4 @@ describe('dspxAdapter', function () {
       expect(spec.getUserSyncs({ pixelEnabled: true }, serverResponses).length).to.be.equal(0);
     });
   });
-=======
->>>>>>> main
 });

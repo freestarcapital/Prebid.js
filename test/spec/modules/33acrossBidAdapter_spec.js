@@ -1214,7 +1214,6 @@ describe('33acrossBidAdapter:', function () {
           .withData(ttxRequest)
           .build();
         const [ builtServerRequest ] = spec.buildRequests(bidRequests, {});
-<<<<<<< HEAD
 
         validateBuiltServerRequest(builtServerRequest, serverRequest);
       });
@@ -1375,10 +1374,6 @@ describe('33acrossBidAdapter:', function () {
 
           expect(JSON.parse(builtServerRequest.data)).to.deep.equal(ttxRequest);
         });
-=======
-
-        validateBuiltServerRequest(builtServerRequest, serverRequest);
->>>>>>> main
       });
     });
 

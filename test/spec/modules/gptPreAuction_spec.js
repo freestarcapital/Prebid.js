@@ -93,7 +93,6 @@ describe('GPT pre-auction module', () => {
       appendGptSlots([adUnit]);
       expect(adUnit.ortb2Imp.ext.data.adserver).to.be.an('object');
       expect(adUnit.ortb2Imp.ext.data.adserver).to.deep.equal({ name: 'gam', adslot: 'slotCode2' });
-<<<<<<< HEAD
     });
 
     it('will trim child id if mcmEnabled is set to true', () => {
@@ -119,8 +118,6 @@ describe('GPT pre-auction module', () => {
       appendGptSlots([adUnit]);
       expect(adUnit.ortb2Imp.ext.data.adserver).to.be.an('object');
       expect(adUnit.ortb2Imp.ext.data.adserver).to.deep.equal({ name: 'gam', adslot: '/12345,21212/slotCode2' });
-=======
->>>>>>> main
     });
 
     it('should use the customGptSlotMatching function if one is given', () => {

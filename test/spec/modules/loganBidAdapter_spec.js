@@ -13,10 +13,7 @@ describe('LoganBidAdapter', function () {
     },
     params: {
       placementId: 783,
-<<<<<<< HEAD
-=======
       traffic: BANNER
->>>>>>> main
     }
   };
 
@@ -48,11 +45,7 @@ describe('LoganBidAdapter', function () {
       expect(serverRequest.method).to.equal('POST');
     });
     it('Returns valid URL', function () {
-<<<<<<< HEAD
       expect(serverRequest.url).to.equal('https://USeast2.logan.ai/pbjs');
-=======
-      expect(serverRequest.url).to.equal('https://USeast2.logan.ai/?c=o&m=multi');
->>>>>>> main
     });
     it('Returns valid data if array of bids is valid', function () {
       let data = serverRequest.data;
@@ -67,7 +60,6 @@ describe('LoganBidAdapter', function () {
       expect(data.gdpr).to.not.exist;
       expect(data.ccpa).to.not.exist;
       let placement = data['placements'][0];
-<<<<<<< HEAD
       expect(placement).to.have.keys('placementId', 'bidId', 'adFormat', 'sizes', 'schain', 'bidfloor');
       expect(placement.placementId).to.equal(783);
       expect(placement.bidId).to.equal('23fhj33i987f');
@@ -75,23 +67,11 @@ describe('LoganBidAdapter', function () {
       expect(placement.schain).to.be.an('object');
       expect(placement.sizes).to.be.an('array');
       expect(placement.bidfloor).to.exist.and.to.equal(0);
-=======
-      expect(placement).to.have.keys('placementId', 'bidId', 'traffic', 'sizes', 'schain');
-      expect(placement.placementId).to.equal(783);
-      expect(placement.bidId).to.equal('23fhj33i987f');
-      expect(placement.traffic).to.equal(BANNER);
-      expect(placement.schain).to.be.an('object');
-      expect(placement.sizes).to.be.an('array');
->>>>>>> main
     });
 
     it('Returns valid data for mediatype video', function () {
       const playerSize = [300, 300];
       bid.mediaTypes = {};
-<<<<<<< HEAD
-=======
-      bid.params.traffic = VIDEO;
->>>>>>> main
       bid.mediaTypes[VIDEO] = {
         playerSize
       };
@@ -100,18 +80,11 @@ describe('LoganBidAdapter', function () {
       expect(data).to.be.an('object');
       let placement = data['placements'][0];
       expect(placement).to.be.an('object');
-<<<<<<< HEAD
       expect(placement).to.have.keys('placementId', 'bidId', 'adFormat', 'wPlayer', 'hPlayer', 'schain', 'minduration', 'maxduration', 'mimes', 'protocols', 'startdelay', 'placement', 'skip', 'skipafter', 'minbitrate', 'maxbitrate', 'delivery', 'playbackmethod', 'api', 'linearity', 'bidfloor');
       expect(placement.adFormat).to.equal(VIDEO);
       expect(placement.wPlayer).to.equal(playerSize[0]);
       expect(placement.hPlayer).to.equal(playerSize[1]);
       expect(placement.bidfloor).to.exist.and.to.equal(0);
-=======
-      expect(placement).to.have.keys('placementId', 'bidId', 'traffic', 'wPlayer', 'hPlayer', 'schain');
-      expect(placement.traffic).to.equal(VIDEO);
-      expect(placement.wPlayer).to.equal(playerSize[0]);
-      expect(placement.hPlayer).to.equal(playerSize[1]);
->>>>>>> main
     });
 
     it('Returns valid data for mediatype native', function () {
@@ -129,26 +102,16 @@ describe('LoganBidAdapter', function () {
       };
 
       bid.mediaTypes = {};
-<<<<<<< HEAD
-=======
-      bid.params.traffic = NATIVE;
->>>>>>> main
       bid.mediaTypes[NATIVE] = native;
       serverRequest = spec.buildRequests([bid], bidderRequest);
       let data = serverRequest.data;
       expect(data).to.be.an('object');
       let placement = data['placements'][0];
       expect(placement).to.be.an('object');
-<<<<<<< HEAD
       expect(placement).to.have.keys('placementId', 'bidId', 'adFormat', 'native', 'schain', 'bidfloor');
       expect(placement.adFormat).to.equal(NATIVE);
       expect(placement.native).to.equal(native);
       expect(placement.bidfloor).to.exist.and.to.equal(0);
-=======
-      expect(placement).to.have.keys('placementId', 'bidId', 'traffic', 'native', 'schain');
-      expect(placement.traffic).to.equal(NATIVE);
-      expect(placement.native).to.equal(native);
->>>>>>> main
     });
 
     it('Returns data with gdprConsent and without uspConsent', function () {
@@ -192,23 +155,15 @@ describe('LoganBidAdapter', function () {
           creativeId: '2',
           netRevenue: true,
           currency: 'USD',
-<<<<<<< HEAD
           dealId: '1',
           meta: {}
-=======
-          dealId: '1'
->>>>>>> main
         }]
       };
       let bannerResponses = spec.interpretResponse(banner);
       expect(bannerResponses).to.be.an('array').that.is.not.empty;
       let dataItem = bannerResponses[0];
       expect(dataItem).to.have.all.keys('requestId', 'cpm', 'width', 'height', 'ad', 'ttl', 'creativeId',
-<<<<<<< HEAD
         'netRevenue', 'currency', 'dealId', 'mediaType', 'meta');
-=======
-        'netRevenue', 'currency', 'dealId', 'mediaType');
->>>>>>> main
       expect(dataItem.requestId).to.equal('23fhj33i987f');
       expect(dataItem.cpm).to.equal(0.4);
       expect(dataItem.width).to.equal(300);
@@ -218,19 +173,13 @@ describe('LoganBidAdapter', function () {
       expect(dataItem.creativeId).to.equal('2');
       expect(dataItem.netRevenue).to.be.true;
       expect(dataItem.currency).to.equal('USD');
-<<<<<<< HEAD
       expect(dataItem.meta).to.be.an('object').that.has.any.key('advertiserDomains');
-=======
->>>>>>> main
     });
     it('Should interpret video response', function () {
       const video = {
         body: [{
           vastUrl: 'test.com',
-<<<<<<< HEAD
           vastXml: '<VAST>',
-=======
->>>>>>> main
           mediaType: 'video',
           cpm: 0.5,
           requestId: '23fhj33i987f',
@@ -238,40 +187,25 @@ describe('LoganBidAdapter', function () {
           creativeId: '2',
           netRevenue: true,
           currency: 'USD',
-<<<<<<< HEAD
           dealId: '1',
           meta: {}
-=======
-          dealId: '1'
->>>>>>> main
         }]
       };
       let videoResponses = spec.interpretResponse(video);
       expect(videoResponses).to.be.an('array').that.is.not.empty;
 
       let dataItem = videoResponses[0];
-<<<<<<< HEAD
       expect(dataItem).to.have.all.keys('requestId', 'cpm', 'vastUrl', 'vastXml', 'ttl', 'creativeId',
         'netRevenue', 'currency', 'dealId', 'mediaType', 'meta');
       expect(dataItem.requestId).to.equal('23fhj33i987f');
       expect(dataItem.cpm).to.equal(0.5);
       expect(dataItem.vastUrl).to.equal('test.com');
       expect(dataItem.vastXml).to.equal('<VAST>');
-=======
-      expect(dataItem).to.have.all.keys('requestId', 'cpm', 'vastUrl', 'ttl', 'creativeId',
-        'netRevenue', 'currency', 'dealId', 'mediaType');
-      expect(dataItem.requestId).to.equal('23fhj33i987f');
-      expect(dataItem.cpm).to.equal(0.5);
-      expect(dataItem.vastUrl).to.equal('test.com');
->>>>>>> main
       expect(dataItem.ttl).to.equal(120);
       expect(dataItem.creativeId).to.equal('2');
       expect(dataItem.netRevenue).to.be.true;
       expect(dataItem.currency).to.equal('USD');
-<<<<<<< HEAD
       expect(dataItem.meta).to.be.an('object').that.has.any.key('advertiserDomains');
-=======
->>>>>>> main
     });
     it('Should interpret native response', function () {
       const native = {
@@ -289,21 +223,14 @@ describe('LoganBidAdapter', function () {
           creativeId: '2',
           netRevenue: true,
           currency: 'USD',
-<<<<<<< HEAD
           meta: {}
-=======
->>>>>>> main
         }]
       };
       let nativeResponses = spec.interpretResponse(native);
       expect(nativeResponses).to.be.an('array').that.is.not.empty;
 
       let dataItem = nativeResponses[0];
-<<<<<<< HEAD
       expect(dataItem).to.have.keys('requestId', 'cpm', 'ttl', 'creativeId', 'netRevenue', 'currency', 'mediaType', 'native', 'meta');
-=======
-      expect(dataItem).to.have.keys('requestId', 'cpm', 'ttl', 'creativeId', 'netRevenue', 'currency', 'mediaType', 'native');
->>>>>>> main
       expect(dataItem.native).to.have.keys('clickUrl', 'impressionTrackers', 'title', 'image')
       expect(dataItem.requestId).to.equal('23fhj33i987f');
       expect(dataItem.cpm).to.equal(0.4);
@@ -316,10 +243,7 @@ describe('LoganBidAdapter', function () {
       expect(dataItem.creativeId).to.equal('2');
       expect(dataItem.netRevenue).to.be.true;
       expect(dataItem.currency).to.equal('USD');
-<<<<<<< HEAD
       expect(dataItem.meta).to.be.an('object').that.has.any.key('advertiserDomains');
-=======
->>>>>>> main
     });
     it('Should return an empty array if invalid banner response is passed', function () {
       const invBanner = {
@@ -395,15 +319,9 @@ describe('LoganBidAdapter', function () {
       expect(syncData).to.be.an('array').which.is.not.empty;
       expect(syncData[0]).to.be.an('object')
       expect(syncData[0].type).to.be.a('string')
-<<<<<<< HEAD
       expect(syncData[0].type).to.equal('image')
       expect(syncData[0].url).to.be.a('string')
       expect(syncData[0].url).to.equal('https://ssp-cookie.logan.ai/image?pbjs=1&gdpr=1&gdpr_consent=ALL&coppa=0')
-=======
-      expect(syncData[0].type).to.equal('iframe')
-      expect(syncData[0].url).to.be.a('string')
-      expect(syncData[0].url).to.equal('https://ssp-cookie.logan.ai/html?src=pbjs&gdpr=1&gdpr_consent=ALL')
->>>>>>> main
     });
     it('Should return array of objects with proper sync config , include CCPA', function() {
       const syncData = spec.getUserSyncs({}, {}, {}, {
@@ -412,15 +330,9 @@ describe('LoganBidAdapter', function () {
       expect(syncData).to.be.an('array').which.is.not.empty;
       expect(syncData[0]).to.be.an('object')
       expect(syncData[0].type).to.be.a('string')
-<<<<<<< HEAD
       expect(syncData[0].type).to.equal('image')
       expect(syncData[0].url).to.be.a('string')
       expect(syncData[0].url).to.equal('https://ssp-cookie.logan.ai/image?pbjs=1&ccpa_consent=1NNN&coppa=0')
-=======
-      expect(syncData[0].type).to.equal('iframe')
-      expect(syncData[0].url).to.be.a('string')
-      expect(syncData[0].url).to.equal('https://ssp-cookie.logan.ai/html?src=pbjs&ccpa_consent=1NNN')
->>>>>>> main
     });
   });
 });

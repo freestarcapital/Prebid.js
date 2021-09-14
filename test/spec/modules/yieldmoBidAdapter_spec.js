@@ -328,7 +328,6 @@ describe('YieldmoAdapter', function () {
 
         localWindow.document.title = originalTitle;
       });
-<<<<<<< HEAD
 
       it('should add ats_envelope to banner bid request', function() {
         const envelope = 'test_envelope';
@@ -346,8 +345,6 @@ describe('YieldmoAdapter', function () {
         let placementInfo = buildAndGetPlacementInfo(bidArray);
         expect(placementInfo).to.include('"gpid":"/6355419/Travel/Europe/France/Paris"');
       });
-=======
->>>>>>> main
     });
 
     describe('Instream video:', function () {
@@ -451,7 +448,6 @@ describe('YieldmoAdapter', function () {
         const requests = build([mockVideoBid()]);
         expect(requests[0].data.imp[0].bidfloor).to.equal(0);
       });
-<<<<<<< HEAD
 
       it('should add ats_envelope to video bid request', function() {
         const envelope = 'test_envelope';
@@ -486,8 +482,6 @@ describe('YieldmoAdapter', function () {
         };
         expect(buildAndGetData([mockVideoBid({ortb2Imp})]).imp[0].ext.gpid).to.be.equal(ortb2Imp.ext.data.pbadslot);
       });
-=======
->>>>>>> main
     });
   });
 

@@ -495,11 +495,7 @@ describe('The smartx adapter', function () {
       };
     });
 
-<<<<<<< HEAD
     it('should attempt to insert the script without outstream config options set', function () {
-=======
-    it('should attempt to insert the script', function () {
->>>>>>> main
       var scriptTag;
       sinon.stub(window.document, 'getElementById').returns({
         appendChild: sinon.stub().callsFake(function (script) {
@@ -510,12 +506,7 @@ describe('The smartx adapter', function () {
 
       responses[0].renderer.render(responses[0]);
 
-<<<<<<< HEAD
       expect(responses[0].renderer.url).to.equal('https://dco.smartclip.net/?plc=7777778');
-=======
-      expect(scriptTag.getAttribute('type')).to.equal('text/javascript');
-      expect(scriptTag.getAttribute('src')).to.equal('https://dco.smartclip.net/?plc=7777778');
->>>>>>> main
 
       window.document.getElementById.restore();
     });

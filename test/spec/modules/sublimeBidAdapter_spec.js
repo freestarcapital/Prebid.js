@@ -213,7 +213,6 @@ describe('Sublime Adapter', function () {
     });
   });
 
-<<<<<<< HEAD
   describe('isBidRequestValid', function () {
     let bid;
     beforeEach(function () {
@@ -229,22 +228,11 @@ describe('Sublime Adapter', function () {
     afterEach(function () {
       delete window.sublime;
     })
-=======
-  describe('isBidRequestValid', function() {
-    const bid = {
-      bidder: 'sublime',
-      params: {
-        zoneId: 24549,
-        endpoint: '',
-      },
-    };
->>>>>>> main
 
     it('should return true when required params found', function () {
       expect(spec.isBidRequestValid(bid)).to.equal(true);
     });
 
-<<<<<<< HEAD
     it('should return true when a valid notifyId is provided', function () {
       bid.params.notifyId = 'f1514724-0922-4b45-a297-27531aeb829a';
       expect(spec.isBidRequestValid(bid)).to.equal(true);
@@ -256,10 +244,6 @@ describe('Sublime Adapter', function () {
     });
 
     it('should return false when required params are not passed', function () {
-=======
-    it('should return false when required params are not passed', function() {
-      const bid = Object.assign({}, bid);
->>>>>>> main
       bid.params = {};
       expect(spec.isBidRequestValid(bid)).to.equal(false);
     });
@@ -318,11 +302,7 @@ describe('Sublime Adapter', function () {
     });
   });
 
-<<<<<<< HEAD
   describe('buildRequests', function () {
-=======
-  describe('buildRequests', function() {
->>>>>>> main
     const bidRequests = [
       {
         bidder: 'sublime',
@@ -358,14 +338,8 @@ describe('Sublime Adapter', function () {
       }
     };
 
-<<<<<<< HEAD
     it('should have a post method', function () {
       const request = spec.buildRequests(bidRequests, bidderRequest);
-=======
-    const request = spec.buildRequests(bidRequests, bidderRequest);
-
-    it('should have a post method', function() {
->>>>>>> main
       expect(request[0].method).to.equal('POST');
       expect(request[1].method).to.equal('POST');
     });
@@ -392,11 +366,7 @@ describe('Sublime Adapter', function () {
     });
   });
 
-<<<<<<< HEAD
   describe('buildRequests: default arguments', function () {
-=======
-  describe('buildRequests: default arguments', function() {
->>>>>>> main
     const bidRequests = [{
       bidder: 'sublime',
       adUnitCode: 'sublime_code',
@@ -408,23 +378,13 @@ describe('Sublime Adapter', function () {
       }
     }];
 
-<<<<<<< HEAD
     it('should have an url that match the default endpoint', function () {
       const request = spec.buildRequests(bidRequests);
-=======
-    const request = spec.buildRequests(bidRequests);
-
-    it('should have an url that match the default endpoint', function() {
->>>>>>> main
       expect(request[0].url).to.equal('https://pbjs.sskzlabs.com/bid');
     });
   });
 
-<<<<<<< HEAD
   describe('interpretResponse', function () {
-=======
-  describe('interpretResponse', function() {
->>>>>>> main
     const serverResponse = {
       'request_id': '3db3773286ee59',
       'sspname': 'foo',
@@ -452,7 +412,6 @@ describe('Sublime Adapter', function () {
           sspname: 'foo',
           netRevenue: true,
           ttl: 600,
-<<<<<<< HEAD
           pbav: '0.8.0',
           ad: '',
         },
@@ -462,17 +421,6 @@ describe('Sublime Adapter', function () {
     });
 
     it('should get correct default size for 1x1', function () {
-=======
-          pbav: '0.7.2',
-          ad: '',
-        },
-      ];
-      const result = spec.interpretResponse({body: serverResponse});
-      expect(Object.keys(result[0])).to.have.members(Object.keys(expectedResponse[0]));
-    });
-
-    it('should get correct default size for 1x1', function() {
->>>>>>> main
       const serverResponse = {
         'requestId': 'xyz654_2',
         'sspname': 'sublime',
@@ -494,11 +442,7 @@ describe('Sublime Adapter', function () {
         }
       };
 
-<<<<<<< HEAD
       const result = spec.interpretResponse({ body: serverResponse }, bidRequest);
-=======
-      const result = spec.interpretResponse({body: serverResponse}, bidRequest);
->>>>>>> main
 
       const expectedResponse = {
         requestId: 'xyz654_2',
@@ -511,11 +455,7 @@ describe('Sublime Adapter', function () {
         netRevenue: true,
         ttl: 600,
         ad: '<!-- Creative -->',
-<<<<<<< HEAD
         pbav: '0.8.0',
-=======
-        pbav: '0.7.2',
->>>>>>> main
         sspname: 'sublime'
       };
 
@@ -568,11 +508,7 @@ describe('Sublime Adapter', function () {
         netRevenue: true,
         ttl: 600,
         ad: '<!-- ad -->',
-<<<<<<< HEAD
         pbav: '0.8.0',
-=======
-        pbav: '0.7.2',
->>>>>>> main
       };
 
       expect(result[0]).to.deep.equal(expectedResponse);
@@ -610,11 +546,7 @@ describe('Sublime Adapter', function () {
       });
     });
 
-<<<<<<< HEAD
     it('should add advertiserDomains', function () {
-=======
-    it('should add advertiserDomains', function() {
->>>>>>> main
       const responseWithAdvertiserDomains = utils.deepClone(serverResponse);
       responseWithAdvertiserDomains.advertiserDomains = ['a_sublime_adomain'];
 

@@ -186,14 +186,10 @@ describe('AdheseAdapter', function () {
             body: '<div style="background-color:red; height:250px; width:300px"></div>',
             tracker: 'https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a',
             impressionCounter: 'https://hosts-demo.adhese.com/rtb_gateway/handlers/client/track/?id=a2f39296-6dd0-4b3c-be85-7baa22e7ff4a',
-<<<<<<< HEAD
             extension: {'prebid': {'cpm': {'amount': '1.000000', 'currency': 'USD'}}, mediaType: 'banner'},
             adomain: [
               'www.example.com'
             ]
-=======
-            extension: {'prebid': {'cpm': {'amount': '1.000000', 'currency': 'USD'}}, mediaType: 'banner'}
->>>>>>> main
           }
         ]
       };
@@ -306,14 +302,10 @@ describe('AdheseAdapter', function () {
           origin: 'RUBICON',
           originInstance: '',
           originData: {}
-<<<<<<< HEAD
         },
         meta: {
           advertiserDomains: []
         },
-=======
-        }
->>>>>>> main
       }];
       expect(spec.interpretResponse(sspCachedVideoResponse, bidRequest)).to.deep.equal(expectedResponse);
     });

@@ -47,11 +47,7 @@ function buildOpenRtbBidRequestPayload(validBidRequests, bidderRequest) {
       banner: {
         format: makeFormat(br.sizes),
         w: br.sizes[0][0],
-<<<<<<< HEAD
         h: br.sizes[0][1]
-=======
-        h: br.sizes[0][1],
->>>>>>> main
       },
       tagid: utils.deepAccess(br, 'params.placementId') || br.adUnitCode,
       secure: 1,
@@ -149,11 +145,7 @@ const getUid = () => {
  * @param {Array<Number>} arr
  */
 const makeFormat = arr => arr.map((s) => {
-<<<<<<< HEAD
   return {w: s[0], h: s[1]};
-=======
-  return { w: s[0], h: s[1] };
->>>>>>> main
 });
 
 export const spec = {

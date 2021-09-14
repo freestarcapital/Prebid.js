@@ -301,12 +301,7 @@ describe('sortableBidAdapter', function() {
         'tagId': '403370',
         'siteId': 'example.com',
         'floor': 0.21,
-<<<<<<< HEAD
         'keywords': {}
-=======
-        'keywords': {},
-        'floorSizeMap': {}
->>>>>>> main
       },
       'bidId': '30b31c1838de1e',
       'bidderRequestId': '22edbae2733bf6',

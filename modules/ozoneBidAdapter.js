@@ -13,7 +13,6 @@ const OZONECOOKIESYNC = '/static/load-cookie.html';
 const OZONE_RENDERER_URL = 'https://prebid.the-ozone-project.com/ozone-renderer.js';
 const ORIGIN_DEV = 'https://test.ozpr.net';
 
-<<<<<<< HEAD
 const OZONEVERSION = '2.6.0';
 export const spec = {
   gvlid: 524,
@@ -23,17 +22,6 @@ export const spec = {
   supportedMediaTypes: [VIDEO, BANNER],
   cookieSyncBag: {publisherId: null, siteId: null, userIdObject: {}}, // variables we want to make available to cookie sync
   propertyBag: {pageId: null, buildRequestsStart: 0, buildRequestsEnd: 0, endpointOverride: null}, /* allow us to store vars in instance scope - needs to be an object to be mutable */
-=======
-const OZONEVERSION = '2.5.0';
-export const spec = {
-  gvlid: 524,
-  aliases: [{ code: 'lmc' }],
-  version: OZONEVERSION,
-  code: BIDDER_CODE,
-  supportedMediaTypes: [VIDEO, BANNER],
-  cookieSyncBag: {'publisherId': null, 'siteId': null, 'userIdObject': {}}, // variables we want to make available to cookie sync
-  propertyBag: {'pageId': null, 'buildRequestsStart': 0, 'buildRequestsEnd': 0}, /* allow us to store vars in instance scope - needs to be an object to be mutable */
->>>>>>> main
   whitelabel_defaults: {
     'logId': 'OZONE',
     'bidder': 'ozone',
@@ -53,7 +41,6 @@ export const spec = {
     this.propertyBag.whitelabel.logId = bidder.toUpperCase();
     this.propertyBag.whitelabel.bidder = bidder;
     let bidderConfig = config.getConfig(bidder) || {};
-<<<<<<< HEAD
     utils.logInfo('got bidderConfig: ', JSON.parse(JSON.stringify(bidderConfig)));
     if (bidderConfig.kvpPrefix) {
       this.propertyBag.whitelabel.keyPrefix = bidderConfig.kvpPrefix;
@@ -93,21 +80,6 @@ export const spec = {
       }
     } catch (e) {}
     utils.logInfo('set propertyBag.whitelabel to', this.propertyBag.whitelabel);
-=======
-    if (bidderConfig.kvpPrefix) {
-      this.propertyBag.whitelabel.keyPrefix = bidderConfig.kvpPrefix;
-    }
-    if (bidderConfig.endpointOverride) {
-      if (bidderConfig.endpointOverride.origin) {
-        this.propertyBag.whitelabel.auctionUrl = bidderConfig.endpointOverride.origin + AUCTIONURI;
-        this.propertyBag.whitelabel.cookieSyncUrl = bidderConfig.endpointOverride.origin + OZONECOOKIESYNC;
-      }
-      if (bidderConfig.endpointOverride.rendererUrl) {
-        this.propertyBag.whitelabel.rendererUrl = bidderConfig.endpointOverride.rendererUrl;
-      }
-    }
-    this.logInfo('set propertyBag.whitelabel to', this.propertyBag.whitelabel);
->>>>>>> main
   },
   getAuctionUrl() {
     return this.propertyBag.whitelabel.auctionUrl;
@@ -118,8 +90,6 @@ export const spec = {
   getRendererUrl() {
     return this.propertyBag.whitelabel.rendererUrl;
   },
-<<<<<<< HEAD
-=======
   /**
    * wrappers for this.logInfo logWarn & logError, to add the proper prefix
    */
@@ -141,7 +111,6 @@ export const spec = {
     args[0] = `${this.propertyBag.whitelabel.logId}: ${arguments[0]}`;
     utils.logWarn.apply(this, args);
   },
->>>>>>> main
   /**
    * Basic check to see whether required parameters are in the request.
    * @param bid
@@ -149,7 +118,6 @@ export const spec = {
    */
   isBidRequestValid(bid) {
     this.loadWhitelabelData(bid);
-<<<<<<< HEAD
     utils.logInfo('isBidRequestValid : ', config.getConfig(), bid);
     let adUnitCode = bid.adUnitCode; // adunit[n].code
 
@@ -179,42 +147,10 @@ export const spec = {
     }
     if (bid.params.hasOwnProperty('customParams')) {
       utils.logError('VALIDATION FAILED : customParams should be renamed to customData', adUnitCode);
-=======
-    this.logInfo('isBidRequestValid : ', config.getConfig(), bid);
-    let adUnitCode = bid.adUnitCode; // adunit[n].code
-
-    if (!(bid.params.hasOwnProperty('placementId'))) {
-      this.logError('BID ADAPTER VALIDATION FAILED : missing placementId : siteId, placementId and publisherId are REQUIRED', adUnitCode);
-      return false;
-    }
-    if (!this.isValidPlacementId(bid.params.placementId)) {
-      this.logError('BID ADAPTER VALIDATION FAILED : placementId must be exactly 10 numeric characters', adUnitCode);
-      return false;
-    }
-    if (!(bid.params.hasOwnProperty('publisherId'))) {
-      this.logError('BID ADAPTER VALIDATION FAILED : missing publisherId : siteId, placementId and publisherId are REQUIRED', adUnitCode);
-      return false;
-    }
-    if (!(bid.params.publisherId).toString().match(/^[a-zA-Z0-9\-]{12}$/)) {
-      this.logError('BID ADAPTER VALIDATION FAILED : publisherId must be exactly 12 alphanumieric characters including hyphens', adUnitCode);
-      return false;
-    }
-    if (!(bid.params.hasOwnProperty('siteId'))) {
-      this.logError('BID ADAPTER VALIDATION FAILED : missing siteId : siteId, placementId and publisherId are REQUIRED', adUnitCode);
-      return false;
-    }
-    if (!(bid.params.siteId).toString().match(/^[0-9]{10}$/)) {
-      this.logError('BID ADAPTER VALIDATION FAILED : siteId must be exactly 10 numeric characters', adUnitCode);
-      return false;
-    }
-    if (bid.params.hasOwnProperty('customParams')) {
-      this.logError('BID ADAPTER VALIDATION FAILED : customParams should be renamed to customData', adUnitCode);
->>>>>>> main
       return false;
     }
     if (bid.params.hasOwnProperty('customData')) {
       if (!Array.isArray(bid.params.customData)) {
-<<<<<<< HEAD
         utils.logError('VALIDATION FAILED : customData is not an Array', adUnitCode);
         return false;
       }
@@ -228,39 +164,16 @@ export const spec = {
       }
       if (typeof bid.params.customData[0]['targeting'] != 'object') {
         utils.logError('VALIDATION FAILED : customData[0] targeting is not an object', adUnitCode);
-=======
-        this.logError('BID ADAPTER VALIDATION FAILED : customData is not an Array', adUnitCode);
-        return false;
-      }
-      if (bid.params.customData.length < 1) {
-        this.logError('BID ADAPTER VALIDATION FAILED : customData is an array but does not contain any elements', adUnitCode);
-        return false;
-      }
-      if (!(bid.params.customData[0]).hasOwnProperty('targeting')) {
-        this.logError('BID ADAPTER VALIDATION FAILED : customData[0] does not contain "targeting"', adUnitCode);
-        return false;
-      }
-      if (typeof bid.params.customData[0]['targeting'] != 'object') {
-        this.logError('BID ADAPTER VALIDATION FAILED : customData[0] targeting is not an object', adUnitCode);
->>>>>>> main
         return false;
       }
     }
     if (bid.hasOwnProperty('mediaTypes') && bid.mediaTypes.hasOwnProperty(VIDEO)) {
       if (!bid.mediaTypes[VIDEO].hasOwnProperty('context')) {
-<<<<<<< HEAD
         utils.logError('No video context key/value in bid. Rejecting bid: ', bid);
         return false;
       }
       if (bid.mediaTypes[VIDEO].context !== 'instream' && bid.mediaTypes[VIDEO].context !== 'outstream') {
         utils.logError('video.context is invalid. Only instream/outstream video is supported. Rejecting bid: ', bid);
-=======
-        this.logError('No video context key/value in bid. Rejecting bid: ', bid);
-        return false;
-      }
-      if (bid.mediaTypes[VIDEO].context !== 'instream' && bid.mediaTypes[VIDEO].context !== 'outstream') {
-        this.logError('video.context is invalid. Only instream/outstream video is supported. Rejecting bid: ', bid);
->>>>>>> main
         return false;
       }
     }
@@ -280,11 +193,7 @@ export const spec = {
     this.propertyBag.buildRequestsStart = new Date().getTime();
     let whitelabelBidder = this.propertyBag.whitelabel.bidder; // by default = ozone
     let whitelabelPrefix = this.propertyBag.whitelabel.keyPrefix;
-<<<<<<< HEAD
     utils.logInfo(`buildRequests time: ${this.propertyBag.buildRequestsStart} v ${OZONEVERSION} validBidRequests`, JSON.parse(JSON.stringify(validBidRequests)), 'bidderRequest', JSON.parse(JSON.stringify(bidderRequest)));
-=======
-    this.logInfo(`buildRequests time: ${this.propertyBag.buildRequestsStart} v ${OZONEVERSION} validBidRequests`, JSON.parse(JSON.stringify(validBidRequests)), 'bidderRequest', JSON.parse(JSON.stringify(bidderRequest)));
->>>>>>> main
     // First check - is there any config to block this request?
     if (this.blockTheRequest()) {
       return [];
@@ -296,7 +205,6 @@ export const spec = {
       this.cookieSyncBag.publisherId = utils.deepAccess(validBidRequests[0], 'params.publisherId');
       htmlParams = validBidRequests[0].params;
     }
-<<<<<<< HEAD
     utils.logInfo('cookie sync bag', this.cookieSyncBag);
     let singleRequest = this.getWhitelabelConfigItem('ozone.singleRequest');
     singleRequest = singleRequest !== false; // undefined & true will be true
@@ -309,27 +217,6 @@ export const spec = {
     if (fpd && utils.deepAccess(fpd, 'user')) {
       utils.logInfo('added FPD user object');
       ozoneRequest.user = fpd.user;
-=======
-    this.logInfo('cookie sync bag', this.cookieSyncBag);
-    let singleRequest = this.getWhitelabelConfigItem('ozone.singleRequest');
-    singleRequest = singleRequest !== false; // undefined & true will be true
-    this.logInfo(`config ${whitelabelBidder}.singleRequest : `, singleRequest);
-    let ozoneRequest = {}; // we only want to set specific properties on this, not validBidRequests[0].params
-    delete ozoneRequest.test; // don't allow test to be set in the config - ONLY use $_GET['pbjs_debug']
-
-    if (bidderRequest && bidderRequest.gdprConsent) {
-      this.logInfo('ADDING GDPR info');
-      let apiVersion = bidderRequest.gdprConsent.apiVersion || '1';
-      ozoneRequest.regs = {ext: {gdpr: bidderRequest.gdprConsent.gdprApplies ? 1 : 0, apiVersion: apiVersion}};
-      if (ozoneRequest.regs.ext.gdpr) {
-        ozoneRequest.user = ozoneRequest.user || {};
-        ozoneRequest.user.ext = {'consent': bidderRequest.gdprConsent.consentString};
-      } else {
-        this.logInfo('**** Strange CMP info: bidderRequest.gdprConsent exists BUT bidderRequest.gdprConsent.gdprApplies is false. See bidderRequest logged above. ****');
-      }
-    } else {
-      this.logInfo('WILL NOT ADD GDPR info; no bidderRequest.gdprConsent object was present.');
->>>>>>> main
     }
 
     const getParams = this.getGetParametersAsObject();
@@ -348,32 +235,18 @@ export const spec = {
       let arrBannerSizes = [];
       if (!ozoneBidRequest.hasOwnProperty('mediaTypes')) {
         if (ozoneBidRequest.hasOwnProperty('sizes')) {
-<<<<<<< HEAD
           utils.logInfo('no mediaTypes detected - will use the sizes array in the config root');
           arrBannerSizes = ozoneBidRequest.sizes;
         } else {
           utils.logInfo('no mediaTypes detected, no sizes array in the config root either. Cannot set sizes for banner type');
-=======
-          this.logInfo('no mediaTypes detected - will use the sizes array in the config root');
-          arrBannerSizes = ozoneBidRequest.sizes;
-        } else {
-          this.logInfo('no mediaTypes detected, no sizes array in the config root either. Cannot set sizes for banner type');
->>>>>>> main
         }
       } else {
         if (ozoneBidRequest.mediaTypes.hasOwnProperty(BANNER)) {
           arrBannerSizes = ozoneBidRequest.mediaTypes[BANNER].sizes; /* Note - if there is a sizes element in the config root it will be pushed into here */
-<<<<<<< HEAD
           utils.logInfo('setting banner size from the mediaTypes.banner element for bidId ' + obj.id + ': ', arrBannerSizes);
         }
         if (ozoneBidRequest.mediaTypes.hasOwnProperty(VIDEO)) {
           utils.logInfo('openrtb 2.5 compliant video');
-=======
-          this.logInfo('setting banner size from the mediaTypes.banner element for bidId ' + obj.id + ': ', arrBannerSizes);
-        }
-        if (ozoneBidRequest.mediaTypes.hasOwnProperty(VIDEO)) {
-          this.logInfo('openrtb 2.5 compliant video');
->>>>>>> main
           // examine all the video attributes in the config, and either put them into obj.video if allowed by IAB2.5 or else in to obj.video.ext
           if (typeof ozoneBidRequest.mediaTypes[VIDEO] == 'object') {
             let childConfig = utils.deepAccess(ozoneBidRequest, 'params.video', {});
@@ -382,16 +255,11 @@ export const spec = {
           }
           // we need to duplicate some of the video values
           let wh = getWidthAndHeightFromVideoObject(obj.video);
-<<<<<<< HEAD
           utils.logInfo('setting video object from the mediaTypes.video element: ' + obj.id + ':', obj.video, 'wh=', wh);
-=======
-          this.logInfo('setting video object from the mediaTypes.video element: ' + obj.id + ':', obj.video, 'wh=', wh);
->>>>>>> main
           if (wh && typeof wh === 'object') {
             obj.video.w = wh['w'];
             obj.video.h = wh['h'];
             if (playerSizeIsNestedArray(obj.video)) { // this should never happen; it was in the original spec for this change though.
-<<<<<<< HEAD
               utils.logInfo('setting obj.video.format to be an array of objects');
               obj.video.ext.format = [wh];
             } else {
@@ -400,22 +268,11 @@ export const spec = {
             }
           } else {
             utils.logWarn('cannot set w, h & format values for video; the config is not right');
-=======
-              this.logInfo('setting obj.video.format to be an array of objects');
-              obj.video.ext.format = [wh];
-            } else {
-              this.logInfo('setting obj.video.format to be an object');
-              obj.video.ext.format = wh;
-            }
-          } else {
-            this.logWarn('cannot set w, h & format values for video; the config is not right');
->>>>>>> main
           }
         }
         // Native integration is not complete yet
         if (ozoneBidRequest.mediaTypes.hasOwnProperty(NATIVE)) {
           obj.native = ozoneBidRequest.mediaTypes[NATIVE];
-<<<<<<< HEAD
           utils.logInfo('setting native object from the mediaTypes.native element: ' + obj.id + ':', obj.native);
         }
         // is the publisher specifying floors, and is the floors module enabled?
@@ -425,9 +282,6 @@ export const spec = {
           utils.logInfo('obj.floor is : ', obj.floor);
         } else {
           utils.logInfo('This bidRequest object DOES NOT have property: getFloor');
-=======
-          this.logInfo('setting native object from the mediaTypes.native element: ' + obj.id + ':', obj.native);
->>>>>>> main
         }
       }
       if (arrBannerSizes.length > 0) {
@@ -443,29 +297,18 @@ export const spec = {
       }
       // these 3 MUST exist - we check them in the validation method
       obj.placementId = placementId;
-<<<<<<< HEAD
       // build the imp['ext'] object - NOTE - Dont obliterate anything that' already in obj.ext
       utils.deepSetValue(obj, 'ext.prebid', {'storedrequest': {'id': placementId}});
       // obj.ext = {'prebid': {'storedrequest': {'id': placementId}}};
-=======
-      // build the imp['ext'] object
-      obj.ext = {'prebid': {'storedrequest': {'id': placementId}}};
->>>>>>> main
       obj.ext[whitelabelBidder] = {};
       obj.ext[whitelabelBidder].adUnitCode = ozoneBidRequest.adUnitCode; // eg. 'mpu'
       obj.ext[whitelabelBidder].transactionId = ozoneBidRequest.transactionId; // this is the transactionId PER adUnit, common across bidders for this unit
       if (ozoneBidRequest.params.hasOwnProperty('customData')) {
         obj.ext[whitelabelBidder].customData = ozoneBidRequest.params.customData;
       }
-<<<<<<< HEAD
       utils.logInfo(`obj.ext.${whitelabelBidder} is `, obj.ext[whitelabelBidder]);
       if (isTestMode != null) {
         utils.logInfo('setting isTestMode to ', isTestMode);
-=======
-      this.logInfo(`obj.ext.${whitelabelBidder} is `, obj.ext[whitelabelBidder]);
-      if (isTestMode != null) {
-        this.logInfo('setting isTestMode to ', isTestMode);
->>>>>>> main
         if (obj.ext[whitelabelBidder].hasOwnProperty('customData')) {
           for (let i = 0; i < obj.ext[whitelabelBidder].customData.length; i++) {
             obj.ext[whitelabelBidder].customData[i]['targeting'][wlOztestmodeKey] = isTestMode;
@@ -474,7 +317,6 @@ export const spec = {
           obj.ext[whitelabelBidder].customData = [{'settings': {}, 'targeting': {}}];
           obj.ext[whitelabelBidder].customData[0].targeting[wlOztestmodeKey] = isTestMode;
         }
-<<<<<<< HEAD
       }
       if (fpd && utils.deepAccess(fpd, 'site')) {
         // attach the site fpd into exactly : imp[n].ext.[whitelabel].customData.0.targeting
@@ -488,8 +330,6 @@ export const spec = {
         } else {
           utils.deepSetValue(obj, 'ext.' + whitelabelBidder + '.customData.0.targeting', fpd.site);
         }
-=======
->>>>>>> main
       }
       return obj;
     });
@@ -508,25 +348,16 @@ export const spec = {
     }
     extObj[whitelabelBidder].pv = this.getPageId(); // attach the page ID that will be common to all auciton calls for this page if refresh() is called
     let ozOmpFloorDollars = this.getWhitelabelConfigItem('ozone.oz_omp_floor'); // valid only if a dollar value (typeof == 'number')
-<<<<<<< HEAD
     utils.logInfo(`${whitelabelPrefix}_omp_floor dollar value = `, ozOmpFloorDollars);
     if (typeof ozOmpFloorDollars === 'number') {
       extObj[whitelabelBidder][whitelabelPrefix + '_omp_floor'] = ozOmpFloorDollars;
     } else if (typeof ozOmpFloorDollars !== 'undefined') {
       utils.logError(`${whitelabelPrefix}_omp_floor is invalid - IF SET then this must be a number, representing dollar value eg. ${whitelabelPrefix}_omp_floor: 1.55. You have it set as a ` + (typeof ozOmpFloorDollars));
-=======
-    this.logInfo(`${whitelabelPrefix}_omp_floor dollar value = `, ozOmpFloorDollars);
-    if (typeof ozOmpFloorDollars === 'number') {
-      extObj[whitelabelBidder][whitelabelPrefix + '_omp_floor'] = ozOmpFloorDollars;
-    } else if (typeof ozOmpFloorDollars !== 'undefined') {
-      this.logError(`${whitelabelPrefix}_omp_floor is invalid - IF SET then this must be a number, representing dollar value eg. ${whitelabelPrefix}_omp_floor: 1.55. You have it set as a ` + (typeof ozOmpFloorDollars));
->>>>>>> main
     }
     let ozWhitelistAdserverKeys = this.getWhitelabelConfigItem('ozone.oz_whitelist_adserver_keys');
     let useOzWhitelistAdserverKeys = utils.isArray(ozWhitelistAdserverKeys) && ozWhitelistAdserverKeys.length > 0;
     extObj[whitelabelBidder][whitelabelPrefix + '_kvp_rw'] = useOzWhitelistAdserverKeys ? 1 : 0;
     if (whitelabelBidder != 'ozone') {
-<<<<<<< HEAD
       utils.logInfo('setting aliases object');
       extObj.prebid = {aliases: {'ozone': whitelabelBidder}};
     }
@@ -536,11 +367,6 @@ export const spec = {
     if (getParams.hasOwnProperty('ozrp') && getParams.ozrp.match(/^[0-3]$/)) { extObj[whitelabelBidder]['ozrp'] = parseInt(getParams.ozrp); }
     if (getParams.hasOwnProperty('ozip') && getParams.ozip.match(/^\d+$/)) { extObj[whitelabelBidder]['ozip'] = parseInt(getParams.ozip); }
     if (this.propertyBag.endpointOverride != null) { extObj[whitelabelBidder]['origin'] = this.propertyBag.endpointOverride; }
-=======
-      this.logInfo('setting aliases object');
-      extObj.prebid = {aliases: {'ozone': whitelabelBidder}};
-    }
->>>>>>> main
 
     // extObj.ortb2 = config.getConfig('ortb2'); // original test location
     var userExtEids = this.generateEids(validBidRequests); // generate the UserIDs in the correct format for UserId module
@@ -551,7 +377,6 @@ export const spec = {
       'id': htmlParams.siteId
     };
     ozoneRequest.test = (getParams.hasOwnProperty('pbjs_debug') && getParams['pbjs_debug'] === 'true') ? 1 : 0;
-<<<<<<< HEAD
 
     // this should come as late as possible so it overrides any user.ext.consent value
     if (bidderRequest && bidderRequest.gdprConsent) {
@@ -572,8 +397,6 @@ export const spec = {
     } else {
       utils.logInfo('WILL NOT ADD CCPA info; no bidderRequest.uspConsent.');
     }
-=======
->>>>>>> main
 
     // this is for 2.2.1
     // coppa compliance
@@ -583,11 +406,7 @@ export const spec = {
 
     // return the single request object OR the array:
     if (singleRequest) {
-<<<<<<< HEAD
       utils.logInfo('buildRequests starting to generate response for a single request');
-=======
-      this.logInfo('buildRequests starting to generate response for a single request');
->>>>>>> main
       ozoneRequest.id = bidderRequest.auctionId; // Unique ID of the bid request, provided by the exchange.
       ozoneRequest.auctionId = bidderRequest.auctionId; // not sure if this should be here?
       ozoneRequest.imp = tosendtags;
@@ -600,24 +419,14 @@ export const spec = {
         data: JSON.stringify(ozoneRequest),
         bidderRequest: bidderRequest
       };
-<<<<<<< HEAD
       utils.logInfo('buildRequests request data for single = ', JSON.parse(JSON.stringify(ozoneRequest)));
       this.propertyBag.buildRequestsEnd = new Date().getTime();
       utils.logInfo(`buildRequests going to return for single at time ${this.propertyBag.buildRequestsEnd} (took ${this.propertyBag.buildRequestsEnd - this.propertyBag.buildRequestsStart}ms): `, ret);
-=======
-      this.logInfo('buildRequests request data for single = ', ozoneRequest);
-      this.propertyBag.buildRequestsEnd = new Date().getTime();
-      this.logInfo(`buildRequests going to return for single at time ${this.propertyBag.buildRequestsEnd} (took ${this.propertyBag.buildRequestsEnd - this.propertyBag.buildRequestsStart}ms): `, ret);
->>>>>>> main
       return ret;
     }
     // not single request - pull apart the tosendtags array & return an array of objects each containing one element in the imp array.
     let arrRet = tosendtags.map(imp => {
-<<<<<<< HEAD
       utils.logInfo('buildRequests starting to generate non-single response, working on imp : ', imp);
-=======
-      this.logInfo('buildRequests starting to generate non-single response, working on imp : ', imp);
->>>>>>> main
       let ozoneRequestSingle = Object.assign({}, ozoneRequest);
       imp.ext[whitelabelBidder].pageAuctionId = bidderRequest['auctionId']; // make a note in the ext object of what the original auctionId was, in the bidderRequest object
       ozoneRequestSingle.id = imp.ext[whitelabelBidder].transactionId; // Unique ID of the bid request, provided by the exchange.
@@ -626,11 +435,7 @@ export const spec = {
       ozoneRequestSingle.ext = extObj;
       ozoneRequestSingle.source = {'tid': imp.ext[whitelabelBidder].transactionId};
       utils.deepSetValue(ozoneRequestSingle, 'user.ext.eids', userExtEids);
-<<<<<<< HEAD
       utils.logInfo('buildRequests RequestSingle (for non-single) = ', ozoneRequestSingle);
-=======
-      this.logInfo('buildRequests RequestSingle (for non-single) = ', ozoneRequestSingle);
->>>>>>> main
       return {
         method: 'POST',
         url: this.getAuctionUrl(),
@@ -639,11 +444,7 @@ export const spec = {
       };
     });
     this.propertyBag.buildRequestsEnd = new Date().getTime();
-<<<<<<< HEAD
     utils.logInfo(`buildRequests going to return for non-single at time ${this.propertyBag.buildRequestsEnd} (took ${this.propertyBag.buildRequestsEnd - this.propertyBag.buildRequestsStart}ms): `, arrRet);
-=======
-    this.logInfo(`buildRequests going to return for non-single at time ${this.propertyBag.buildRequestsEnd} (took ${this.propertyBag.buildRequestsEnd - this.propertyBag.buildRequestsStart}ms): `, arrRet);
->>>>>>> main
     return arrRet;
   },
   /**
@@ -694,13 +495,8 @@ export const spec = {
     let startTime = new Date().getTime();
     let whitelabelBidder = this.propertyBag.whitelabel.bidder; // by default = ozone
     let whitelabelPrefix = this.propertyBag.whitelabel.keyPrefix;
-<<<<<<< HEAD
     utils.logInfo(`interpretResponse time: ${startTime} . Time between buildRequests done and interpretResponse start was ${startTime - this.propertyBag.buildRequestsEnd}ms`);
     utils.logInfo(`serverResponse, request`, JSON.parse(JSON.stringify(serverResponse)), JSON.parse(JSON.stringify(request)));
-=======
-    this.logInfo(`interpretResponse time: ${startTime} . Time between buildRequests done and interpretResponse start was ${startTime - this.propertyBag.buildRequestsEnd}ms`);
-    this.logInfo(`serverResponse, request`, JSON.parse(JSON.stringify(serverResponse)), JSON.parse(JSON.stringify(request)));
->>>>>>> main
     serverResponse = serverResponse.body || {};
     // note that serverResponse.id value is the auction_id we might want to use for reporting reasons.
     if (!serverResponse.hasOwnProperty('seatbid')) {
@@ -711,7 +507,6 @@ export const spec = {
     }
     let arrAllBids = [];
     let enhancedAdserverTargeting = this.getWhitelabelConfigItem('ozone.enhancedAdserverTargeting');
-<<<<<<< HEAD
     utils.logInfo('enhancedAdserverTargeting', enhancedAdserverTargeting);
     if (typeof enhancedAdserverTargeting == 'undefined') {
       enhancedAdserverTargeting = true;
@@ -719,13 +514,6 @@ export const spec = {
     utils.logInfo('enhancedAdserverTargeting', enhancedAdserverTargeting);
 
     // 2021-03-05 - comment this out for a build without adding adid to the response
-=======
-    this.logInfo('enhancedAdserverTargeting', enhancedAdserverTargeting);
-    if (typeof enhancedAdserverTargeting == 'undefined') {
-      enhancedAdserverTargeting = true;
-    }
-    this.logInfo('enhancedAdserverTargeting', enhancedAdserverTargeting);
->>>>>>> main
     serverResponse.seatbid = injectAdIdsIntoAllBidResponses(serverResponse.seatbid); // we now make sure that each bid in the bidresponse has a unique (within page) adId attribute.
 
     serverResponse.seatbid = this.removeSingleBidderMultipleBids(serverResponse.seatbid);
@@ -738,11 +526,7 @@ export const spec = {
       let sb = serverResponse.seatbid[i];
       for (let j = 0; j < sb.bid.length; j++) {
         let thisRequestBid = this.getBidRequestForBidId(sb.bid[j].impid, request.bidderRequest.bids);
-<<<<<<< HEAD
         utils.logInfo(`seatbid:${i}, bid:${j} Going to set default w h for seatbid/bidRequest`, sb.bid[j], thisRequestBid);
-=======
-        this.logInfo(`seatbid:${i}, bid:${j} Going to set default w h for seatbid/bidRequest`, sb.bid[j], thisRequestBid);
->>>>>>> main
         const {defaultWidth, defaultHeight} = defaultSize(thisRequestBid);
         let thisBid = ozoneAddStandardProperties(sb.bid[j], defaultWidth, defaultHeight);
         // prebid 4.0 compliance
@@ -750,41 +534,24 @@ export const spec = {
         let videoContext = null;
         let isVideo = false;
         let bidType = utils.deepAccess(thisBid, 'ext.prebid.type');
-<<<<<<< HEAD
         utils.logInfo(`this bid type is : ${bidType}`, j);
-=======
-        this.logInfo(`this bid type is : ${bidType}`, j);
->>>>>>> main
         if (bidType === VIDEO) {
           isVideo = true;
           videoContext = this.getVideoContextForBidId(thisBid.bidId, request.bidderRequest.bids); // should be instream or outstream (or null if error)
           if (videoContext === 'outstream') {
-<<<<<<< HEAD
             utils.logInfo('going to attach a renderer to OUTSTREAM video : ', j);
             thisBid.renderer = newRenderer(thisBid.bidId);
           } else {
             utils.logInfo('bid is not an outstream video, will not attach a renderer: ', j);
-=======
-            this.logInfo('going to attach a renderer to OUTSTREAM video : ', j);
-            thisBid.renderer = newRenderer(thisBid.bidId);
-          } else {
-            this.logInfo('bid is not an outstream video, will not attach a renderer: ', j);
->>>>>>> main
           }
         }
         let adserverTargeting = {};
         if (enhancedAdserverTargeting) {
           let allBidsForThisBidid = ozoneGetAllBidsForBidId(thisBid.bidId, serverResponse.seatbid);
           // add all the winning & non-winning bids for this bidId:
-<<<<<<< HEAD
           utils.logInfo('Going to iterate allBidsForThisBidId', allBidsForThisBidid);
           Object.keys(allBidsForThisBidid).forEach((bidderName, index, ar2) => {
             utils.logInfo(`adding adserverTargeting for ${bidderName} for bidId ${thisBid.bidId}`);
-=======
-          this.logInfo('Going to iterate allBidsForThisBidId', allBidsForThisBidid);
-          Object.keys(allBidsForThisBidid).forEach((bidderName, index, ar2) => {
-            this.logInfo(`adding adserverTargeting for ${bidderName} for bidId ${thisBid.bidId}`);
->>>>>>> main
             // let bidderName = bidderNameWH.split('_')[0];
             adserverTargeting[whitelabelPrefix + '_' + bidderName] = bidderName;
             adserverTargeting[whitelabelPrefix + '_' + bidderName + '_crid'] = String(allBidsForThisBidid[bidderName].crid);
@@ -814,22 +581,15 @@ export const spec = {
           });
         } else {
           if (useOzWhitelistAdserverKeys) {
-<<<<<<< HEAD
             utils.logWarn(`You have set a whitelist of adserver keys but this will be ignored because ${whitelabelBidder}.enhancedAdserverTargeting is set to false. No per-bid keys will be sent to adserver.`);
           } else {
             utils.logInfo(`${whitelabelBidder}.enhancedAdserverTargeting is set to false, so no per-bid keys will be sent to adserver.`);
-=======
-            this.logWarn(`You have set a whitelist of adserver keys but this will be ignored because ${whitelabelBidder}.enhancedAdserverTargeting is set to false. No per-bid keys will be sent to adserver.`);
-          } else {
-            this.logInfo(`${whitelabelBidder}.enhancedAdserverTargeting is set to false, so no per-bid keys will be sent to adserver.`);
->>>>>>> main
           }
         }
         // also add in the winning bid, to be sent to dfp
         let {seat: winningSeat, bid: winningBid} = ozoneGetWinnerForRequestBid(thisBid.bidId, serverResponse.seatbid);
         adserverTargeting[whitelabelPrefix + '_auc_id'] = String(request.bidderRequest.auctionId);
         adserverTargeting[whitelabelPrefix + '_winner'] = String(winningSeat);
-<<<<<<< HEAD
         adserverTargeting[whitelabelPrefix + '_bid'] = 'true';
 
         if (enhancedAdserverTargeting) {
@@ -842,14 +602,6 @@ export const spec = {
         }
         if (useOzWhitelistAdserverKeys) { // delete any un-whitelisted keys
           utils.logInfo('Going to filter out adserver targeting keys not in the whitelist: ', ozWhitelistAdserverKeys);
-=======
-        if (enhancedAdserverTargeting) {
-          adserverTargeting[whitelabelPrefix + '_imp_id'] = String(winningBid.impid);
-          adserverTargeting[whitelabelPrefix + '_pb_v'] = OZONEVERSION;
-        }
-        if (useOzWhitelistAdserverKeys) { // delete any un-whitelisted keys
-          this.logInfo('Going to filter out adserver targeting keys not in the whitelist: ', ozWhitelistAdserverKeys);
->>>>>>> main
           Object.keys(adserverTargeting).forEach(function(key) { if (ozWhitelistAdserverKeys.indexOf(key) === -1) { delete adserverTargeting[key]; } });
         }
         thisBid.adserverTargeting = adserverTargeting;
@@ -857,11 +609,7 @@ export const spec = {
       }
     }
     let endTime = new Date().getTime();
-<<<<<<< HEAD
     utils.logInfo(`interpretResponse going to return at time ${endTime} (took ${endTime - startTime}ms) Time from buildRequests Start -> interpretRequests End = ${endTime - this.propertyBag.buildRequestsStart}ms`, arrAllBids);
-=======
-    this.logInfo(`interpretResponse going to return at time ${endTime} (took ${endTime - startTime}ms) Time from buildRequests Start -> interpretRequests End = ${endTime - this.propertyBag.buildRequestsStart}ms`, arrAllBids);
->>>>>>> main
     return arrAllBids;
   },
   /**
@@ -905,14 +653,9 @@ export const spec = {
     return ret;
   },
   // see http://prebid.org/dev-docs/bidder-adaptor.html#registering-user-syncs
-<<<<<<< HEAD
   // us privacy: https://docs.prebid.org/dev-docs/modules/consentManagementUsp.html
   getUserSyncs(optionsType, serverResponse, gdprConsent, usPrivacy) {
     utils.logInfo('getUserSyncs optionsType', optionsType, 'serverResponse', serverResponse, 'gdprConsent', gdprConsent, 'usPrivacy', usPrivacy, 'cookieSyncBag', this.cookieSyncBag);
-=======
-  getUserSyncs(optionsType, serverResponse, gdprConsent) {
-    this.logInfo('getUserSyncs optionsType, serverResponse, gdprConsent, cookieSyncBag', optionsType, serverResponse, gdprConsent, this.cookieSyncBag);
->>>>>>> main
     if (!serverResponse || serverResponse.length === 0) {
       return [];
     }
@@ -941,11 +684,7 @@ export const spec = {
       if (strQueryString.length > 0) {
         strQueryString = '?' + strQueryString;
       }
-<<<<<<< HEAD
       utils.logInfo('getUserSyncs going to return cookie sync url : ' + this.getCookieSyncUrl() + strQueryString);
-=======
-      this.logInfo('getUserSyncs going to return cookie sync url : ' + this.getCookieSyncUrl() + strQueryString);
->>>>>>> main
       return [{
         type: 'iframe',
         url: this.getCookieSyncUrl() + strQueryString
@@ -987,16 +726,10 @@ export const spec = {
    */
   findAllUserIds(bidRequest) {
     var ret = {};
-<<<<<<< HEAD
     // @todo - what is Neustar fabrick called & where to look for it? If it's a simple value then it will automatically be ok
     // it is not in the table 'Bidder Adapter Implementation' on https://docs.prebid.org/dev-docs/modules/userId.html#prebidjs-adapters
     let searchKeysSingle = ['pubcid', 'tdid', 'idl_env', 'criteoId', 'lotamePanoramaId', 'fabrickId'];
 
-=======
-    // @todo - what is fabrick called & where to look for it? If it's a simple value then it will automatically be ok
-    let searchKeysSingle = ['pubcid', 'tdid', 'id5id', 'parrableId', 'idl_env', 'criteoId', 'criteortus',
-      'sharedid', 'lotamePanoramaId', 'fabrickId'];
->>>>>>> main
     if (bidRequest.hasOwnProperty('userId')) {
       for (let arrayId in searchKeysSingle) {
         let key = searchKeysSingle[arrayId];
@@ -1004,17 +737,11 @@ export const spec = {
           if (typeof (bidRequest.userId[key]) == 'string') {
             ret[key] = bidRequest.userId[key];
           } else if (typeof (bidRequest.userId[key]) == 'object') {
-<<<<<<< HEAD
             utils.logError(`WARNING: findAllUserIds had to use first key in user object to get value for bid.userId key: ${key}. Prebid adapter should be updated.`);
             // fallback - get the value of the first key in the object; this is NOT desirable behaviour
             ret[key] = bidRequest.userId[key][Object.keys(bidRequest.userId[key])[0]]; // cannot use Object.values
           } else {
             utils.logError(`failed to get string key value for userId : ${key}`);
-=======
-            ret[key] = bidRequest.userId[key][Object.keys(bidRequest.userId[key])[0]]; // cannot use Object.values
-          } else {
-            this.logError(`failed to get string key value for userId : ${key}`);
->>>>>>> main
           }
         }
       }
@@ -1022,7 +749,6 @@ export const spec = {
       if (lipbid) {
         ret['lipb'] = {'lipbid': lipbid};
       }
-<<<<<<< HEAD
       let id5id = utils.deepAccess(bidRequest.userId, 'id5id.uid');
       if (id5id) {
         ret['id5id'] = id5id;
@@ -1039,8 +765,6 @@ export const spec = {
       if (sharedidthird) {
         ret['sharedidthird'] = sharedidthird;
       }
-=======
->>>>>>> main
     }
     if (!ret.hasOwnProperty('pubcid')) {
       let pubcid = utils.deepAccess(bidRequest, 'crumbs.pubcid');
@@ -1069,17 +793,10 @@ export const spec = {
     let arr = this.getGetParametersAsObject();
     if (arr.hasOwnProperty(whitelabelPrefix + 'storedrequest')) {
       if (this.isValidPlacementId(arr[whitelabelPrefix + 'storedrequest'])) {
-<<<<<<< HEAD
         utils.logInfo(`using GET ${whitelabelPrefix}storedrequest ` + arr[whitelabelPrefix + 'storedrequest'] + ' to replace placementId');
         return arr[whitelabelPrefix + 'storedrequest'];
       } else {
         utils.logError(`GET ${whitelabelPrefix}storedrequest FAILED VALIDATION - will not use it`);
-=======
-        this.logInfo(`using GET ${whitelabelPrefix}storedrequest ` + arr[whitelabelPrefix + 'storedrequest'] + ' to replace placementId');
-        return arr[whitelabelPrefix + 'storedrequest'];
-      } else {
-        this.logError(`GET ${whitelabelPrefix}storedrequest FAILED VALIDATION - will not use it`);
->>>>>>> main
       }
     }
     return null;
@@ -1139,11 +856,7 @@ export const spec = {
     // if there is an ozone.oz_request = false then quit now.
     let ozRequest = this.getWhitelabelConfigItem('ozone.oz_request');
     if (typeof ozRequest == 'boolean' && !ozRequest) {
-<<<<<<< HEAD
       utils.logWarn(`Will not allow auction : ${this.propertyBag.whitelabel.keyPrefix}one.${this.propertyBag.whitelabel.keyPrefix}_request is set to false`);
-=======
-      this.logWarn(`Will not allow auction : ${this.propertyBag.whitelabel.keyPrefix}one.${this.propertyBag.whitelabel.keyPrefix}_request is set to false`);
->>>>>>> main
       return true;
     }
     return false;
@@ -1241,11 +954,7 @@ export const spec = {
  * @returns seatbid object
  */
 export function injectAdIdsIntoAllBidResponses(seatbid) {
-<<<<<<< HEAD
   utils.logInfo('injectAdIdsIntoAllBidResponses', seatbid);
-=======
-  spec.logInfo('injectAdIdsIntoAllBidResponses', seatbid);
->>>>>>> main
   for (let i = 0; i < seatbid.length; i++) {
     let sb = seatbid[i];
     for (let j = 0; j < sb.bid.length; j++) {
@@ -1271,11 +980,7 @@ export function checkDeepArray(Arr) {
 
 export function defaultSize(thebidObj) {
   if (!thebidObj) {
-<<<<<<< HEAD
     utils.logInfo('defaultSize received empty bid obj! going to return fixed default size');
-=======
-    spec.logInfo('defaultSize received empty bid obj! going to return fixed default size');
->>>>>>> main
     return {
       'defaultHeight': 250,
       'defaultWidth': 300
@@ -1353,22 +1058,14 @@ export function getRoundedBid(price, mediaType) {
   let theConfigObject = getGranularityObject(mediaType, mediaTypeGranularity, strBuckets, objBuckets);
   let theConfigKey = getGranularityKeyName(mediaType, mediaTypeGranularity, strBuckets);
 
-<<<<<<< HEAD
   utils.logInfo('getRoundedBid. price:', price, 'mediaType:', mediaType, 'configkey:', theConfigKey, 'configObject:', theConfigObject, 'mediaTypeGranularity:', mediaTypeGranularity, 'strBuckets:', strBuckets);
-=======
-  spec.logInfo('getRoundedBid. price:', price, 'mediaType:', mediaType, 'configkey:', theConfigKey, 'configObject:', theConfigObject, 'mediaTypeGranularity:', mediaTypeGranularity, 'strBuckets:', strBuckets);
->>>>>>> main
 
   let priceStringsObj = getPriceBucketString(
     price,
     theConfigObject,
     config.getConfig('currency.granularityMultiplier')
   );
-<<<<<<< HEAD
   utils.logInfo('priceStringsObj', priceStringsObj);
-=======
-  spec.logInfo('priceStringsObj', priceStringsObj);
->>>>>>> main
   // by default, without any custom granularity set, you get granularity name : 'medium'
   let granularityNamePriceStringsKeyMapping = {
     'medium': 'med',
@@ -1379,11 +1076,7 @@ export function getRoundedBid(price, mediaType) {
   };
   if (granularityNamePriceStringsKeyMapping.hasOwnProperty(theConfigKey)) {
     let priceStringsKey = granularityNamePriceStringsKeyMapping[theConfigKey];
-<<<<<<< HEAD
     utils.logInfo('getRoundedBid: looking for priceStringsKey:', priceStringsKey);
-=======
-    spec.logInfo('getRoundedBid: looking for priceStringsKey:', priceStringsKey);
->>>>>>> main
     return priceStringsObj[priceStringsKey];
   }
   return priceStringsObj['auto'];
@@ -1452,26 +1145,15 @@ export function getWidthAndHeightFromVideoObject(objVideo) {
     return null;
   }
   if (playerSize[0] && typeof playerSize[0] === 'object') {
-<<<<<<< HEAD
     utils.logInfo('getWidthAndHeightFromVideoObject found nested array inside playerSize.', playerSize[0]);
     playerSize = playerSize[0];
     if (typeof playerSize[0] !== 'number' && typeof playerSize[0] !== 'string') {
       utils.logInfo('getWidthAndHeightFromVideoObject found non-number/string type inside the INNER array in playerSize. This is totally wrong - cannot continue.', playerSize[0]);
-=======
-    spec.logInfo('getWidthAndHeightFromVideoObject found nested array inside playerSize.', playerSize[0]);
-    playerSize = playerSize[0];
-    if (typeof playerSize[0] !== 'number' && typeof playerSize[0] !== 'string') {
-      spec.logInfo('getWidthAndHeightFromVideoObject found non-number/string type inside the INNER array in playerSize. This is totally wrong - cannot continue.', playerSize[0]);
->>>>>>> main
       return null;
     }
   }
   if (playerSize.length !== 2) {
-<<<<<<< HEAD
     utils.logInfo('getWidthAndHeightFromVideoObject found playerSize with length of ' + playerSize.length + '. This is totally wrong - cannot continue.');
-=======
-    spec.logInfo('getWidthAndHeightFromVideoObject found playerSize with length of ' + playerSize.length + '. This is totally wrong - cannot continue.');
->>>>>>> main
     return null;
   }
   return ({'w': playerSize[0], 'h': playerSize[1]});
@@ -1498,29 +1180,17 @@ export function playerSizeIsNestedArray(objVideo) {
  * @returns {*}
  */
 function getPlayerSizeFromObject(objVideo) {
-<<<<<<< HEAD
   utils.logInfo('getPlayerSizeFromObject received object', objVideo);
-=======
-  spec.logInfo('getPlayerSizeFromObject received object', objVideo);
->>>>>>> main
   let playerSize = utils.deepAccess(objVideo, 'playerSize');
   if (!playerSize) {
     playerSize = utils.deepAccess(objVideo, 'ext.playerSize');
   }
   if (!playerSize) {
-<<<<<<< HEAD
     utils.logError('getPlayerSizeFromObject FAILED: no playerSize in video object or ext', objVideo);
     return null;
   }
   if (typeof playerSize !== 'object') {
     utils.logError('getPlayerSizeFromObject FAILED: playerSize is not an object/array', objVideo);
-=======
-    spec.logError('getPlayerSizeFromObject FAILED: no playerSize in video object or ext', objVideo);
-    return null;
-  }
-  if (typeof playerSize !== 'object') {
-    spec.logError('getPlayerSizeFromObject FAILED: playerSize is not an object/array', objVideo);
->>>>>>> main
     return null;
   }
   return playerSize;
@@ -1531,11 +1201,7 @@ function getPlayerSizeFromObject(objVideo) {
  */
 function newRenderer(adUnitCode, rendererOptions = {}) {
   let isLoaded = window.ozoneVideo;
-<<<<<<< HEAD
   utils.logInfo(`newRenderer going to set loaded to ${isLoaded ? 'true' : 'false'}`);
-=======
-  spec.logInfo(`newRenderer going to set loaded to ${isLoaded ? 'true' : 'false'}`);
->>>>>>> main
   const renderer = Renderer.install({
     url: spec.getRendererUrl(),
     config: rendererOptions,
@@ -1545,20 +1211,12 @@ function newRenderer(adUnitCode, rendererOptions = {}) {
   try {
     renderer.setRender(outstreamRender);
   } catch (err) {
-<<<<<<< HEAD
     utils.logError('Prebid Error when calling setRender on renderer', JSON.parse(JSON.stringify(renderer)), err);
-=======
-    spec.logError('Prebid Error when calling setRender on renderer', JSON.parse(JSON.stringify(renderer)), err);
->>>>>>> main
   }
   return renderer;
 }
 function outstreamRender(bid) {
-<<<<<<< HEAD
   utils.logInfo('outstreamRender called. Going to push the call to window.ozoneVideo.outstreamRender(bid) bid =', JSON.parse(JSON.stringify(bid)));
-=======
-  spec.logInfo('outstreamRender called. Going to push the call to window.ozoneVideo.outstreamRender(bid) bid =', JSON.parse(JSON.stringify(bid)));
->>>>>>> main
   // push to render queue because ozoneVideo may not be loaded yet
   bid.renderer.push(() => {
     window.ozoneVideo.outstreamRender(bid);

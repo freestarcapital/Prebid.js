@@ -11,7 +11,6 @@ export const S2S_VENDORS = {
       p1Consent: 'https://prebid.adnxs.com/pbs/v1/cookie_sync',
       noP1Consent: 'https://prebid.adnxs-simple.com/pbs/v1/cookie_sync'
     },
-<<<<<<< HEAD
     timeout: 1000
   },
   'appnexuspsp': {
@@ -21,8 +20,6 @@ export const S2S_VENDORS = {
       p1Consent: 'https://ib.adnxs.com/openrtb2/prebid',
       noP1Consent: 'https://ib.adnxs-simple.com/openrtb2/prebid'
     },
-=======
->>>>>>> main
     timeout: 1000
   },
   'rubicon': {

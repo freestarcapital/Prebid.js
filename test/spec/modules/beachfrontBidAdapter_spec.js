@@ -308,19 +308,6 @@ describe('BeachfrontAdapter', function () {
             }
           ]
         };
-<<<<<<< HEAD
-=======
-        const bidRequest = bidRequests[0];
-        bidRequest.mediaTypes = { video: {} };
-        bidRequest.schain = schain;
-        const requests = spec.buildRequests([ bidRequest ]);
-        const data = requests[0].data;
-        expect(data.source.ext.schain).to.deep.equal(schain);
-      });
-
-      it('must add the Trade Desk User ID to the request', () => {
-        const tdid = '4321';
->>>>>>> main
         const bidRequest = bidRequests[0];
         bidRequest.mediaTypes = { video: {} };
         bidRequest.schain = schain;
@@ -560,19 +547,6 @@ describe('BeachfrontAdapter', function () {
             }
           ]
         };
-<<<<<<< HEAD
-=======
-        const bidRequest = bidRequests[0];
-        bidRequest.mediaTypes = { banner: {} };
-        bidRequest.schain = schain;
-        const requests = spec.buildRequests([ bidRequest ]);
-        const data = requests[0].data;
-        expect(data.schain).to.deep.equal(schain);
-      });
-
-      it('must add the Trade Desk User ID to the request', () => {
-        const tdid = '4321';
->>>>>>> main
         const bidRequest = bidRequests[0];
         bidRequest.mediaTypes = { banner: {} };
         bidRequest.schain = schain;

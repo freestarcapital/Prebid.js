@@ -3,7 +3,6 @@ import { expect } from 'chai'; // may prefer 'assert' in place of 'expect'
 import { spec } from 'modules/adnuntiusBidAdapter.js';
 import { newBidder } from 'src/adapters/bidderFactory.js';
 import { config } from 'src/config.js';
-<<<<<<< HEAD
 import * as utils from 'src/utils.js';
 import { getStorageManager } from 'src/storageManager.js';
 
@@ -15,24 +14,13 @@ describe('adnuntiusBidAdapter', function () {
   const storage = getStorageManager(GVLID, 'adnuntius')
   storage.setDataInLocalStorage('adn.metaData', JSON.stringify(meta))
 
-=======
-
-describe('adnuntiusBidAdapter', function () {
->>>>>>> main
   afterEach(function () {
     config.resetConfig();
   });
   const tzo = new Date().getTimezoneOffset();
-<<<<<<< HEAD
   const ENDPOINT_URL = `${URL}${tzo}&format=json&userId=${usi}`;
   const ENDPOINT_URL_SEGMENTS = `${URL}${tzo}&format=json&segments=segment1,segment2,segment3&userId=${usi}`;
   const ENDPOINT_URL_CONSENT = `${URL}${tzo}&format=json&consentString=consentString&userId=${usi}`;
-=======
-  const ENDPOINT_URL = `https://delivery.adnuntius.com/i?tzo=${tzo}&format=json`;
-  // const ENDPOINT_URL_SEGMENTS_ = `https://delivery.adnuntius.com/i?tzo=${tzo}&format=json`;
-  const ENDPOINT_URL_SEGMENTS = `https://delivery.adnuntius.com/i?tzo=${tzo}&format=json&segments=segment1,segment2,segment3`;
-  const ENDPOINT_URL_CONSENT = `https://delivery.adnuntius.com/i?tzo=${tzo}&format=json&consentString=consentString`;
->>>>>>> main
   const adapter = newBidder(spec);
 
   const bidRequests = [
@@ -141,11 +129,7 @@ describe('adnuntiusBidAdapter', function () {
       expect(request[0]).to.have.property('url');
       expect(request[0].url).to.equal(ENDPOINT_URL);
       expect(request[0]).to.have.property('data');
-<<<<<<< HEAD
       expect(request[0].data).to.equal('{\"adUnits\":[{\"auId\":\"8b6bc\",\"targetId\":\"123\"}],\"metaData\":{\"usi\":\"' + usi + '\"}}');
-=======
-      expect(request[0].data).to.equal('{\"adUnits\":[{\"auId\":\"8b6bc\",\"targetId\":\"123\"}]}');
->>>>>>> main
     });
 
     it('should pass segments if available in config', function () {

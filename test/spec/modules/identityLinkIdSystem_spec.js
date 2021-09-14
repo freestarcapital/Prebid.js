@@ -121,7 +121,6 @@ describe('IdentityLinkId tests', function () {
     expect(callBackSpy.calledOnce).to.be.true;
   });
 
-<<<<<<< HEAD
   it('should not call the LiveRamp envelope endpoint if cookie _lr_retry_request exist', function () {
     let now = new Date();
     now.setTime(now.getTime() + 3000);
@@ -147,8 +146,6 @@ describe('IdentityLinkId tests', function () {
     expect(callBackSpy.calledOnce).to.be.true;
   });
 
-=======
->>>>>>> main
   it('should not call the LiveRamp envelope endpoint if config property notUse3P is set to true', function () {
     defaultConfigParams.params.notUse3P = true;
     let callBackSpy = sinon.spy();

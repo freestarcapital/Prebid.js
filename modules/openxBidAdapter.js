@@ -29,7 +29,6 @@ export const USER_ID_CODE_TO_QUERY_ARG = {
   parrableid: 'parrableid', // Parrable ID
   pubcid: 'pubcid', // PubCommon ID
   quantcastId: 'quantcastid', // Quantcast ID
-<<<<<<< HEAD
   tapadId: 'tapadid', // Tapad Id
   tdid: 'ttduuid', // The Trade Desk Unified ID
   uid2: 'uid2', // Unified ID 2.0
@@ -42,12 +41,6 @@ export const USER_ID_CODE_TO_QUERY_ARG = {
   mwOpenLinkId: 'mwopenlinkid', // MediaWallah OpenLink ID
   dapId: 'dapid', // Akamai DAP ID
   amxId: 'amxid' // AMX RTB ID
-=======
-  sharedId: 'sharedid', // Shared ID User ID
-  tapadId: 'tapadid', // Tapad Id
-  tdid: 'ttduuid', // The Trade Desk Unified ID
-  verizonMediaId: 'verizonmediaid', // Verizon Media ConnectID
->>>>>>> main
 };
 
 export const spec = {
@@ -328,15 +321,12 @@ function appendUserIdsToQueryParams(queryParams, userIds) {
 
     if (USER_ID_CODE_TO_QUERY_ARG.hasOwnProperty(userIdProviderKey)) {
       switch (userIdProviderKey) {
-<<<<<<< HEAD
         case 'flocId':
           queryParams[key] = userIdObjectOrValue.id;
           break;
         case 'uid2':
           queryParams[key] = userIdObjectOrValue.id;
           break;
-=======
->>>>>>> main
         case 'lipb':
           queryParams[key] = userIdObjectOrValue.lipbid;
           if (Array.isArray(userIdObjectOrValue.segments) && userIdObjectOrValue.segments.length > 0) {

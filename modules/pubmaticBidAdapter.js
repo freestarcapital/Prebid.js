@@ -602,7 +602,6 @@ function _addDealCustomTargetings(imp, bid) {
   }
 }
 
-<<<<<<< HEAD
 function _addJWPlayerSegmentData(imp, bid) {
   var jwSegData = (bid.rtd && bid.rtd.jwplayer && bid.rtd.jwplayer.targeting) || undefined;
   var jwPlayerData = '';
@@ -623,8 +622,6 @@ function _addJWPlayerSegmentData(imp, bid) {
     : ext.key_val += '|' + jwPlayerData;
 }
 
-=======
->>>>>>> main
 function _createImpressionObject(bid, conf) {
   var impObj = {};
   var bannerObj;
@@ -647,10 +644,7 @@ function _createImpressionObject(bid, conf) {
 
   _addPMPDealsInImpression(impObj, bid);
   _addDealCustomTargetings(impObj, bid);
-<<<<<<< HEAD
   _addJWPlayerSegmentData(impObj, bid);
-=======
->>>>>>> main
   if (bid.hasOwnProperty('mediaTypes')) {
     for (mediaTypes in bid.mediaTypes) {
       switch (mediaTypes) {
@@ -999,7 +993,6 @@ export const spec = {
           !utils.isStr(bid.params.outstreamAU) &&
           !bid.hasOwnProperty('renderer') &&
           !bid.mediaTypes[VIDEO].hasOwnProperty('renderer')) {
-<<<<<<< HEAD
           // we are here since outstream ad-unit is provided without outstreamAU and renderer
           // so it is not a valid video ad-unit
           // but it may be valid banner or native ad-unit
@@ -1013,10 +1006,6 @@ export const spec = {
             utils.logError(`${LOG_WARN_PREFIX}: for "outstream" bids either outstreamAU parameter must be provided or ad unit supplied renderer is required. Rejecting bid: `, bid);
             return false;
           }
-=======
-          utils.logError(`${LOG_WARN_PREFIX}: for "outstream" bids either outstreamAU parameter must be provided or ad unit supplied renderer is required. Rejecting bid: `, bid);
-          return false;
->>>>>>> main
         }
       }
       return true;

@@ -6,11 +6,7 @@ import { getStorageManager } from '../src/storageManager.js';
 
 const BIDDER_CODE = 'relaido';
 const BIDDER_DOMAIN = 'api.relaido.jp';
-<<<<<<< HEAD
 const ADAPTER_VERSION = '1.0.5';
-=======
-const ADAPTER_VERSION = '1.0.4';
->>>>>>> main
 const DEFAULT_TTL = 300;
 const UUID_KEY = 'relaido_uuid';
 
