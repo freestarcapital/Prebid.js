@@ -26,8 +26,6 @@ const PRICE_TO_DOLLAR_FACTOR = {
 };
 const USER_SYNC_URL = 'https://js-sec.indexww.com/um/ixmatch.html';
 const RENDERER_URL = 'https://js-sec.indexww.com/htv/video-player.js';
-const FLOOR_SOURCE = { PBJS: 'p', IX: 'x' };
-// determines which eids we send and the rtiPartner field in ext
 
 const FIRST_PARTY_DATA = {
   SITE: [
@@ -36,32 +34,6 @@ const FIRST_PARTY_DATA = {
   ],
   USER: ['id', 'buyeruid', 'yob', 'gender', 'keywords', 'customdata', 'geo', 'data', 'ext']
 };
-
-const SOURCE_RTI_MAPPING = {
-  'liveramp.com': 'idl',
-  'netid.de': 'NETID',
-  'neustar.biz': 'fabrickId',
-  'zeotap.com': 'zeotapIdPlus',
-  'uidapi.com': 'UID2',
-  'adserver.org': 'TDID'
-};
-
-const PROVIDERS = [
-  'britepoolid',
-  'id5id',
-  'lipbid',
-  'haloId',
-  'criteoId',
-  'lotamePanoramaId',
-  'merkleId',
-  'parrableId',
-  'connectid',
-  'tapadId',
-  'quantcastId',
-  'pubcid',
-  'TDID',
-  'flocId'
-];
 
 const REQUIRED_VIDEO_PARAMS = ['mimes', 'minduration', 'maxduration']; // note: protocol/protocols is also reqd
 
@@ -776,18 +748,6 @@ function _getUserIds(bidRequest) {
 
   return PROVIDERS.filter(provider => userIds[provider]);
 }
-
-/**
- * Return an object of user IDs stored by Prebid User ID module
- *
- * @returns {array} ID providers that are present in userIds
- */
-function _getUserIds(bidRequest) {
-  const userIds = bidRequest.userId || {};
-
-  return PROVIDERS.filter(provider => userIds[provider]);
-}
-
 /**
  * Calculates IX diagnostics values and packages them into an object
  *
