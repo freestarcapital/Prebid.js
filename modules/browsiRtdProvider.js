@@ -125,7 +125,7 @@ function getAllSlots() {
 function getKVObject(p, keyName) {
   const prValue = p < 0 ? 'NA' : (Math.floor(p * 10) / 10).toFixed(2);
   let prObject = {};
-  prObject[((_moduleParams['keyName'] || keyName || DEF_KEYNAME).toString())] = prValue.toString();
+  prObject[((_moduleParams['keyName'] || keyName).toString())] = prValue.toString();
   return prObject;
 }
 /**

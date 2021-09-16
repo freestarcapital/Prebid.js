@@ -2,12 +2,11 @@ import * as utils from '../src/utils.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { BANNER, VIDEO, NATIVE } from '../src/mediaTypes.js';
 import {config} from '../src/config.js';
-import { Renderer } from '../src/Renderer.js';
 
 const BIDDER_CODE = 'pubmatic';
 const LOG_WARN_PREFIX = 'PubMatic: ';
 const ENDPOINT = 'https://hbopenbid.pubmatic.com/translator?source=prebid-client';
-const USER_SYNC_URL_IFRAME = 'https://ads.pubmatic.com/AdServer/js/showad.js#PIX&kdntuid=1&p=';
+const USER_SYNC_URL_IFRAME = 'https://ads.pubmatic.com/AdServer/js/user_sync.html?kdntuid=1&p=';
 const USER_SYNC_URL_IMAGE = 'https://image8.pubmatic.com/AdServer/ImgSync?p=';
 const DEFAULT_CURRENCY = 'USD';
 const AUCTION_TYPE = 1;
@@ -15,8 +14,6 @@ const UNDEFINED = undefined;
 const DEFAULT_WIDTH = 0;
 const DEFAULT_HEIGHT = 0;
 const PREBID_NATIVE_HELP_LINK = 'http://prebid.org/dev-docs/show-native-ads.html';
-const PUBLICATION = 'pubmatic'; // Your publication on Blue Billywig, potentially with environment (e.g. publication.bbvms.com or publication.test.bbvms.com)
-const RENDERER_URL = 'https://pubmatic.bbvms.com/r/'.concat('$RENDERER', '.js'); // URL of the renderer application
 const CUSTOM_PARAMS = {
   'kadpageurl': '', // Custom page url
   'gender': '', // User gender
@@ -605,6 +602,26 @@ function _addDealCustomTargetings(imp, bid) {
   }
 }
 
+function _addJWPlayerSegmentData(imp, bid) {
+  var jwSegData = (bid.rtd && bid.rtd.jwplayer && bid.rtd.jwplayer.targeting) || undefined;
+  var jwPlayerData = '';
+  const jwMark = 'jw-';
+
+  if (jwSegData === undefined || jwSegData === '' || !jwSegData.hasOwnProperty('segments')) return;
+
+  var maxLength = jwSegData.segments.length;
+
+  jwPlayerData += jwMark + 'id=' + jwSegData.content.id; // add the content id first
+
+  for (var i = 0; i < maxLength; i++) {
+    jwPlayerData += '|' + jwMark + jwSegData.segments[i] + '=1';
+  }
+  const ext = imp.ext;
+  (ext && ext.key_val === undefined)
+    ? ext.key_val = jwPlayerData
+    : ext.key_val += '|' + jwPlayerData;
+}
+
 function _createImpressionObject(bid, conf) {
   var impObj = {};
   var bannerObj;
@@ -627,6 +644,7 @@ function _createImpressionObject(bid, conf) {
 
   _addPMPDealsInImpression(impObj, bid);
   _addDealCustomTargetings(impObj, bid);
+  _addJWPlayerSegmentData(impObj, bid);
   if (bid.hasOwnProperty('mediaTypes')) {
     for (mediaTypes in bid.mediaTypes) {
       switch (mediaTypes) {
@@ -975,8 +993,19 @@ export const spec = {
           !utils.isStr(bid.params.outstreamAU) &&
           !bid.hasOwnProperty('renderer') &&
           !bid.mediaTypes[VIDEO].hasOwnProperty('renderer')) {
-          utils.logError(`${LOG_WARN_PREFIX}: for "outstream" bids either outstreamAU parameter must be provided or ad unit supplied renderer is required. Rejecting bid: `, bid);
-          return false;
+          // we are here since outstream ad-unit is provided without outstreamAU and renderer
+          // so it is not a valid video ad-unit
+          // but it may be valid banner or native ad-unit
+          // so if mediaType banner or Native is present then  we will remove media-type video and return true
+
+          if (bid.mediaTypes.hasOwnProperty(BANNER) || bid.mediaTypes.hasOwnProperty(NATIVE)) {
+            delete bid.mediaTypes[VIDEO];
+            utils.logWarn(`${LOG_WARN_PREFIX}: for "outstream" bids either outstreamAU parameter must be provided or ad unit supplied renderer is required. Rejecting mediatype Video of bid: `, bid);
+            return true;
+          } else {
+            utils.logError(`${LOG_WARN_PREFIX}: for "outstream" bids either outstreamAU parameter must be provided or ad unit supplied renderer is required. Rejecting bid: `, bid);
+            return false;
+          }
         }
       }
       return true;
@@ -1061,11 +1090,6 @@ export const spec = {
     payload.site.page = conf.kadpageurl.trim() || payload.site.page.trim();
     payload.site.domain = _getDomainFromURL(payload.site.page);
 
-    // add the content object from config in request
-    if (typeof config.getConfig('content') === 'object') {
-      payload.site.content = config.getConfig('content');
-    }
-
     // merge the device from config.getConfig('device')
     if (typeof config.getConfig('device') === 'object') {
       payload.device = Object.assign(payload.device, config.getConfig('device'));
@@ -1119,19 +1143,13 @@ export const spec = {
       // not copying domain from site as it is a derived value from page
       payload.app.publisher = payload.site.publisher;
       payload.app.ext = payload.site.ext || UNDEFINED;
-      // We will also need to pass content object in app.content if app object is also set into the config;
-      // BUT do not use content object from config if content object is present in app as app.content
-      if (typeof payload.app.content !== 'object') {
-        payload.app.content = payload.site.content || UNDEFINED;
-      }
       delete payload.site;
     }
 
     return {
       method: 'POST',
       url: ENDPOINT,
-      data: JSON.stringify(payload),
-      bidderRequest: bidderRequest
+      data: JSON.stringify(payload)
     };
   },
 
@@ -1181,7 +1199,6 @@ export const spec = {
                         newBid.width = bid.hasOwnProperty('w') ? bid.w : req.video.w;
                         newBid.height = bid.hasOwnProperty('h') ? bid.h : req.video.h;
                         newBid.vastXml = bid.adm;
-                        _assignRenderer(newBid, request);
                         break;
                       case NATIVE:
                         _parseNativeResponse(bid, newBid);
@@ -1202,7 +1219,6 @@ export const spec = {
                 newBid.meta.buyerId = bid.ext.advid;
               }
               if (bid.adomain && bid.adomain.length > 0) {
-                newBid.meta.advertiserDomains = bid.adomain;
                 newBid.meta.clickUrl = bid.adomain[0];
               }
 

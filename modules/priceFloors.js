@@ -64,13 +64,19 @@ function getHostNameFromReferer(referer) {
   return referrerHostname;
 }
 
+// First look into bidRequest!
+function getGptSlotFromBidRequest(bidRequest) {
+  const isGam = utils.deepAccess(bidRequest, 'ortb2Imp.ext.data.adserver.name') === 'gam';
+  return isGam && bidRequest.ortb2Imp.ext.data.adserver.adslot;
+}
+
 /**
  * @summary floor field types with their matching functions to resolve the actual matched value
  */
 export let fieldMatchingFunctions = {
   'size': (bidRequest, bidResponse) => utils.parseGPTSingleSizeArray(bidResponse.size) || '*',
   'mediaType': (bidRequest, bidResponse) => bidResponse.mediaType || 'banner',
-  'gptSlot': (bidRequest, bidResponse) => utils.getGptSlotInfoForAdUnitCode(bidRequest.adUnitCode).gptSlot,
+  'gptSlot': (bidRequest, bidResponse) => getGptSlotFromBidRequest(bidRequest) || utils.getGptSlotInfoForAdUnitCode(bidRequest.adUnitCode).gptSlot,
   'domain': (bidRequest, bidResponse) => referrerHostname || getHostNameFromReferer(getRefererInfo().referer),
   'adUnitCode': (bidRequest, bidResponse) => bidRequest.adUnitCode
 }
@@ -143,7 +149,7 @@ function generatePossibleEnumerations(arrayOfFields, delimiter) {
 export function getBiddersCpmAdjustment(bidderName, inputCpm, bid = {}) {
   const adjustmentFunction = utils.deepAccess(getGlobal(), `bidderSettings.${bidderName}.bidCpmAdjustment`) || utils.deepAccess(getGlobal(), 'bidderSettings.standard.bidCpmAdjustment');
   if (adjustmentFunction) {
-    return parseFloat(adjustmentFunction(inputCpm, {...bid, cpm: inputCpm}));
+    return parseFloat(adjustmentFunction(inputCpm));
   }
   return parseFloat(inputCpm);
 }
@@ -521,7 +527,6 @@ export function handleFetchResponse(fetchResponse) {
     _floorsConfig.data = fetchData;
     // set skipRate override if necessary
     _floorsConfig.skipRate = utils.isNumber(fetchData.skipRate) ? fetchData.skipRate : _floorsConfig.skipRate;
-    _floorsConfig.floorProvider = fetchData.floorProvider || _floorsConfig.floorProvider;
   }
 
   // if any auctions are waiting for fetch to finish, we need to continue them!
@@ -578,7 +583,6 @@ export function handleSetFloorsConfig(config) {
     'floorMin',
     'enabled', enabled => enabled !== false, // defaults to true
     'auctionDelay', auctionDelay => auctionDelay || 0,
-    'floorProvider', floorProvider => utils.deepAccess(config, 'data.floorProvider', floorProvider),
     'endpoint', endpoint => endpoint || {},
     'skipRate', () => !isNaN(utils.deepAccess(config, 'data.skipRate')) ? config.data.skipRate : config.skipRate || 0,
     'enforcement', enforcement => utils.pick(enforcement || {}, [
@@ -691,7 +695,7 @@ export function addBidResponseHook(fn, adUnitCode, bid) {
   }
 
   // ok we got the bid response cpm in our desired currency. Now we need to run the bidders CPMAdjustment function if it exists
-  adjustedCpm = getBiddersCpmAdjustment(bid.bidderCode, adjustedCpm, bid);
+  adjustedCpm = getBiddersCpmAdjustment(bid.bidderCode, adjustedCpm);
 
   // add necessary data information for analytics adapters / floor providers would possibly need
   addFloorDataToBid(floorData, floorInfo, bid, adjustedCpm);

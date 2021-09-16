@@ -72,7 +72,7 @@ function getPricing(xmlNode) {
       price: priceNode.textContent || priceNode.innerText
     };
   } else {
-    utils.logWarn('PREBID - ' + BIDDER_CODE + ': No bid received or missing pricing extension.');
+    utils.logWarn('PREBID - ' + BIDDER_CODE + ': Can\'t get pricing data. Is price awareness enabled?');
   }
 
   return princingData;
@@ -420,6 +420,7 @@ export const spec = {
         currency: princingData.currency,
         netRevenue: true,
         ttl: 360,
+        meta: { advertiserDomains: princingData.adomain && utils.isArray(princingData.adomain) ? princingData.adomain : [] },
         dealId: dealId,
         campaignId: campaignId,
         bannerId: bannerId

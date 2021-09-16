@@ -1,6 +1,6 @@
 import adapter from 'src/AnalyticsAdapter';
 import adapterManager from 'src/adapterManager';
-import { auctionManager } from 'src/auctionManager'; 
+import { auctionManager } from 'src/auctionManager';
 
 const analyticsType = 'endpoint';
 /**

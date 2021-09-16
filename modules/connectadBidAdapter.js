@@ -2,7 +2,6 @@ import * as utils from '../src/utils.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { BANNER } from '../src/mediaTypes.js'
 import {config} from '../src/config.js';
-import {createEidsArray} from './userId/eids.js';
 
 const BIDDER_CODE = 'connectad';
 const BIDDER_CODE_ALIAS = 'connectadrealtime';
@@ -20,6 +19,8 @@ export const spec = {
   },
 
   buildRequests: function(validBidRequests, bidderRequest) {
+    let digitrust;
+
     let ret = {
       method: 'POST',
       url: '',
@@ -41,8 +42,7 @@ export const spec = {
       screensize: getScreenSize(),
       dnt: (navigator.doNotTrack == 'yes' || navigator.doNotTrack == '1' || navigator.msDoNotTrack == '1') ? 1 : 0,
       language: navigator.language,
-      ua: navigator.userAgent,
-      pversion: '$prebid.version$'
+      ua: navigator.userAgent
     });
 
     // coppa compliance
@@ -79,7 +79,6 @@ export const spec = {
       const placement = Object.assign({
         id: bid.transactionId,
         divName: bid.bidId,
-        pisze: bid.mediaTypes.banner.sizes[0] || bid.sizes[0],
         sizes: bid.mediaTypes.banner.sizes,
         adTypes: getSize(bid.mediaTypes.banner.sizes || bid.sizes),
         bidfloor: getBidFloor(bid),

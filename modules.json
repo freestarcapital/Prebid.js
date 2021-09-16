@@ -8,6 +8,7 @@
     "districtmDMXBidAdapter",
     "emx_digitalBidAdapter",
     "freestarBidAdapter",
+    "gptPreAuction",
     "gridBidAdapter",
     "gumgumBidAdapter",
     "ixBidAdapter",

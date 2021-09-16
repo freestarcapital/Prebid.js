@@ -47,7 +47,6 @@ export function Renderer(options) {
         utils.logWarn(`No render function was provided, please use .setRender on the renderer`);
       }
     }
-
     if (!isRendererPreferredFromAdUnit(adUnitCode)) {
       // we expect to load a renderer url once only so cache the request to load script
       this.cmd.unshift(runRender) // should render run first ?

@@ -11,6 +11,12 @@ const USER_IDS_CONFIG = {
     atype: 1
   },
 
+  // naveggId
+  'naveggId': {
+    source: 'navegg.com',
+    atype: 1
+  },
+
   // pubCommonId
   'pubcid': {
     source: 'pubcid.org',
@@ -43,29 +49,9 @@ const USER_IDS_CONFIG = {
   },
 
   // parrableId
-  'parrableId': {
+  'parrableid': {
     source: 'parrable.com',
-    atype: 1,
-    getValue: function(parrableId) {
-      if (parrableId.eid) {
-        return parrableId.eid;
-      }
-      if (parrableId.ccpaOptout) {
-        // If the EID was suppressed due to a non consenting ccpa optout then
-        // we still wish to provide this as a reason to the adapters
-        return '';
-      }
-      return null;
-    },
-    getUidExt: function(parrableId) {
-      const extendedData = utils.pick(parrableId, [
-        'ibaOptout',
-        'ccpaOptout'
-      ]);
-      if (Object.keys(extendedData).length) {
-        return extendedData;
-      }
-    }
+    atype: 1
   },
 
   // identityLink
@@ -108,6 +94,19 @@ const USER_IDS_CONFIG = {
     atype: 1,
   },
 
+  // DigiTrust
+  'digitrustid': {
+    getValue: function (data) {
+      var id = null;
+      if (data && data.data && data.data.id != null) {
+        id = data.data.id;
+      }
+      return id;
+    },
+    source: 'digitru.st',
+    atype: 1
+  },
+
   // criteo
   'criteoId': {
     source: 'criteo.com',
@@ -132,20 +131,6 @@ const USER_IDS_CONFIG = {
   'netId': {
     source: 'netid.de',
     atype: 1
-  },
-
-  // sharedid
-  'sharedid': {
-    source: 'sharedid.org',
-    atype: 1,
-    getValue: function(data) {
-      return data.id;
-    },
-    getUidExt: function(data) {
-      return (data && data.third) ? {
-        third: data.third
-      } : undefined;
-    }
   },
 
   // zeotapIdPlus
@@ -213,6 +198,11 @@ const USER_IDS_CONFIG = {
       return data.id;
     }
   },
+  // Akamai Data Activation Platform (DAP)
+  'dapId': {
+    source: 'akamai.com',
+    atype: 1
+  },
   'deepintentId': {
     source: 'deepintent.com',
     atype: 3
@@ -221,6 +211,27 @@ const USER_IDS_CONFIG = {
   'admixerId': {
     source: 'admixer.net',
     atype: 3
+  },
+  // Adtelligent Id
+  'adtelligentId': {
+    source: 'adtelligent.com',
+    atype: 3
+  },
+  amxId: {
+    source: 'amxrtb.com',
+    atype: 1,
+  },
+  'publinkId': {
+    source: 'epsilon.com',
+    atype: 3
+  },
+  'kpuid': {
+    source: 'kpuid.com',
+    atype: 3
+  },
+  'imuid': {
+    source: 'intimatemerger.com',
+    atype: 1
   }
 };
 

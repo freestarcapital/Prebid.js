@@ -257,6 +257,143 @@ describe('native.js', function () {
     delete bid.native.adTemplate;
   });
 
+  it('should only include targeting that has sendTargetingKeys set to true', function () {
+    const bidRequest = {
+      nativeParams: {
+        image: {
+          required: true,
+          sizes: [150, 50]
+        },
+        title: {
+          required: true,
+          len: 80,
+          sendTargetingKeys: true
+        },
+        sendTargetingKeys: false,
+      }
+
+    };
+    const targeting = getNativeTargeting(bid, bidRequest);
+
+    expect(Object.keys(targeting)).to.deep.equal([
+      CONSTANTS.NATIVE_KEYS.title
+    ]);
+  });
+
+  it('should only include targeting if sendTargetingKeys not set to false', function () {
+    const bidRequest = {
+      nativeParams: {
+        image: {
+          required: true,
+          sizes: [150, 50]
+        },
+        title: {
+          required: true,
+          len: 80
+        },
+        body: {
+          required: true
+        },
+        clickUrl: {
+          required: true
+        },
+        icon: {
+          required: false,
+          sendTargetingKeys: false
+        },
+        cta: {
+          required: false,
+          sendTargetingKeys: false
+        },
+        sponsoredBy: {
+          required: false,
+          sendTargetingKeys: false
+        },
+        ext: {
+          foo: {
+            required: false,
+            sendTargetingKeys: true
+          }
+        }
+      }
+
+    };
+    const targeting = getNativeTargeting(bid, bidRequest);
+
+    expect(Object.keys(targeting)).to.deep.equal([
+      CONSTANTS.NATIVE_KEYS.title,
+      CONSTANTS.NATIVE_KEYS.body,
+      CONSTANTS.NATIVE_KEYS.image,
+      CONSTANTS.NATIVE_KEYS.clickUrl,
+      'hb_native_foo'
+    ]);
+  });
+
+  it('should copy over rendererUrl to bid object and include it in targeting', function () {
+    const bidRequest = {
+      nativeParams: {
+        image: {
+          required: true,
+          sizes: [150, 50]
+        },
+        title: {
+          required: true,
+          len: 80,
+        },
+        rendererUrl: {
+          url: 'https://www.renderer.com/'
+        }
+      }
+
+    };
+    const targeting = getNativeTargeting(bid, bidRequest);
+
+    expect(Object.keys(targeting)).to.deep.equal([
+      CONSTANTS.NATIVE_KEYS.title,
+      CONSTANTS.NATIVE_KEYS.body,
+      CONSTANTS.NATIVE_KEYS.cta,
+      CONSTANTS.NATIVE_KEYS.image,
+      CONSTANTS.NATIVE_KEYS.icon,
+      CONSTANTS.NATIVE_KEYS.sponsoredBy,
+      CONSTANTS.NATIVE_KEYS.clickUrl,
+      CONSTANTS.NATIVE_KEYS.rendererUrl
+    ]);
+
+    expect(bid.native.rendererUrl).to.deep.equal('https://www.renderer.com/');
+    delete bid.native.rendererUrl;
+  });
+
+  it('should copy over adTemplate to bid object and include it in targeting', function () {
+    const bidRequest = {
+      nativeParams: {
+        image: {
+          required: true,
+          sizes: [150, 50]
+        },
+        title: {
+          required: true,
+          len: 80,
+        },
+        adTemplate: '<div><p>##hb_native_body##<\/p><\/div>'
+      }
+
+    };
+    const targeting = getNativeTargeting(bid, bidRequest);
+
+    expect(Object.keys(targeting)).to.deep.equal([
+      CONSTANTS.NATIVE_KEYS.title,
+      CONSTANTS.NATIVE_KEYS.body,
+      CONSTANTS.NATIVE_KEYS.cta,
+      CONSTANTS.NATIVE_KEYS.image,
+      CONSTANTS.NATIVE_KEYS.icon,
+      CONSTANTS.NATIVE_KEYS.sponsoredBy,
+      CONSTANTS.NATIVE_KEYS.clickUrl
+    ]);
+
+    expect(bid.native.adTemplate).to.deep.equal('<div><p>##hb_native_body##<\/p><\/div>');
+    delete bid.native.adTemplate;
+  });
+
   it('fires impression trackers', function () {
     fireNativeTrackers({}, bid);
     sinon.assert.calledOnce(triggerPixelStub);

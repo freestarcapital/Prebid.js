@@ -188,23 +188,17 @@ export function setSubmoduleRegistry(submodules) {
 }
 
 /**
- * @param {SubmoduleContainer} submodule
+ * @param {SubmoduleStorage} storage
  * @param {(Object|string)} value
  */
-export function setStoredValue(submodule, value) {
-  /**
-   * @type {SubmoduleStorage}
-   */
-  const storage = submodule.config.storage;
-  const domainOverride = (typeof submodule.submodule.domainOverride === 'function') ? submodule.submodule.domainOverride() : null;
-
+function setStoredValue(storage, value) {
   try {
     const valueStr = utils.isPlainObject(value) ? JSON.stringify(value) : value;
     const expiresStr = (new Date(Date.now() + (storage.expires * (60 * 60 * 24 * 1000)))).toUTCString();
     if (storage.type === COOKIE) {
-      coreStorage.setCookie(storage.name, valueStr, expiresStr, 'Lax', domainOverride);
+      coreStorage.setCookie(storage.name, valueStr, expiresStr, 'Lax');
       if (typeof storage.refreshInSeconds === 'number') {
-        coreStorage.setCookie(`${storage.name}_last`, new Date().toUTCString(), expiresStr, 'Lax', domainOverride);
+        coreStorage.setCookie(`${storage.name}_last`, new Date().toUTCString(), expiresStr);
       }
     } else if (storage.type === LOCAL_STORAGE) {
       coreStorage.setDataInLocalStorage(`${storage.name}_exp`, expiresStr);
@@ -413,7 +407,7 @@ function processSubmoduleCallbacks(submodules, cb) {
       // if valid, id data should be saved to cookie/html storage
       if (idObj) {
         if (submodule.config.storage) {
-          setStoredValue(submodule, idObj);
+          setStoredValue(submodule.config.storage, idObj);
         }
         // cache decoded value (this is copied to every adUnit bid)
         submodule.idObj = submodule.submodule.decode(idObj, submodule.config);
@@ -489,7 +483,7 @@ function addIdDataToAdUnitBids(adUnits, submodules) {
 }
 
 /**
- * This is a common function that will initialize subModules if not already done and it will also execute subModule callbacks
+ * This is a common function that will initalize subModules if not already done and it will also execute subModule callbacks
  */
 function initializeSubmodulesAndExecuteCallbacks(continueAuction) {
   let delayed = false;
@@ -603,7 +597,6 @@ function refreshUserIds(options, callback) {
     // we always want the latest consentData stored, even if we don't execute any submodules
     const storedConsentData = getStoredConsentData();
     setStoredConsentData(consentData);
-
     let callbackSubmodules = [];
     for (let submodule of userIdModules) {
       if (submoduleNames.length > 0 &&
@@ -613,6 +606,11 @@ function refreshUserIds(options, callback) {
 
       utils.logInfo(`${MODULE_NAME} - refreshing ${submodule.submodule.name}`);
       populateSubmoduleId(submodule, consentData, storedConsentData, true);
+      updateInitializedSubmodules(submodule);
+
+      if (initializedSubmodules.length) {
+        setPrebidServerEidPermissions(initializedSubmodules);
+      }
 
       if (utils.isFn(submodule.callback)) {
         callbackSubmodules.push(submodule);
@@ -711,6 +709,21 @@ function initSubmodules(submodules, consentData) {
   }, []);
 }
 
+function updateInitializedSubmodules(submodule) {
+  let updated = false;
+  for (let i = 0; i < initializedSubmodules.length; i++) {
+    if (submodule.config.name.toLowerCase() === initializedSubmodules[i].config.name.toLowerCase()) {
+      updated = true;
+      initializedSubmodules[i] = submodule;
+      break;
+    }
+  }
+
+  if (!updated) {
+    initializedSubmodules.push(submodule);
+  }
+}
+
 /**
  * list of submodule configurations with valid 'storage' or 'value' obj definitions
  * * storage config: contains values for storing/retrieving User ID data in browser storage
@@ -758,7 +771,8 @@ function updateSubmodules() {
 
   // find submodule and the matching configuration, if found create and append a SubmoduleContainer
   submodules = addedSubmodules.map(i => {
-    const submoduleConfig = find(configs, j => j.name && j.name.toLowerCase() === i.name.toLowerCase());
+    const submoduleConfig = find(configs, j => j.name && (j.name.toLowerCase() === i.name.toLowerCase() ||
+      (i.aliasName && j.name.toLowerCase() === i.aliasName.toLowerCase())));
     if (submoduleConfig && i.name !== submoduleConfig.name) submoduleConfig.name = i.name;
     i.findRootDomain = findRootDomain;
     return submoduleConfig ? {
@@ -817,8 +831,8 @@ export function init(config) {
 
   // listen for config userSyncs to be set
   config.getConfig(conf => {
-    // Note: support for 'usersync' was dropped as part of Prebid.js 4.0
-    const userSync = conf.userSync;
+    // Note: support for both 'userSync' and 'usersync' will be deprecated with Prebid.js 3.0
+    const userSync = conf.userSync || conf.usersync;
     if (userSync && userSync.userIds) {
       configRegistry = userSync.userIds;
       syncDelay = utils.isNumber(userSync.syncDelay) ? userSync.syncDelay : DEFAULT_SYNC_DELAY;

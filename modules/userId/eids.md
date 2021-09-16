@@ -22,6 +22,14 @@ userIdAsEids = [
     },
 
     {
+        source: 'navegg.com',
+        uids: [{
+            id: 'naveggId',
+            atype: 1
+        }]
+    },
+    
+    {
         source: 'neustar.biz',
         uids: [{
             id: 'some-random-id-value',
@@ -109,18 +117,15 @@ userIdAsEids = [
     },
 
     {
-        source: 'sharedid.org',
+        source: 'zeotap.com',
         uids: [{
             id: 'some-random-id-value',
-            atype: 1,
-            ext: {
-                third: 'some-random-id-value'
-             }
-         }]
+            atype: 1
+        }]
     },
 
     {
-        source: 'zeotap.com',
+        source: 'nextroll.com',
         uids: [{
             id: 'some-random-id-value',
             atype: 1
@@ -187,6 +192,13 @@ userIdAsEids = [
         }]
     },
     {
+    source: 'akamai.com',
+        uids: [{
+            id: 'some-random-id-value',
+            atype: 1
+        }]
+    },
+    {
         source: 'admixer.net',
         uids: [{
             id: 'some-random-id-value',
@@ -199,6 +211,13 @@ userIdAsEids = [
             id: 'some-random-id-value',
             atype: 3
         }]
+    }, 
+    {
+         source: 'kpuid.com',
+         uids: [{
+              id: 'some-random-id-value',
+              atype: 3
+         }]
     }
 ]
 ```

@@ -709,7 +709,7 @@ describe('synacormediaBidAdapter ', function () {
       bidder: 'synacormedia',
       params: {
         seatId: 'prebid',
-        placementId: 'demo1',
+        tagId: 'demo1',
         pos: 1,
         video: {}
       },

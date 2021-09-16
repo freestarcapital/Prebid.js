@@ -303,6 +303,36 @@ describe('Hybrid.ai Adapter', function() {
           expect(bids[0].netRevenue).to.equal(true)
           expect(typeof bids[0].ad).to.equal('string')
         })
+        it('should return a In-Image bid', function() {
+          const request = spec.buildRequests([validBidRequests[2]], bidderRequest)
+          const serverResponse = {
+            body: {
+              bids: [
+                {
+                  bidId: '2df8c0733f284e',
+                  price: 0.5,
+                  currency: 'USD',
+                  content: 'html',
+                  inImage: {
+                    actionUrls: {}
+                  },
+                  width: 100,
+                  height: 100,
+                  ttl: 360
+                }
+              ]
+            }
+          }
+          const bids = spec.interpretResponse(serverResponse, request)
+          expect(bids.length).to.equal(1)
+          expect(bids[0].requestId).to.equal('2df8c0733f284e')
+          expect(bids[0].cpm).to.equal(0.5)
+          expect(bids[0].width).to.equal(100)
+          expect(bids[0].height).to.equal(100)
+          expect(bids[0].currency).to.equal('USD')
+          expect(bids[0].netRevenue).to.equal(true)
+          expect(typeof bids[0].ad).to.equal('string')
+        })
       })
       describe('the bid is a video', function() {
         it('should return a video bid', function() {

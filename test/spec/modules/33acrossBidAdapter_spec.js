@@ -215,7 +215,7 @@ describe('33acrossBidAdapter:', function () {
   function ServerRequestBuilder() {
     const serverRequest = {
       'method': 'POST',
-      'url': `${END_POINT}?guid=${SITE_ID}`,
+      'url': END_POINT,
       'data': null,
       'options': {
         'contentType': 'text/plain',
@@ -1216,6 +1216,164 @@ describe('33acrossBidAdapter:', function () {
         const [ builtServerRequest ] = spec.buildRequests(bidRequests, {});
 
         validateBuiltServerRequest(builtServerRequest, serverRequest);
+      });
+    });
+
+    context('when price floor module is enabled for video in bidRequest', function() {
+      it('does not set any bidfloors in video if there is no floor', function() {
+        const bidRequests = (
+          new BidRequestsBuilder()
+            .withVideo({context: 'outstream'})
+            .build()
+        );
+
+        bidRequests[0].getFloor = () => ({});
+
+        const ttxRequest = new TtxRequestBuilder()
+          .withVideo()
+          .withProduct()
+          .build();
+
+        const [ builtServerRequest ] = spec.buildRequests(bidRequests, {});
+
+        expect(JSON.parse(builtServerRequest.data)).to.deep.equal(ttxRequest);
+      });
+
+      it('sets bidfloors in video if there is a floor', function() {
+        const bidRequests = (
+          new BidRequestsBuilder()
+            .withVideo({context: 'outstream'})
+            .build()
+        );
+
+        bidRequests[0].getFloor = ({size, currency, mediaType}) => {
+          const floor = (mediaType === 'video') ? 1.0 : 0.10
+          return (
+            {
+              floor,
+              currency: 'USD'
+            }
+          );
+        };
+
+        const ttxRequest = new TtxRequestBuilder()
+          .withVideo()
+          .withProduct()
+          .withFloors('video', [ 1.0 ])
+          .build();
+
+        const [ builtServerRequest ] = spec.buildRequests(bidRequests, {});
+
+        expect(JSON.parse(builtServerRequest.data)).to.deep.equal(ttxRequest);
+      });
+    });
+
+    context('when user ID data exists as userIdAsEids Array in bidRequest', function() {
+      it('passes userIds in eids field in ORTB request', function() {
+        const eids = [
+          {
+            'source': 'x-device-vendor-x.com',
+            'uids': [
+              {
+                'id': 'yyy',
+                'atype': 1
+              },
+              {
+                'id': 'zzz',
+                'atype': 1
+              },
+              {
+                'id': 'DB700403-9A24-4A4B-A8D5-8A0B4BE777D2',
+                'atype': 2
+              }
+            ],
+            'ext': {
+              'foo': 'bar'
+            }
+          }
+        ];
+
+        const bidRequests = (
+          new BidRequestsBuilder()
+            .withUserIds(eids)
+            .build()
+        );
+
+        const ttxRequest = new TtxRequestBuilder()
+          .withUserIds(eids)
+          .withProduct()
+          .build();
+
+        const [ builtServerRequest ] = spec.buildRequests(bidRequests, {});
+
+        expect(JSON.parse(builtServerRequest.data)).to.deep.equal(ttxRequest);
+      });
+
+      it('does not validate eids ORTB', function() {
+        const eids = [1, 2, 3];
+
+        const bidRequests = (
+          new BidRequestsBuilder()
+            .withUserIds(eids)
+            .build()
+        );
+
+        const ttxRequest = new TtxRequestBuilder()
+          .withUserIds(eids)
+          .withProduct()
+          .build();
+
+        const [ builtServerRequest ] = spec.buildRequests(bidRequests, {});
+
+        expect(JSON.parse(builtServerRequest.data)).to.deep.equal(ttxRequest);
+      });
+    });
+
+    context('when user IDs do not exist under the userIdAsEids field in bidRequest as a non-empty Array', function() {
+      it('does not pass user IDs in the bidRequest ORTB', function() {
+        const eidsScenarios = [
+          'foo',
+          [],
+          {foo: 1}
+        ];
+
+        eidsScenarios.forEach((eids) => {
+          const bidRequests = (
+            new BidRequestsBuilder()
+              .withUserIds(eids)
+              .build()
+          );
+          bidRequests.userId = {
+            'vendorx': {
+              'source': 'x-device-vendor-x.com',
+              'uids': [
+                {
+                  'id': 'yyy',
+                  'atype': 1
+                },
+                {
+                  'id': 'zzz',
+                  'atype': 1
+                },
+                {
+                  'id': 'DB700403-9A24-4A4B-A8D5-8A0B4BE777D2',
+                  'atype': 2
+                }
+              ],
+              'ext': {
+                'foo': 'bar'
+              }
+            }
+          };
+
+          const ttxRequest = new TtxRequestBuilder()
+            .withProduct()
+            .build();
+
+          const [ builtServerRequest ] = spec.buildRequests(bidRequests, {});
+
+          expect(JSON.parse(builtServerRequest.data)).to.deep.equal(ttxRequest);
+        });
       });
     });
 

@@ -23,7 +23,7 @@ const events = require('./events.js');
 const { triggerUserSyncs } = userSync;
 
 /* private variables */
-const { ADD_AD_UNITS, BID_WON, REQUEST_BIDS, SET_TARGETING, AD_RENDER_FAILED, STALE_RENDER } = CONSTANTS.EVENTS;
+const { ADD_AD_UNITS, BID_WON, REQUEST_BIDS, SET_TARGETING, AD_RENDER_FAILED, AD_RENDER_SUCCEEDED, STALE_RENDER } = CONSTANTS.EVENTS;
 const { PREVENT_WRITING_ON_MAIN_DOCUMENT, NO_AD, EXCEPTION, CANNOT_FIND_AD, MISSING_DOC_OR_ADID } = CONSTANTS.AD_RENDER_FAILED_REASON;
 
 const eventValidators = {
@@ -86,58 +86,64 @@ function validateSizes(sizes, targLength) {
 }
 
 function validateBannerMediaType(adUnit) {
-  const validatedAdUnit = utils.deepClone(adUnit);
-  const banner = validatedAdUnit.mediaTypes.banner;
+  const banner = adUnit.mediaTypes.banner;
   const bannerSizes = validateSizes(banner.sizes);
   if (bannerSizes.length > 0) {
     banner.sizes = bannerSizes;
     // Deprecation Warning: This property will be deprecated in next release in favor of adUnit.mediaTypes.banner.sizes
-    validatedAdUnit.sizes = bannerSizes;
+    adUnit.sizes = bannerSizes;
   } else {
     utils.logError('Detected a mediaTypes.banner object without a proper sizes field.  Please ensure the sizes are listed like: [[300, 250], ...].  Removing invalid mediaTypes.banner object from request.');
-    delete validatedAdUnit.mediaTypes.banner
+    delete adUnit.mediaTypes.banner
   }
-  return validatedAdUnit;
 }
 
 function validateVideoMediaType(adUnit) {
-  const validatedAdUnit = utils.deepClone(adUnit);
-  const video = validatedAdUnit.mediaTypes.video;
-  if (video.playerSize) {
-    let tarPlayerSizeLen = (typeof video.playerSize[0] === 'number') ? 2 : 1;
+  const video = adUnit.mediaTypes.video;
+  let tarPlayerSizeLen = (typeof video.playerSize[0] === 'number') ? 2 : 1;
 
-    const videoSizes = validateSizes(video.playerSize, tarPlayerSizeLen);
-    if (videoSizes.length > 0) {
-      if (tarPlayerSizeLen === 2) {
-        utils.logInfo('Transforming video.playerSize from [640,480] to [[640,480]] so it\'s in the proper format.');
-      }
-      video.playerSize = videoSizes;
-      // Deprecation Warning: This property will be deprecated in next release in favor of adUnit.mediaTypes.video.playerSize
-      validatedAdUnit.sizes = videoSizes;
-    } else {
-      utils.logError('Detected incorrect configuration of mediaTypes.video.playerSize.  Please specify only one set of dimensions in a format like: [[640, 480]]. Removing invalid mediaTypes.video.playerSize property from request.');
-      delete validatedAdUnit.mediaTypes.video.playerSize;
+  const videoSizes = validateSizes(video.playerSize, tarPlayerSizeLen);
+  if (videoSizes.length > 0) {
+    if (tarPlayerSizeLen === 2) {
+      utils.logInfo('Transforming video.playerSize from [640,480] to [[640,480]] so it\'s in the proper format.');
     }
+    video.playerSize = videoSizes;
+    // Deprecation Warning: This property will be deprecated in next release in favor of adUnit.mediaTypes.video.playerSize
+    adUnit.sizes = videoSizes;
+  } else {
+    utils.logError('Detected incorrect configuration of mediaTypes.video.playerSize.  Please specify only one set of dimensions in a format like: [[640, 480]]. Removing invalid mediaTypes.video.playerSize property from request.');
+    delete adUnit.mediaTypes.video.playerSize;
   }
-  return validatedAdUnit;
 }
 
 function validateNativeMediaType(adUnit) {
-  const validatedAdUnit = utils.deepClone(adUnit);
-  const native = validatedAdUnit.mediaTypes.native;
+  const native = adUnit.mediaTypes.native;
   if (native.image && native.image.sizes && !Array.isArray(native.image.sizes)) {
     utils.logError('Please use an array of sizes for native.image.sizes field.  Removing invalid mediaTypes.native.image.sizes property from request.');
-    delete validatedAdUnit.mediaTypes.native.image.sizes;
+    delete adUnit.mediaTypes.native.image.sizes;
   }
   if (native.image && native.image.aspect_ratios && !Array.isArray(native.image.aspect_ratios)) {
     utils.logError('Please use an array of sizes for native.image.aspect_ratios field.  Removing invalid mediaTypes.native.image.aspect_ratios property from request.');
-    delete validatedAdUnit.mediaTypes.native.image.aspect_ratios;
+    delete adUnit.mediaTypes.native.image.aspect_ratios;
   }
   if (native.icon && native.icon.sizes && !Array.isArray(native.icon.sizes)) {
     utils.logError('Please use an array of sizes for native.icon.sizes field.  Removing invalid mediaTypes.native.icon.sizes property from request.');
-    delete validatedAdUnit.mediaTypes.native.icon.sizes;
+    delete adUnit.mediaTypes.native.icon.sizes;
   }
-  return validatedAdUnit;
+}
+
+function validateAdUnitPos(adUnit, mediaType) {
+  let pos = utils.deepAccess(adUnit, `mediaTypes.${mediaType}.pos`);
+
+  if (!pos || !utils.isNumber(pos) || !isFinite(pos)) {
+    let warning = `Value of property 'pos' on ad unit ${adUnit.code} should be of type: Number`;
+
+    utils.logWarn(warning);
+    events.emit(CONSTANTS.EVENTS.AUCTION_DEBUG, {type: 'WARNING', arguments: warning});
+    delete adUnit.mediaTypes[mediaType].pos;
+  }
+
+  return adUnit
 }
 
 export const adUnitSetupChecks = {
@@ -148,9 +154,7 @@ export const adUnitSetupChecks = {
 };
 
 export const checkAdUnitSetup = hook('sync', function (adUnits) {
-  const validatedAdUnits = [];
-
-  adUnits.forEach(adUnit => {
+  return adUnits.filter(adUnit => {
     const mediaTypes = adUnit.mediaTypes;
     const bids = adUnit.bids;
     let validatedBanner, validatedVideo, validatedNative;
@@ -162,27 +166,24 @@ export const checkAdUnitSetup = hook('sync', function (adUnits) {
 
     if (!mediaTypes || Object.keys(mediaTypes).length === 0) {
       utils.logError(`Detected adUnit.code '${adUnit.code}' did not have a 'mediaTypes' object defined.  This is a required field for the auction, so this adUnit has been removed.`);
-      return;
+      return false;
     }
 
     if (mediaTypes.banner) {
       validatedBanner = validateBannerMediaType(adUnit);
+      if (mediaTypes.banner.hasOwnProperty('pos')) validatedBanner = validateAdUnitPos(validatedBanner, 'banner');
     }
 
     if (mediaTypes.video) {
       validatedVideo = validatedBanner ? validateVideoMediaType(validatedBanner) : validateVideoMediaType(adUnit);
+      if (mediaTypes.video.hasOwnProperty('pos')) validatedVideo = validateAdUnitPos(validatedVideo, 'video');
     }
 
     if (mediaTypes.native) {
-      validatedNative = validatedVideo ? validateNativeMediaType(validatedVideo) : validatedBanner ? validateNativeMediaType(validatedBanner) : validateNativeMediaType(adUnit);
+      validateNativeMediaType(adUnit);
     }
-
-    const validatedAdUnit = Object.assign({}, validatedBanner, validatedVideo, validatedNative);
-
-    validatedAdUnits.push(validatedAdUnit);
+    return true;
   });
-
-  return validatedAdUnits;
 }, 'checkAdUnitSetup');
 
 /// ///////////////////////////////
@@ -353,7 +354,7 @@ $$PREBID_GLOBAL$$.setTargetingForGPTAsync = function (adUnit, customSlotMatching
  * @param  {(string|string[])} adUnitCode adUnitCode or array of adUnitCodes
  * @alias module:pbjs.setTargetingForAst
  */
-$$PREBID_GLOBAL$$.setTargetingForAst = function (adUnitCodes) {
+$$PREBID_GLOBAL$$.setTargetingForAst = function(adUnitCodes) {
   utils.logInfo('Invoking $$PREBID_GLOBAL$$.setTargetingForAn', arguments);
   if (!targeting.isApntagDefined()) {
     utils.logError('window.apntag is not defined on the page');
@@ -375,6 +376,14 @@ function emitAdRenderFail({ reason, message, bid, id }) {
   events.emit(AD_RENDER_FAILED, data);
 }
 
+function emitAdRenderSucceeded({ doc, bid, id }) {
+  const data = { doc };
+  if (bid) data.bid = bid;
+  if (id) data.adId = id;
+
+  events.emit(AD_RENDER_SUCCEEDED, data);
+}
+
 /**
  * This function will render the ad (based on params) in the given iframe document passed through.
  * Note that doc SHOULD NOT be the parent document page as we can't doc.write() asynchronously
@@ -382,7 +391,7 @@ function emitAdRenderFail({ reason, message, bid, id }) {
  * @param  {string} id bid id to locate the ad
  * @alias module:pbjs.renderAd
  */
-$$PREBID_GLOBAL$$.renderAd = function (doc, id, options) {
+$$PREBID_GLOBAL$$.renderAd = hook('async', function (doc, id, options) {
   utils.logInfo('Invoking $$PREBID_GLOBAL$$.renderAd', arguments);
   utils.logMessage('Calling renderAd with adId :' + id);
 
@@ -422,10 +431,11 @@ $$PREBID_GLOBAL$$.renderAd = function (doc, id, options) {
           const {height, width, ad, mediaType, adUrl, renderer} = bid;
 
           const creativeComment = document.createComment(`Creative ${bid.creativeId} served by ${bid.bidder} Prebid.js Header Bidding`);
-          utils.insertElement(creativeComment, doc, 'body');
 
           if (isRendererRequired(renderer)) {
             executeRenderer(renderer, bid);
+            utils.insertElement(creativeComment, doc, 'html');
+            emitAdRenderSucceeded({ doc, bid, id });
           } else if ((doc === document && !utils.inIframe()) || mediaType === 'video') {
             const message = `Error trying to write ad. Ad render call ad id ${id} was prevented from writing to the main document.`;
             emitAdRenderFail({reason: PREVENT_WRITING_ON_MAIN_DOCUMENT, message, bid, id});
@@ -443,7 +453,9 @@ $$PREBID_GLOBAL$$.renderAd = function (doc, id, options) {
             doc.write(ad);
             doc.close();
             setRenderSize(doc, width, height);
+            utils.insertElement(creativeComment, doc, 'html');
             utils.callBurl(bid);
+            emitAdRenderSucceeded({ doc, bid, id });
           } else if (adUrl) {
             const iframe = utils.createInvisibleIframe();
             iframe.height = height;
@@ -454,7 +466,9 @@ $$PREBID_GLOBAL$$.renderAd = function (doc, id, options) {
 
             utils.insertElement(iframe, doc, 'body');
             setRenderSize(doc, width, height);
+            utils.insertElement(creativeComment, doc, 'html');
             utils.callBurl(bid);
+            emitAdRenderSucceeded({ doc, bid, id });
           } else {
             const message = `Error trying to write ad. No ad for bid response id: ${id}`;
             emitAdRenderFail({reason: NO_AD, message, bid, id});
@@ -472,7 +486,7 @@ $$PREBID_GLOBAL$$.renderAd = function (doc, id, options) {
     const message = `Error trying to write ad Id :${id} to the page. Missing document or adId`;
     emitAdRenderFail({ reason: MISSING_DOC_OR_ADID, message, id });
   }
-};
+});
 
 /**
  * Remove adUnit from the $$PREBID_GLOBAL$$ configuration, if there are no addUnitCode(s) it will remove all
@@ -543,6 +557,8 @@ $$PREBID_GLOBAL$$.requestBids = hook('async', function ({ bidsBackHandler, timeo
     adUnitCodes = adUnits && adUnits.map(unit => unit.code);
   }
 
+  adUnits = checkAdUnitSetup(adUnits);
+
   /*
    * for a given adunit which supports a set of mediaTypes
    * and a given bidder which supports a set of mediaTypes
@@ -551,7 +567,7 @@ $$PREBID_GLOBAL$$.requestBids = hook('async', function ({ bidsBackHandler, timeo
    */
   adUnits.forEach(adUnit => {
     // get the adunit's mediaTypes, defaulting to banner if mediaTypes isn't present
-    const adUnitMediaTypes = Object.keys(adUnit.mediaTypes || { 'banner': 'banner' });
+    const adUnitMediaTypes = Object.keys(adUnit.mediaTypes || {'banner': 'banner'});
 
     // get the bidder's mediaTypes
     const allBidders = adUnit.bids.map(bid => bid.bidder);
@@ -593,7 +609,7 @@ $$PREBID_GLOBAL$$.requestBids = hook('async', function ({ bidsBackHandler, timeo
     return;
   }
 
-  const auction = auctionManager.createAuction({ adUnits, adUnitCodes, callback: bidsBackHandler, cbTimeout, labels, auctionId });
+  const auction = auctionManager.createAuction({adUnits, adUnitCodes, callback: bidsBackHandler, cbTimeout, labels, auctionId});
 
   let adUnitsLen = adUnits.length;
   if (adUnitsLen > 15) {
@@ -604,9 +620,8 @@ $$PREBID_GLOBAL$$.requestBids = hook('async', function ({ bidsBackHandler, timeo
   auction.callBids();
 });
 
-export function executeCallbacks(fn, reqBidsConfigObj) {
+export function executeStorageCallbacks(fn, reqBidsConfigObj) {
   runAll(storageCallbacks);
-  runAll(enableAnalyticsCallbacks);
   fn.call(this, reqBidsConfigObj);
 
   function runAll(queue) {
@@ -618,7 +633,7 @@ export function executeCallbacks(fn, reqBidsConfigObj) {
 }
 
 // This hook will execute all storage callbacks which were registered before gdpr enforcement hook was added. Some bidders, user id modules use storage functions when module is parsed but gdpr enforcement hook is not added at that stage as setConfig callbacks are yet to be called. Hence for such calls we execute all the stored callbacks just before requestBids. At this hook point we will know for sure that gdprEnforcement module is added or not
-$$PREBID_GLOBAL$$.requestBids.before(executeCallbacks, 49);
+$$PREBID_GLOBAL$$.requestBids.before(executeStorageCallbacks, 49);
 
 /**
  *
@@ -743,30 +758,22 @@ $$PREBID_GLOBAL$$.createBid = function (statusCode) {
  * @param {Object} config.options The options for this particular analytics adapter.  This will likely vary between adapters.
  * @alias module:pbjs.enableAnalytics
  */
-
-// Stores 'enableAnalytics' callbacks for later execution.
-const enableAnalyticsCallbacks = [];
-
-const enableAnalyticsCb = hook('async', function (config) {
+$$PREBID_GLOBAL$$.enableAnalytics = function (config) {
   if (config && !utils.isEmpty(config)) {
     utils.logInfo('Invoking $$PREBID_GLOBAL$$.enableAnalytics for: ', config);
     adapterManager.enableAnalytics(config);
   } else {
     utils.logError('$$PREBID_GLOBAL$$.enableAnalytics should be called with option {}');
   }
-}, 'enableAnalyticsCb');
-
-$$PREBID_GLOBAL$$.enableAnalytics = function (config) {
-  enableAnalyticsCallbacks.push(enableAnalyticsCb.bind(this, config));
 };
 
 /**
  * @alias module:pbjs.aliasBidder
  */
-$$PREBID_GLOBAL$$.aliasBidder = function (bidderCode, alias, options) {
+$$PREBID_GLOBAL$$.aliasBidder = function (bidderCode, alias) {
   utils.logInfo('Invoking $$PREBID_GLOBAL$$.aliasBidder', arguments);
   if (bidderCode && alias) {
-    adapterManager.aliasBidAdapter(bidderCode, alias, options);
+    adapterManager.aliasBidAdapter(bidderCode, alias);
   } else {
     utils.logError('bidderCode and alias must be passed as arguments', '$$PREBID_GLOBAL$$.aliasBidder');
   }
@@ -856,7 +863,6 @@ $$PREBID_GLOBAL$$.markWinningBidAsUsed = function (markBidRequest) {
   } else {
     utils.logWarn('Improper use of markWinningBidAsUsed. It needs an adUnitCode or an adId to function.');
   }
-
   if (bids.length > 0) {
     bids[0].status = CONSTANTS.BID_STATUS.RENDERED;
   }
@@ -868,6 +874,7 @@ $$PREBID_GLOBAL$$.markWinningBidAsUsed = function (markBidRequest) {
  * @alias module:pbjs.getConfig
  */
 $$PREBID_GLOBAL$$.getConfig = config.getConfig;
+$$PREBID_GLOBAL$$.readConfig = config.readConfig;
 
 /**
  * Set Prebid config options.
@@ -940,7 +947,7 @@ $$PREBID_GLOBAL$$.que.push(() => listenMessagesFromCreative());
  *                            the Prebid script has been fully loaded.
  * @alias module:pbjs.cmd.push
  */
-$$PREBID_GLOBAL$$.cmd.push = function (command) {
+$$PREBID_GLOBAL$$.cmd.push = function(command) {
   if (typeof command === 'function') {
     try {
       command.call();
@@ -955,7 +962,7 @@ $$PREBID_GLOBAL$$.cmd.push = function (command) {
 $$PREBID_GLOBAL$$.que.push = $$PREBID_GLOBAL$$.cmd.push;
 
 function processQueue(queue) {
-  queue.forEach(function (cmd) {
+  queue.forEach(function(cmd) {
     if (typeof cmd.called === 'undefined') {
       try {
         cmd.call();
@@ -970,7 +977,7 @@ function processQueue(queue) {
 /**
  * @alias module:pbjs.processQueue
  */
-$$PREBID_GLOBAL$$.processQueue = function () {
+$$PREBID_GLOBAL$$.processQueue = function() {
   hook.ready();
   processQueue($$PREBID_GLOBAL$$.que);
   processQueue($$PREBID_GLOBAL$$.cmd);

@@ -32,12 +32,6 @@ export const zeotapIdPlusSubmodule = {
    * used to link submodule with config
    * @type {string}
    */
-  name: ZEOTAP_MODULE_NAME,
-  /**
-   * Vendor ID of Zeotap
-   * @type {Number}
-   */
-  gvlid: ZEOTAP_VENDOR_ID,
   /**
    * decode the stored id value for passing to bid requests
    * @function

@@ -29,8 +29,7 @@ var displayAdUnit = [
         bidder: 'lunamedia',
         params: {
             pubid: '121ab139faf7ac67428a23f1d0a9a71b',
-			placement: 1234,
-			size: "320x50"
+            placement: 1234
         }
     }]
 }];
@@ -53,8 +52,7 @@ var videoAdUnit = {
       	bidder: 'lunamedia',
       	params: {
         	pubid: '121ab139faf7ac67428a23f1d0a9a71b',
-			placement: 1234,
-			size: "320x480",
+        	placement: 1234,
         	video: {
             	id: 123,
             	skip: 1,

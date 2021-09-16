@@ -876,18 +876,14 @@ describe('Livewrapped adapter tests', function () {
           'id': 'publisher-common-id',
           'atype': 1
         }]
-      },
-      {
-        'source': 'sharedid.org',
-        'uids': [{
-          'id': 'sharedid',
-          'atype': 1,
-          'ext': {
-            'third': 'sharedid'
-          }
-        }]
       }
     ];
+
+    let result = spec.buildRequests(testbidRequest.bids, testbidRequest);
+    let data = JSON.parse(result.data);
+
+    expect(data.rtbData.user.ext.eids).to.deep.equal(testbidRequest.bids[0].userIdAsEids);
+  });
 
     let result = spec.buildRequests(testbidRequest.bids, testbidRequest);
     let data = JSON.parse(result.data);

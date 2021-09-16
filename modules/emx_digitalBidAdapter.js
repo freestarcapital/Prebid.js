@@ -11,6 +11,11 @@ const RENDERER_URL = 'https://js.brealtime.com/outstream/1.30.0/bundle.js';
 const ADAPTER_VERSION = '1.5.1';
 const DEFAULT_CUR = 'USD';
 
+const EIDS_SUPPORTED = [
+  { key: 'idl_env', source: 'liveramp.com', rtiPartner: 'idl', queryParam: 'idl' },
+  { key: 'uid2.id', source: 'uidapi.com', rtiPartner: 'UID2', queryParam: 'uid2' }
+];
+
 export const emxAdapter = {
   validateSizes: (sizes) => {
     if (!utils.isArray(sizes) || typeof sizes[0] === 'undefined') {
@@ -168,12 +173,32 @@ export const emxAdapter = {
     }
 
     return emxData;
+  },
+  // supporting eids
+  getEids(bidRequests) {
+    return EIDS_SUPPORTED
+      .map(emxAdapter.getUserId(bidRequests))
+      .filter(x => x);
+  },
+  getUserId(bidRequests) {
+    return ({ key, source, rtiPartner }) => {
+      let id = utils.deepAccess(bidRequests, `userId.${key}`);
+      return id ? emxAdapter.formatEid(id, source, rtiPartner) : null;
+    };
+  },
+  formatEid(id, source, rtiPartner) {
+    return {
+      source,
+      uids: [{
+        id,
+        ext: { rtiPartner }
+      }]
+    };
   }
 };
 
 export const spec = {
   code: BIDDER_CODE,
-  gvlid: 183,
   supportedMediaTypes: [BANNER, VIDEO],
   isBidRequestValid: function (bid) {
     if (!bid || !bid.params) {
@@ -252,6 +277,21 @@ export const spec = {
     if (bidderRequest && bidderRequest.uspConsent) {
       emxData.us_privacy = bidderRequest.uspConsent
     }
+
+    // adding eid support
+    if (bidderRequest.userId) {
+      let eids = emxAdapter.getEids(bidderRequest);
+      if (eids.length > 0) {
+        if (emxData.user && emxData.user.ext) {
+          emxData.user.ext.eids = eids;
+        } else {
+          emxData.user = {
+            ext: {eids}
+          };
+        }
+      }
+    }
+
     return {
       method: 'POST',
       url,
@@ -300,21 +340,12 @@ export const spec = {
     }
     return emxBidResponses;
   },
-  getUserSyncs: function (syncOptions, responses, gdprConsent, uspConsent) {
+  getUserSyncs: function (syncOptions) {
     const syncs = [];
     if (syncOptions.iframeEnabled) {
-      let url = 'https://biddr.brealtime.com/check.html';
-      if (gdprConsent && typeof gdprConsent.consentString === 'string') {
-        // add 'gdpr' only if 'gdprApplies' is defined
-        if (typeof gdprConsent.gdprApplies === 'boolean') {
-          url += `?gdpr=${Number(gdprConsent.gdprApplies)}&gdpr_consent=${gdprConsent.consentString}`;
-        } else {
-          url += `?gdpr_consent=${gdprConsent.consentString}`;
-        }
-      }
       syncs.push({
         type: 'iframe',
-        url: url
+        url: 'https://biddr.brealtime.com/check.html'
       });
     }
     return syncs;

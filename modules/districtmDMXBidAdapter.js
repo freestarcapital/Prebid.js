@@ -51,7 +51,6 @@ export const spec = {
               if (nBid.dealid) {
                 nBid.dealId = nBid.dealid;
               }
-              nBid.uuid = nBid.bidId;
               nBid.ad = nBid.adm;
               nBid.netRevenue = true;
               nBid.creativeId = nBid.crid;
@@ -120,7 +119,6 @@ export const spec = {
       bindUserId(eids, utils.deepAccess(bidRequest[0], `userId.lotamePanoramaId`), 'lotame.com', 1);
       bindUserId(eids, utils.deepAccess(bidRequest[0], `userId.parrableId`), 'parrable.com', 1);
       bindUserId(eids, utils.deepAccess(bidRequest[0], `userId.netId`), 'netid.de', 1);
-      bindUserId(eids, utils.deepAccess(bidRequest[0], `userId.sharedid`), 'sharedid.org', 1);
       dmxRequest.user = dmxRequest.user || {};
       dmxRequest.user.ext = dmxRequest.user.ext || {};
       dmxRequest.user.ext.eids = eids;

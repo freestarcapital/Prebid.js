@@ -1,5 +1,5 @@
 # Overview
- 
+
 Module Name: Audience Network Bid Adapter
 
 Module Type: Bidder Adapter

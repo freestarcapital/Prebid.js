@@ -67,9 +67,11 @@ export const spec = {
     {code: 'stringads'},
     {code: 'bcm'},
     {code: 'engageadx'},
-    {code: 'converge_digital', gvlid: 248},
+    {code: 'converge', gvlid: 248},
     {code: 'adomega'},
-    {code: 'denakop'}
+    {code: 'denakop'},
+    {code: 'rtbanalytica'},
+    {code: 'unibots'}
   ],
   supportedMediaTypes: [BANNER, VIDEO, NATIVE],
 
@@ -96,11 +98,10 @@ export const spec = {
    */
   buildRequests: function (bidRequests, bidderRequest) {
     let impDispatch = dispatchImps(bidRequests, bidderRequest.refererInfo);
-    let requests = [];
-    let schain = bidRequests[0].schain;
+    const requests = [];
     Object.keys(impDispatch).forEach(host => {
       Object.keys(impDispatch[host]).forEach(zoneId => {
-        const request = buildRtbRequest(impDispatch[host][zoneId], bidderRequest, schain);
+        const request = buildRtbRequest(impDispatch[host][zoneId], bidderRequest);
         requests.push({
           method: 'POST',
           url: `https://${host}/hb?zone=${zoneId}&v=${VERSION}`,
@@ -360,10 +361,9 @@ function getAllowedSyncMethod(bidderCode) {
  * Builds complete rtb request
  * @param imps {Object} Collection of rtb impressions
  * @param bidderRequest {BidderRequest}
- * @param schain {Object=} Supply chain config
  * @return {Object} Complete rtb request
  */
-function buildRtbRequest(imps, bidderRequest, schain) {
+function buildRtbRequest(imps, bidderRequest) {
   let {bidderCode, gdprConsent, auctionId, refererInfo, timeout, uspConsent} = bidderRequest;
   let coppa = config.getConfig('coppa');
   let req = {
@@ -373,7 +373,6 @@ function buildRtbRequest(imps, bidderRequest, schain) {
     'at': 1,
     'device': {
       'ip': 'caller',
-      'ipv6': 'caller',
       'ua': 'caller',
       'js': 1,
       'language': getLanguage()
@@ -404,6 +403,10 @@ function buildRtbRequest(imps, bidderRequest, schain) {
   if (schain) {
     utils.deepSetValue(req, 'source.ext.schain', schain);
   }
+  let eids = getExtendedUserIds(bidderRequest);
+  if (eids) {
+    utils.deepSetValue(req, 'user.ext.eids', eids);
+  }
   return req;
 }
 
@@ -433,6 +436,13 @@ function createSite(refInfo) {
     site.keywords = keywords.content;
   }
   return site;
+}
+
+function getExtendedUserIds(bidderRequest) {
+  let eids = utils.deepAccess(bidderRequest, 'bids.0.userIdAsEids');
+  if (utils.isArray(eids)) {
+    return eids;
+  }
 }
 
 /**

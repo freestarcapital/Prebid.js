@@ -1,7 +1,7 @@
 import {registerBidder} from '../src/adapters/bidderFactory.js';
 import { getStorageManager } from '../src/storageManager.js';
 
-const storage = getStorageManager();
+export const storage = getStorageManager();
 
 function inIframe() {
   try {
@@ -160,7 +160,6 @@ function buildMantisUrl(path, data, domain) {
     secure: isSecure(),
     version: 9
   };
-
   if (window.mantis_uuid) {
     params.uuid = window.mantis_uuid;
   } else if (storage.hasLocalStorage()) {
@@ -247,6 +246,9 @@ export const spec = {
         width: ad.width,
         height: ad.height,
         ad: ad.html,
+        meta: {
+          advertiserDomains: ad.domains || []
+        },
         ttl: ad.ttl || serverResponse.body.ttl || 86400,
         creativeId: ad.view,
         netRevenue: true,
