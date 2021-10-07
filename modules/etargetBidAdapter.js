@@ -1,4 +1,4 @@
-import * as utils from '../src/utils.js';
+import { deepSetValue, isFn, isPlainObject } from '../src/utils.js';
 import {config} from '../src/config.js';
 import {registerBidder} from '../src/adapters/bidderFactory.js';
 import { BANNER, VIDEO } from '../src/mediaTypes.js';
@@ -146,7 +146,7 @@ export const spec = {
           bidObject.gdpr_consent = bidRequest.gdpr.gdpr_consent;
         }
         if (bid.adomain) {
-          utils.deepSetValue(bidObject, 'meta.advertiserDomains', Array.isArray(bid.adomain) ? bid.adomain : [bid.adomain]);
+          deepSetValue(bidObject, 'meta.advertiserDomains', Array.isArray(bid.adomain) ? bid.adomain : [bid.adomain]);
         }
         bidRespones.push(bidObject);
       }
@@ -166,7 +166,7 @@ export const spec = {
   }
 };
 function getBidFloor(bid) {
-  if (!utils.isFn(bid.getFloor)) {
+  if (!isFn(bid.getFloor)) {
     return null;
   }
   let floor = bid.getFloor({
@@ -174,7 +174,7 @@ function getBidFloor(bid) {
     mediaType: '*',
     size: '*'
   });
-  if (utils.isPlainObject(floor) && !isNaN(floor.floor)) {
+  if (isPlainObject(floor) && !isNaN(floor.floor)) {
     return floor.floor;
   }
   return null;

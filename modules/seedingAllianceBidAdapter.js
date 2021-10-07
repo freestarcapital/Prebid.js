@@ -3,7 +3,7 @@
 
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { NATIVE } from '../src/mediaTypes.js';
-import * as utils from '../src/utils.js';
+import { _map, deepSetValue, isEmpty, deepAccess } from '../src/utils.js';
 import { config } from '../src/config.js';
 
 const BIDDER_CODE = 'seedingAlliance';
@@ -62,11 +62,10 @@ export const spec = {
     const pt = setOnAny(validBidRequests, 'params.pt') || setOnAny(validBidRequests, 'params.priceType') || 'net';
     const tid = validBidRequests[0].transactionId;
     const cur = [config.getConfig('currency.adServerCurrency') || DEFAULT_CUR];
-    let pubcid = null;
     let url = bidderRequest.refererInfo.referer;
 
     const imp = validBidRequests.map((bid, id) => {
-      const assets = utils._map(bid.nativeParams, (bidParams, key) => {
+      const assets = _map(bid.nativeParams, (bidParams, key) => {
         const props = NATIVE_PARAMS[key];
 
         const asset = {
@@ -112,10 +111,6 @@ export const spec = {
       };
     });
 
-    if (validBidRequests[0].crumbs && validBidRequests[0].crumbs.pubcid) {
-      pubcid = validBidRequests[0].crumbs.pubcid;
-    }
-
     const request = {
       id: bidderRequest.auctionId,
       site: {
@@ -126,21 +121,32 @@ export const spec = {
       },
       cur,
       imp,
-      user: {
-        buyeruid: pubcid
+      user: {},
+      regs: {
+        ext: {
+          gdpr: 0
+        }
       }
     };
+
+    if (bidderRequest && bidderRequest.gdprConsent) {
+      deepSetValue(request, 'user.ext.consent', bidderRequest.gdprConsent.consentString);
+      deepSetValue(request, 'regs.ext.gdpr', (typeof bidderRequest.gdprConsent.gdprApplies === 'boolean' && bidderRequest.gdprConsent.gdprApplies) ? 1 : 0);
+    }
 
     return {
       method: 'POST',
       url: ENDPOINT_URL,
       data: JSON.stringify(request),
+      options: {
+        contentType: 'application/json'
+      },
       bids: validBidRequests
     };
   },
 
   interpretResponse: function(serverResponse, { bids }) {
-    if (utils.isEmpty(serverResponse.body)) {
+    if (isEmpty(serverResponse.body)) {
       return [];
     }
 
@@ -165,7 +171,10 @@ export const spec = {
             currency: cur,
             mediaType: NATIVE,
             bidderCode: BIDDER_CODE,
-            native: parseNative(bidResponse)
+            native: parseNative(bidResponse),
+            meta: {
+              advertiserDomains: bidResponse.adomain && bidResponse.adomain.length > 0 ? bidResponse.adomain : []
+            }
           };
         }
       })
@@ -178,13 +187,16 @@ registerBidder(spec);
 function parseNative(bid) {
   const {assets, link, imptrackers} = bid.adm.native;
 
-  link.clicktrackers.forEach(function (clicktracker, index) {
-    link.clicktrackers[index] = clicktracker.replace(/\$\{AUCTION_PRICE\}/, bid.price);
-  });
-
-  imptrackers.forEach(function (imptracker, index) {
-    imptrackers[index] = imptracker.replace(/\$\{AUCTION_PRICE\}/, bid.price);
-  });
+  if (link.clicktrackers) {
+    link.clicktrackers.forEach(function (clicktracker, index) {
+      link.clicktrackers[index] = clicktracker.replace(/\$\{AUCTION_PRICE\}/, bid.price);
+    });
+  }
+  if (imptrackers) {
+    imptrackers.forEach(function (imptracker, index) {
+      imptrackers[index] = imptracker.replace(/\$\{AUCTION_PRICE\}/, bid.price);
+    });
+  }
 
   const result = {
     url: link.url,
@@ -207,7 +219,7 @@ function parseNative(bid) {
 
 function setOnAny(collection, key) {
   for (let i = 0, result; i < collection.length; i++) {
-    result = utils.deepAccess(collection[i], key);
+    result = deepAccess(collection[i], key);
     if (result) {
       return result;
     }

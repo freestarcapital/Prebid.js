@@ -1,4 +1,4 @@
-import * as utils from '../src/utils.js';
+import { deepAccess, isEmpty, parseSizesInput, isStr, logWarn } from '../src/utils.js';
 import {config} from '../src/config.js';
 import {registerBidder} from '../src/adapters/bidderFactory.js';
 import { Renderer } from '../src/Renderer.js';
@@ -39,21 +39,21 @@ export const spec = {
         t: 'i'
       };
 
-      const videoMediaType = utils.deepAccess(bidRequest, 'mediaTypes.video');
-      if ((utils.isEmpty(bidRequest.mediaType) && utils.isEmpty(bidRequest.mediaTypes)) ||
+      const videoMediaType = deepAccess(bidRequest, 'mediaTypes.video');
+      if ((isEmpty(bidRequest.mediaType) && isEmpty(bidRequest.mediaTypes)) ||
       (bidRequest.mediaType === BANNER || (bidRequest.mediaTypes && bidRequest.mediaTypes[BANNER]))) {
-        const sizes = utils.deepAccess(bidRequest, 'mediaTypes.banner.sizes') || bidRequest.sizes;
-        payload.sz = utils.parseSizesInput(sizes).join(',');
+        const sizes = deepAccess(bidRequest, 'mediaTypes.banner.sizes') || bidRequest.sizes;
+        payload.sz = parseSizesInput(sizes).join(',');
       } else if (bidRequest.mediaType === VIDEO || videoMediaType) {
-        const sizes = utils.deepAccess(bidRequest, 'mediaTypes.video.playerSize') || bidRequest.sizes;
-        const size = utils.parseSizesInput(sizes)[0];
+        const sizes = deepAccess(bidRequest, 'mediaTypes.video.playerSize') || bidRequest.sizes;
+        const size = parseSizesInput(sizes)[0];
         payload.w = size.split('x')[0];
         payload.h = size.split('x')[1];
       }
 
       // LiveRampID
-      const idlEnv = utils.deepAccess(bidRequest, 'userId.idl_env');
-      if (utils.isStr(idlEnv) && !utils.isEmpty(idlEnv)) {
+      const idlEnv = deepAccess(bidRequest, 'userId.idl_env');
+      if (isStr(idlEnv) && !isEmpty(idlEnv)) {
         payload.lr_env = idlEnv;
       }
 
@@ -172,7 +172,7 @@ function newRenderer(response) {
   try {
     renderer.setRender(outstreamRender);
   } catch (err) {
-    utils.logWarn('Prebid Error calling setRender on newRenderer', err);
+    logWarn('Prebid Error calling setRender on newRenderer', err);
   }
 
   return renderer;
@@ -181,6 +181,28 @@ function newRenderer(response) {
 function outstreamRender(bid) {
   bid.renderer.push(() => {
     window.DACIVTPREBID.renderPrebid(bid);
+  });
+}
+
+function newCmerRenderer(response) {
+  const renderer = Renderer.install({
+    id: response.uid,
+    url: CMER_PLAYER_URL,
+    loaded: false,
+  });
+
+  try {
+    renderer.setRender(cmerRender);
+  } catch (err) {
+    logWarn('Prebid Error calling setRender on newRenderer', err);
+  }
+
+  return renderer;
+}
+
+function cmerRender(bid) {
+  bid.renderer.push(() => {
+    window.CMERYONEPREBID.renderPrebid(bid);
   });
 }
 
