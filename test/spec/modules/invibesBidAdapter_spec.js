@@ -22,6 +22,39 @@ describe('invibesBidAdapter:', function () {
         [400, 300],
         [125, 125]
       ],
+      transactionId: 't1'
+    }, {
+      bidId: 'b2',
+      bidder: BIDDER_CODE,
+      bidderRequestId: 'r2',
+      params: {
+        placementId: 'abcde'
+      },
+      adUnitCode: 'test-div',
+      auctionId: 'a2',
+      sizes: [
+        [300, 250],
+        [400, 300]
+      ],
+      transactionId: 't2'
+    }
+  ];
+
+  let bidRequestsWithUserId = [
+    {
+      bidId: 'b1',
+      bidder: BIDDER_CODE,
+      bidderRequestId: 'r1',
+      params: {
+        placementId: PLACEMENT_ID
+      },
+      adUnitCode: 'test-div',
+      auctionId: 'a1',
+      sizes: [
+        [300, 250],
+        [400, 300],
+        [125, 125]
+      ],
       transactionId: 't1',
       userId: {
         pubcid: 'pub-cid-code',
@@ -104,7 +137,7 @@ describe('invibesBidAdapter:', function () {
         expect(spec.isBidRequestValid(invalidBid)).to.be.false;
       });
 
-      it('returns false when bid response was previously received', function () {
+      it('returns true when bid response was previously received', function () {
         const validBid = {
           bidder: BIDDER_CODE,
           params: {
@@ -113,7 +146,7 @@ describe('invibesBidAdapter:', function () {
         }
 
         top.window.invibes.bidResponse = {prop: 'prop'};
-        expect(spec.isBidRequestValid(validBid)).to.be.false;
+        expect(spec.isBidRequestValid(validBid)).to.be.true;
       });
     });
   });
@@ -141,17 +174,9 @@ describe('invibesBidAdapter:', function () {
     });
 
     it('has capped ids if local storage variable is correctly formatted', function () {
-      top.window.invibes.optIn = 1;
-      top.window.invibes.purposes = [true, false, false, false, false, false, false, false, false, false];
       localStorage.ivvcap = '{"9731":[1,1768600800000]}';
       const request = spec.buildRequests(bidRequests, {auctionStart: Date.now()});
       expect(request.data.capCounts).to.equal('9731=1');
-    });
-
-    it('does not have capped ids if local storage variable is correctly formatted but no opt in', function () {
-      localStorage.ivvcap = '{"9731":[1,1768600800000]}';
-      const request = spec.buildRequests(bidRequests, {auctionStart: Date.now()});
-      expect(request.data.capCounts).to.equal('');
     });
 
     it('does not have capped ids if local storage variable is incorrectly formatted', function () {
@@ -190,9 +215,20 @@ describe('invibesBidAdapter:', function () {
       expect(JSON.parse(request.data.bidParamsJson).placementIds).to.contain(bidRequests[1].params.placementId);
     });
 
+    it('sends all Placement Ids and userId', function () {
+      const request = spec.buildRequests(bidRequestsWithUserId);
+      expect(JSON.parse(request.data.bidParamsJson).userId).to.exist;
+    });
+
     it('sends undefined lid when no cookie', function () {
       let request = spec.buildRequests(bidRequests);
       expect(request.data.lId).to.be.undefined;
+    });
+
+    it('sends pushed cids if they exist', function () {
+      top.window.invibes.pushedCids = { 981: [] };
+      let request = spec.buildRequests(bidRequests);
+      expect(request.data.pcids).to.contain(981);
     });
 
     it('sends lid when comes on cookie', function () {
@@ -200,92 +236,83 @@ describe('invibesBidAdapter:', function () {
       top.window.invibes.purposes = [true, false, false, false, false, false, false, false, false, false];
       global.document.cookie = 'ivbsdid={"id":"dvdjkams6nkq","cr":' + Date.now() + ',"hc":0}';
       let bidderRequest = {gdprConsent: {vendorData: {vendorConsents: {436: true}}}};
+      global.document.cookie = 'ivbsdid={"id":"dvdjkams6nkq","cr":' + Date.now() + ',"hc":5}';
+      let request = spec.buildRequests(bidRequests, bidderRequest);
+      expect(request.data.lId).to.not.exist;
+    });
+
+    it('graduate and send the domain id', function () {
+      let bidderRequest = {gdprConsent: {vendorData: {vendorConsents: {436: true}}}};
+      stubDomainOptions(new StubbedPersistence('{"id":"dvdjkams6nkq","cr":1521818537626,"hc":7}'));
       let request = spec.buildRequests(bidRequests, bidderRequest);
       expect(request.data.lId).to.exist;
     });
 
-    it('should send purpose 1', function () {
-      let bidderRequest = {
-        gdprConsent: {
-          vendorData: {
-            gdprApplies: true,
-            hasGlobalConsent: false,
-            vendor: {consents: {436: true}},
-            purpose: {
-              consents: {
-                1: true,
-                2: true,
-                3: true,
-                4: true,
-                5: true,
-                6: true,
-                7: true,
-                8: true,
-                9: true,
-                10: true
-              }
-            }
-          }
-        }
-      };
+    it('send the domain id if already graduated', function () {
+      let bidderRequest = {gdprConsent: {vendorData: {vendorConsents: {436: true}}}};
+      stubDomainOptions(new StubbedPersistence('{"id":"f8zoh044p9oi"}'));
       let request = spec.buildRequests(bidRequests, bidderRequest);
-      expect(request.data.purposes.split(',')[0]).to.equal('true');
+      expect(request.data.lId).to.exist;
+      expect(top.window.invibes.dom.tempId).to.exist;
     });
 
-    it('should send purpose 2 & 7', function () {
-      let bidderRequest = {
-        gdprConsent: {
-          vendorData: {
-            gdprApplies: true,
-            hasGlobalConsent: false,
-            vendor: {consents: {436: true}},
-            purpose: {
-              consents: {
-                1: true,
-                2: true,
-                3: true,
-                4: true,
-                5: true,
-                6: true,
-                7: true,
-                8: true,
-                9: true,
-                10: true
-              }
-            }
-          }
-        }
-      };
+    it('send the domain id after replacing it with new format', function () {
+      let bidderRequest = {gdprConsent: {vendorData: {vendorConsents: {436: true}}}};
+      stubDomainOptions(new StubbedPersistence('{"id":"f8zoh044p9oi.8537626"}'));
       let request = spec.buildRequests(bidRequests, bidderRequest);
-      expect(request.data.purposes.split(',')[1] && request.data.purposes.split(',')[6]).to.equal('true');
+      expect(request.data.lId).to.exist;
+      expect(top.window.invibes.dom.tempId).to.exist;
     });
 
-    it('should send purpose 9', function () {
+    it('dont send the domain id if consent declined on tcf v1', function () {
       let bidderRequest = {
         gdprConsent: {
           vendorData: {
             gdprApplies: true,
             hasGlobalConsent: false,
-            vendor: {consents: {436: true}},
-            purpose: {
-              consents: {
-                1: true,
-                2: true,
-                3: true,
-                4: true,
-                5: true,
-                6: true,
-                7: true,
-                8: true,
-                9: true,
-                10: true
-              }
-            }
+            vendorConsents: {436: false}
           }
         }
       };
+      stubDomainOptions(new StubbedPersistence('{"id":"f8zoh044p9oi.8537626"}'));
       let request = spec.buildRequests(bidRequests, bidderRequest);
-      expect(request.data.purposes.split(',')[9]).to.equal('true');
+      expect(request.data.lId).to.not.exist;
+      expect(top.window.invibes.dom.tempId).to.not.exist;
+      expect(request.data.oi).to.equal(0);
+    });
+
+    it('dont send the domain id if consent declined on tcf v2', function () {
+      let bidderRequest = {
+        gdprConsent: {
+          vendorData: {
+            gdprApplies: true,
+            hasGlobalConsent: false,
+            vendor: {consents: {436: false}}
+          }
+        }
+      };
+      stubDomainOptions(new StubbedPersistence('{"id":"f8zoh044p9oi.8537626"}'));
+      let request = spec.buildRequests(bidRequests, bidderRequest);
+      expect(request.data.lId).to.not.exist;
+      expect(top.window.invibes.dom.tempId).to.not.exist;
+      expect(request.data.oi).to.equal(0);
+    });
+
+    it('dont send the domain id if no consent', function () {
+      let bidderRequest = {};
+      stubDomainOptions(new StubbedPersistence('{"id":"f8zoh044p9oi.8537626"}'));
+      let request = spec.buildRequests(bidRequests, bidderRequest);
+      expect(request.data.lId).to.not.exist;
+      expect(top.window.invibes.dom.tempId).to.not.exist;
+    });
+
+    it('try to init id but was already loaded on page - does not increment the id again', function () {
+      let bidderRequest = {gdprConsent: {vendorData: {vendorConsents: {436: true}}}};
+      global.document.cookie = 'ivbsdid={"id":"dvdjkams6nkq","cr":1521818537626,"hc":0}';
+      let request = spec.buildRequests(bidRequests, bidderRequest);
+      request = spec.buildRequests(bidRequests, bidderRequest);
+      expect(request.data.lId).to.not.exist;
+      expect(top.window.invibes.dom.tempId).to.exist;
     });
 
     it('should send legitimateInterests 2 & 7', function () {
@@ -460,7 +487,7 @@ describe('invibesBidAdapter:', function () {
       expect(request.data.oi).to.equal(0);
     });
 
-    it('should send oi = 2 when purpose consents weren\'t approved on tcf v2', function () {
+    it('should send oi = 0 when purpose consents weren\'t approved on tcf v2', function () {
       let bidderRequest = {
         gdprConsent: {
           vendorData: {
@@ -485,10 +512,10 @@ describe('invibesBidAdapter:', function () {
         }
       };
       let request = spec.buildRequests(bidRequests, bidderRequest);
-      expect(request.data.oi).to.equal(2);
+      expect(request.data.oi).to.equal(0);
     });
 
-    it('should send oi = 2 when purpose consents are less then 10 on tcf v2', function () {
+    it('should send oi = 0 when purpose consents are less then 10 on tcf v2', function () {
       let bidderRequest = {
         gdprConsent: {
           vendorData: {
@@ -508,7 +535,7 @@ describe('invibesBidAdapter:', function () {
         }
       };
       let request = spec.buildRequests(bidRequests, bidderRequest);
-      expect(request.data.oi).to.equal(2);
+      expect(request.data.oi).to.equal(0);
     });
 
     it('should send oi = 4 when vendor consents are null on tcf v2', function () {
@@ -643,7 +670,7 @@ describe('invibesBidAdapter:', function () {
       expect(request.data.oi).to.equal(2);
     });
 
-    it('should send oi = 2 when purpose consents weren\'t approved on tcf v1', function () {
+    it('should send oi = 0 when purpose consents weren\'t approved on tcf v1', function () {
       let bidderRequest = {
         gdprConsent: {
           vendorData: {
@@ -661,10 +688,10 @@ describe('invibesBidAdapter:', function () {
         }
       };
       let request = spec.buildRequests(bidRequests, bidderRequest);
-      expect(request.data.oi).to.equal(2);
+      expect(request.data.oi).to.equal(0);
     });
 
-    it('should send oi = 2 when purpose consents are less then 5 on tcf v1', function () {
+    it('should send oi = 0 when purpose consents are less then 5 on tcf v1', function () {
       let bidderRequest = {
         gdprConsent: {
           vendorData: {
@@ -680,7 +707,7 @@ describe('invibesBidAdapter:', function () {
         }
       };
       let request = spec.buildRequests(bidRequests, bidderRequest);
-      expect(request.data.oi).to.equal(2);
+      expect(request.data.oi).to.equal(0);
     });
 
     it('should send oi = 0 when vendor consents for invibes are false on tcf v1', function () {
@@ -738,6 +765,7 @@ describe('invibesBidAdapter:', function () {
     }];
 
     let multiResponse = {
+      MultipositionEnabled: true,
       AdPlacements: [{
         Ads: [{
           BidPrice: 0.5,
@@ -776,6 +804,26 @@ describe('invibesBidAdapter:', function () {
           advertiserName: 'theadvertiser'
         }
       }
+    };
+
+    var buildResponse = function(placementId, cid, blcids, creativeId) {
+      return {
+        MultipositionEnabled: true,
+        AdPlacements: [{
+          Ads: [{
+            BidPrice: 0.5,
+            VideoExposedId: creativeId,
+            Cid: cid,
+            Blcids: blcids
+          }],
+          BidModel: {
+            BidVersion: 1,
+            PlacementId: placementId,
+            AuctionStartTime: Date.now(),
+            CreativeHtml: '<!-- Creative -->'
+          }
+        }]
+      };
     };
 
     context('when the response is not valid', function () {
@@ -856,6 +904,53 @@ describe('invibesBidAdapter:', function () {
         expect(result[0].meta.advertiserDomains).to.contain('theadvertiser_2.com');
       });
     });
+
+    context('in multiposition context, with conflicting ads', function() {
+      it('registers the second ad when no conflict', function() {
+        var firstResponse = buildResponse('12345', 1, [1], 123);
+        var secondResponse = buildResponse('abcde', 2, [2], 456);
+
+        var firstResult = spec.interpretResponse({body: firstResponse}, {bidRequests});
+        var secondResult = spec.interpretResponse({body: secondResponse}, {bidRequests});
+        expect(secondResult[0].creativeId).to.equal(456);
+      });
+
+      it('registers the second ad when no conflict - empty arrays', function() {
+        var firstResponse = buildResponse('12345', 1, [], 123);
+        var secondResponse = buildResponse('abcde', 2, [], 456);
+
+        var firstResult = spec.interpretResponse({body: firstResponse}, {bidRequests});
+        var secondResult = spec.interpretResponse({body: secondResponse}, {bidRequests});
+        expect(secondResult[0].creativeId).to.equal(456);
+      });
+
+      it('doesnt register the second ad when it is blacklisted by the first', function() {
+        var firstResponse = buildResponse('12345', 1, [2], 123);
+        var secondResponse = buildResponse('abcde', 2, [], 456);
+
+        var firstResult = spec.interpretResponse({body: firstResponse}, {bidRequests});
+        var secondResult = spec.interpretResponse({body: secondResponse}, {bidRequests});
+        expect(secondResult).to.be.empty;
+      });
+
+      it('doesnt register the second ad when it is blacklisting the first', function() {
+        var firstResponse = buildResponse('12345', 1, [], 123);
+        var secondResponse = buildResponse('abcde', 2, [1], 456);
+
+        var firstResult = spec.interpretResponse({body: firstResponse}, {bidRequests});
+        var secondResult = spec.interpretResponse({body: secondResponse}, {bidRequests});
+        expect(secondResult).to.be.empty;
+      });
+
+      it('doesnt register the second ad when it has same ids as the first', function() {
+        var firstResponse = buildResponse('12345', 1, [1], 123);
+        var secondResponse = buildResponse('abcde', 1, [1], 456);
+
+        var firstResult = spec.interpretResponse({body: firstResponse}, {bidRequests});
+        var secondResult = spec.interpretResponse({body: secondResponse}, {bidRequests});
+        expect(secondResult).to.be.empty;
+      });
+    });
   });
 
   describe('getUserSyncs', function () {
@@ -868,16 +963,6 @@ describe('invibesBidAdapter:', function () {
     it('returns an iframe with params if enabled', function () {
       top.window.invibes.optIn = 1;
       global.document.cookie = 'ivvbks=17639.0,1,2';
-      let response = spec.getUserSyncs({iframeEnabled: true});
-      expect(response.type).to.equal('iframe');
-      expect(response.url).to.include(SYNC_ENDPOINT);
-      expect(response.url).to.include('optIn');
-      expect(response.url).to.include('ivvbks');
-    });
-
-    it('returns an iframe with params including if enabled', function () {
-      top.window.invibes.optIn = 1;
-      global.document.cookie = 'ivvbks=17639.0,1,2;ivbsdid={"id":"dvdjkams6nkq","cr":' + Date.now() + ',"hc":0}';
       let response = spec.getUserSyncs({iframeEnabled: true});
       expect(response.type).to.equal('iframe');
       expect(response.url).to.include(SYNC_ENDPOINT);

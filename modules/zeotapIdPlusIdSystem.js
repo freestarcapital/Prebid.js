@@ -4,7 +4,7 @@
  * @module modules/zeotapIdPlusIdSystem
  * @requires module:modules/userId
  */
-import * as utils from '../src/utils.js'
+import { isStr, isPlainObject } from '../src/utils.js';
 import {submodule} from '../src/hook.js';
 import { getStorageManager } from '../src/storageManager.js';
 
@@ -32,12 +32,6 @@ export const zeotapIdPlusSubmodule = {
    * used to link submodule with config
    * @type {string}
    */
-  name: ZEOTAP_MODULE_NAME,
-  /**
-   * Vendor ID of Zeotap
-   * @type {Number}
-   */
-  gvlid: ZEOTAP_VENDOR_ID,
   /**
    * decode the stored id value for passing to bid requests
    * @function
@@ -45,7 +39,7 @@ export const zeotapIdPlusSubmodule = {
    * @return { Object | string | undefined }
    */
   decode(value) {
-    const id = value ? utils.isStr(value) ? value : utils.isPlainObject(value) ? value.id : undefined : undefined;
+    const id = value ? isStr(value) ? value : isPlainObject(value) ? value.id : undefined : undefined;
     return id ? {
       'IDP': JSON.parse(atob(id))
     } : undefined;

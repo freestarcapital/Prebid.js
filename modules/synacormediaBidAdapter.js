@@ -1,6 +1,6 @@
 'use strict';
 
-import { getAdUnitSizes, logWarn, deepSetValue } from '../src/utils.js';
+import { getAdUnitSizes, logWarn } from '../src/utils.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { BANNER, VIDEO } from '../src/mediaTypes.js';
 import includes from 'core-js-pure/features/array/includes.js';
@@ -200,7 +200,7 @@ export const spec = {
       .filter(param => includes(VIDEO_PARAMS, param) && sourceObj[param] !== null && (!isNaN(parseInt(sourceObj[param], 10)) || !(sourceObj[param].length < 1)))
       .forEach(param => destObj[param] = Array.isArray(sourceObj[param]) ? sourceObj[param] : parseInt(sourceObj[param], 10));
   },
-  interpretResponse: function(serverResponse, bidRequest) {
+  interpretResponse: function(serverResponse) {
     const updateMacros = (bid, r) => {
       return r ? r.replace(/\${AUCTION_PRICE}/g, bid.price) : r;
     };

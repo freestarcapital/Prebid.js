@@ -18,7 +18,6 @@ Module that connects to Project Limelight SSP demand sources
                 bids: [{
                         bidder: 'project-limelight',
                         params: {
-                            host: 'ads.project-limelight.com',
                             adUnitId: 0,
                             adUnitType: 'banner'
                         }
@@ -35,7 +34,6 @@ var videoAdUnit = [{
                 bids: [{
                         bidder: 'project-limelight',
                         params: {
-                            host: 'ads.project-limelight.com',
                             adUnitId: 0,
                             adUnitType: 'video'
                         }

@@ -158,7 +158,7 @@ export function getAdUnitSizes(adUnit) {
     } else {
       sizes.push(bannerSizes);
     }
-  // TODO - remove this else block when we're ready to deprecate adUnit.sizes for bidders
+    // TODO - remove this else block when we're ready to deprecate adUnit.sizes for bidders
   } else if (Array.isArray(adUnit.sizes)) {
     if (Array.isArray(adUnit.sizes[0])) {
       sizes = adUnit.sizes;
@@ -661,6 +661,12 @@ export function getBidderCodes(adUnits = $$PREBID_GLOBAL$$.adUnits) {
 
 export function isGptPubadsDefined() {
   if (window.googletag && isFn(window.googletag.pubads) && isFn(window.googletag.pubads().getSlots)) {
+    return true;
+  }
+}
+
+export function isApnGetTagDefined() {
+  if (window.apntag && isFn(window.apntag.getTag)) {
     return true;
   }
 }

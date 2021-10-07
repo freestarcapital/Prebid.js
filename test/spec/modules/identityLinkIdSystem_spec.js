@@ -48,22 +48,7 @@ describe('IdentityLinkId tests', function () {
     expect(callBackSpy.calledOnce).to.be.true;
   });
 
-  it('should NOT call the LiveRamp envelope endpoint if gdpr applies but consent string is empty string', function () {
-    let consentData = {
-      gdprApplies: true,
-      consentString: ''
-    };
-    let submoduleCallback = identityLinkSubmodule.getId(defaultConfigParams, consentData);
-    expect(submoduleCallback).to.be.undefined;
-  });
-
-  it('should NOT call the LiveRamp envelope endpoint if gdpr applies but consent string is missing', function () {
-    let consentData = { gdprApplies: true };
-    let submoduleCallback = identityLinkSubmodule.getId(defaultConfigParams, consentData);
-    expect(submoduleCallback).to.be.undefined;
-  });
-
-  it('should call the LiveRamp envelope endpoint with IAB consent string v1', function () {
+  it('should call the LiveRamp envelope endpoint with consent string', function () {
     let callBackSpy = sinon.spy();
     let consentData = {
       gdprApplies: true,
@@ -73,27 +58,6 @@ describe('IdentityLinkId tests', function () {
     submoduleCallback(callBackSpy);
     let request = server.requests[0];
     expect(request.url).to.be.eq('https://api.rlcdn.com/api/identity/envelope?pid=14&ct=1&cv=BOkIpDSOkIpDSADABAENCc-AAAApOAFAAMAAsAMIAcAA_g');
-    request.respond(
-      200,
-      responseHeader,
-      JSON.stringify({})
-    );
-    expect(callBackSpy.calledOnce).to.be.true;
-  });
-
-  it('should call the LiveRamp envelope endpoint with IAB consent string v2', function () {
-    let callBackSpy = sinon.spy();
-    let consentData = {
-      gdprApplies: true,
-      consentString: 'CO4VThZO4VTiuADABBENAzCgAP_AAEOAAAAAAwwAgAEABhAAgAgAAA.YAAAAAAAAAA',
-      vendorData: {
-        tcfPolicyVersion: 2
-      }
-    };
-    let submoduleCallback = identityLinkSubmodule.getId(defaultConfigParams, consentData).callback;
-    submoduleCallback(callBackSpy);
-    let request = server.requests[0];
-    expect(request.url).to.be.eq('https://api.rlcdn.com/api/identity/envelope?pid=14&ct=4&cv=CO4VThZO4VTiuADABBENAzCgAP_AAEOAAAAAAwwAgAEABhAAgAgAAA.YAAAAAAAAAA');
     request.respond(
       200,
       responseHeader,
@@ -128,6 +92,31 @@ describe('IdentityLinkId tests', function () {
       503,
       responseHeader,
       'Unavailable'
+    );
+    expect(callBackSpy.calledOnce).to.be.true;
+  });
+
+  it('should not call the LiveRamp envelope endpoint if cookie _lr_retry_request exist', function () {
+    let now = new Date();
+    now.setTime(now.getTime() + 3000);
+    storage.setCookie('_lr_retry_request', 'true', now.toUTCString());
+    let callBackSpy = sinon.spy();
+    let submoduleCallback = identityLinkSubmodule.getId(defaultConfigParams).callback;
+    submoduleCallback(callBackSpy);
+    let request = server.requests[0];
+    expect(request).to.be.eq(undefined);
+  });
+
+  it('should call the LiveRamp envelope endpoint if cookie _lr_retry_request does not exist and notUse3P config property was not set', function () {
+    let callBackSpy = sinon.spy();
+    let submoduleCallback = identityLinkSubmodule.getId(defaultConfigParams).callback;
+    submoduleCallback(callBackSpy);
+    let request = server.requests[0];
+    expect(request.url).to.be.eq('https://api.rlcdn.com/api/identity/envelope?pid=14');
+    request.respond(
+      200,
+      responseHeader,
+      JSON.stringify({})
     );
     expect(callBackSpy.calledOnce).to.be.true;
   });

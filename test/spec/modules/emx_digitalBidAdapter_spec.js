@@ -414,6 +414,40 @@ describe('emx_digital Adapter', function () {
       expect(request.source.ext.schain).to.have.property('ver', '1.0');
       expect(request.source.ext.schain.nodes[0].asi).to.equal(schainBidderRequest.bids[0].schain.nodes[0].asi);
     });
+
+    it('should add liveramp identitylink id to request', () => {
+      const idl_env = '123';
+      const bidRequestWithID = utils.deepClone(bidderRequest);
+      bidRequestWithID.userId = { idl_env };
+      let requestWithID = spec.buildRequests(bidRequestWithID.bids, bidRequestWithID);
+      requestWithID = JSON.parse(requestWithID.data);
+      expect(requestWithID.user.ext.eids[0]).to.deep.equal({
+        source: 'liveramp.com',
+        uids: [{
+          id: idl_env,
+          ext: {
+            rtiPartner: 'idl'
+          }
+        }]
+      });
+    });
+
+    it('should add UID 2.0 to request', () => {
+      const uid2 = { id: '456' };
+      const bidRequestWithUID = utils.deepClone(bidderRequest);
+      bidRequestWithUID.userId = { uid2 };
+      let requestWithUID = spec.buildRequests(bidRequestWithUID.bids, bidRequestWithUID);
+      requestWithUID = JSON.parse(requestWithUID.data);
+      expect(requestWithUID.user.ext.eids[0]).to.deep.equal({
+        source: 'uidapi.com',
+        uids: [{
+          id: uid2.id,
+          ext: {
+            rtiPartner: 'UID2'
+          }
+        }]
+      });
+    });
   });
 
   describe('interpretResponse', function () {
@@ -671,23 +705,12 @@ describe('emx_digital Adapter', function () {
   });
 
   describe('getUserSyncs', function () {
-    it('should register the iframe sync url', function () {
-      let syncs = spec.getUserSyncs({
-        iframeEnabled: true
-      });
-      expect(syncs).to.not.be.an('undefined');
-      expect(syncs).to.have.lengthOf(1);
-      expect(syncs[0].type).to.equal('iframe');
-    });
-
-    it('should pass gdpr params', function () {
-      let syncs = spec.getUserSyncs({ iframeEnabled: true }, {}, {
-        gdprApplies: false, consentString: 'test'
-      });
-      expect(syncs).to.not.be.an('undefined');
-      expect(syncs).to.have.lengthOf(1);
-      expect(syncs[0].type).to.equal('iframe');
-      expect(syncs[0].url).to.contains('gdpr=0');
+    let syncOptionsIframe = { iframeEnabled: true };
+    let syncOptionsPixel = { pixelEnabled: true };
+    it('Should push the correct sync type depending on the config', function () {
+      let iframeSync = spec.getUserSyncs(syncOptionsIframe);
+      expect(iframeSync.length).to.equal(1);
+      expect(iframeSync[0].type).to.equal('iframe');
     });
   });
 });

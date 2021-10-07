@@ -6,7 +6,7 @@ import { generateUUID, deepAccess, convertTypes, formatQS } from '../src/utils.j
 import findIndex from 'core-js-pure/features/array/find-index.js';
 import includes from 'core-js-pure/features/array/includes.js';
 
-const code = 'audienceNetwork'; 
+const code = 'audienceNetwork';
 const currency = 'USD';
 const method = 'GET';
 const url = 'https://an.facebook.com/v2/placementbid.json';

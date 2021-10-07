@@ -144,7 +144,6 @@ describe('the spotx adapter', function () {
         outstream_options: {foo: 'bar'},
         outstream_function: '987',
         custom: {bar: 'foo'},
-        price_floor: 123,
         start_delay: true,
         number_of_ads: 2,
         spotx_all_google_consent: 1,
@@ -194,7 +193,6 @@ describe('the spotx adapter', function () {
       });
 
       expect(request.data.imp.video.startdelay).to.equal(1);
-      expect(request.data.imp.bidfloor).to.equal(123);
       expect(request.data.ext).to.deep.equal({
         number_of_ads: 2,
         wrap_response: 1
@@ -405,6 +403,42 @@ describe('the spotx adapter', function () {
       expect(request.data.ext.wrap_response).to.equal(0);
       config.getConfig.restore();
     });
+
+    it('should pass price floor in USD from the floors module if available', function () {
+      var request;
+
+      bid.getFloor = function () {
+        return { currency: 'USD', floor: 3 };
+      }
+
+      bid.params.price_floor = 2;
+
+      request = spec.buildRequests([bid], bidRequestObj)[0];
+
+      expect(request.data.imp.bidfloor).to.equal(3);
+    });
+
+    it('should not pass price floor if price floors module gives a non-USD currency', function () {
+      var request;
+
+      bid.getFloor = function () {
+        return { currency: 'EUR', floor: 3 };
+      }
+
+      request = spec.buildRequests([bid], bidRequestObj)[0];
+
+      expect(request.data.imp.bidfloor).to.be.undefined;
+    });
+
+    it('if floors module is not available, should pass price floor from price_floor param if available', function () {
+      var request;
+
+      bid.params.price_floor = 2;
+
+      request = spec.buildRequests([bid], bidRequestObj)[0];
+
+      expect(request.data.imp.bidfloor).to.equal(2);
+    });
   });
 
   describe('interpretResponse', function() {
@@ -455,7 +489,6 @@ describe('the spotx adapter', function () {
               impid: 123,
               cur: 'USD',
               price: 12,
-              adomain: ['abc.com'],
               crid: 321,
               w: 400,
               h: 300,
@@ -467,7 +500,6 @@ describe('the spotx adapter', function () {
               impid: 124,
               cur: 'USD',
               price: 13,
-              adomain: ['def.com'],
               w: 200,
               h: 100,
               ext: {
@@ -485,7 +517,6 @@ describe('the spotx adapter', function () {
       expect(responses).to.be.an('array').with.length(2);
       expect(responses[0].cache_key).to.equal('cache123');
       expect(responses[0].channel_id).to.equal(12345);
-      expect(responses[0].meta.advertiserDomains[0]).to.equal('abc.com');
       expect(responses[0].cpm).to.equal(12);
       expect(responses[0].creativeId).to.equal(321);
       expect(responses[0].currency).to.equal('USD');
@@ -499,7 +530,6 @@ describe('the spotx adapter', function () {
       expect(responses[1].cache_key).to.equal('cache124');
       expect(responses[1].channel_id).to.equal(12345);
       expect(responses[1].cpm).to.equal(13);
-      expect(responses[1].meta.advertiserDomains[0]).to.equal('def.com');
       expect(responses[1].creativeId).to.equal('');
       expect(responses[1].currency).to.equal('USD');
       expect(responses[1].height).to.equal(100);

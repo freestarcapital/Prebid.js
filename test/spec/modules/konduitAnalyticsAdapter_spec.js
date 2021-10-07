@@ -84,43 +84,43 @@ describe(`Konduit Analytics Adapter`, () => {
 
   it(`should add all events to an aggregatedEvents queue
    inside konduitAnalyticsAdapter.context and send a request with correct data`, function () {
-    server.respondWith(JSON.stringify({ key: 'test' }));
+      server.respondWith(JSON.stringify({ key: 'test' }));
 
-    adapterManager.registerAnalyticsAdapter({
-      code: 'konduit',
-      adapter: konduitAnalyticsAdapter
+      adapterManager.registerAnalyticsAdapter({
+        code: 'konduit',
+        adapter: konduitAnalyticsAdapter
+      });
+
+      adapterManager.enableAnalytics({
+        provider: 'konduit',
+      });
+
+      expect(konduitAnalyticsAdapter.context).to.be.an('object');
+      expect(konduitAnalyticsAdapter.context.aggregatedEvents).to.be.an('array');
+
+      const eventTypes = [
+        CONSTANTS.EVENTS.AUCTION_INIT,
+        CONSTANTS.EVENTS.BID_REQUESTED,
+        CONSTANTS.EVENTS.NO_BID,
+        CONSTANTS.EVENTS.BID_RESPONSE,
+        CONSTANTS.EVENTS.BID_WON,
+        CONSTANTS.EVENTS.AUCTION_END,
+      ];
+      const args = eventTypes.map(eventType => eventsData[eventType]);
+
+      eventTypes.forEach((eventType, i) => {
+        events.emit(eventType, args[i]);
+      });
+
+      server.respond();
+
+      expect(konduitAnalyticsAdapter.context.aggregatedEvents.length).to.be.equal(6);
+      expect(server.requests[0].url).to.match(/http(s):\/\/\w*\.konduit\.me\/analytics-initial-event/);
+
+      const requestBody = JSON.parse(server.requests[0].requestBody);
+      expect(requestBody.konduitId).to.be.equal(konduitId);
+      expect(requestBody.prebidVersion).to.be.equal('$prebid.version$');
+      expect(requestBody.environment).to.be.an('object');
+      sinon.assert.callCount(konduitAnalyticsAdapter.track, 6);
     });
-
-    adapterManager.enableAnalytics({
-      provider: 'konduit',
-    });
-
-    expect(konduitAnalyticsAdapter.context).to.be.an('object');
-    expect(konduitAnalyticsAdapter.context.aggregatedEvents).to.be.an('array');
-
-    const eventTypes = [
-      CONSTANTS.EVENTS.AUCTION_INIT,
-      CONSTANTS.EVENTS.BID_REQUESTED,
-      CONSTANTS.EVENTS.NO_BID,
-      CONSTANTS.EVENTS.BID_RESPONSE,
-      CONSTANTS.EVENTS.BID_WON,
-      CONSTANTS.EVENTS.AUCTION_END,
-    ];
-    const args = eventTypes.map(eventType => eventsData[eventType]);
-
-    eventTypes.forEach((eventType, i) => {
-      events.emit(eventType, args[i]);
-    });
-
-    server.respond();
-
-    expect(konduitAnalyticsAdapter.context.aggregatedEvents.length).to.be.equal(6);
-    expect(server.requests[0].url).to.match(/http(s):\/\/\w*\.konduit\.me\/analytics-initial-event/);
-
-    const requestBody = JSON.parse(server.requests[0].requestBody);
-    expect(requestBody.konduitId).to.be.equal(konduitId);
-    expect(requestBody.prebidVersion).to.be.equal('$prebid.version$');
-    expect(requestBody.environment).to.be.an('object');
-    sinon.assert.callCount(konduitAnalyticsAdapter.track, 6);
-  });
 });

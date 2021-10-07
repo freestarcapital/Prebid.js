@@ -7,7 +7,7 @@ BritePool User ID Module. For assistance setting up your module please contact u
 Individual params may be set for the BritePool User ID Submodule. 
 ```
 pbjs.setConfig({
-    userSync: {
+    usersync: {
         userIds: [{
             name: 'britepoolId',
             storage: {

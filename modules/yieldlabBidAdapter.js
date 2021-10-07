@@ -1,4 +1,4 @@
-import * as utils from '../src/utils.js'
+import { _each, isPlainObject, isArray, deepAccess } from '../src/utils.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js'
 import find from 'core-js-pure/features/array/find.js'
 import { VIDEO, BANNER } from '../src/mediaTypes.js'
@@ -9,9 +9,11 @@ const BIDDER_CODE = 'yieldlab'
 const BID_RESPONSE_TTL_SEC = 300
 const CURRENCY_CODE = 'EUR'
 const OUTSTREAMPLAYER_URL = 'https://ad.adition.com/dynamic.ad?a=o193092&ma_loadEvent=ma-start-event'
+const GVLID = 70
 
 export const spec = {
   code: BIDDER_CODE,
+  gvlid: GVLID,
   supportedMediaTypes: [VIDEO, BANNER],
 
   isBidRequestValid: function (bid) {
@@ -34,7 +36,7 @@ export const spec = {
       json: true
     }
 
-    utils._each(validBidRequests, function (bid) {
+    _each(validBidRequests, function (bid) {
       adslotIds.push(bid.params.adslotId)
       if (bid.params.targeting) {
         query.t = createTargetingString(bid.params.targeting)
@@ -42,12 +44,12 @@ export const spec = {
       if (bid.userIdAsEids && Array.isArray(bid.userIdAsEids)) {
         query.ids = createUserIdString(bid.userIdAsEids)
       }
-      if (bid.params.customParams && utils.isPlainObject(bid.params.customParams)) {
+      if (bid.params.customParams && isPlainObject(bid.params.customParams)) {
         for (let prop in bid.params.customParams) {
           query[prop] = bid.params.customParams[prop]
         }
       }
-      if (bid.schain && utils.isPlainObject(bid.schain) && Array.isArray(bid.schain.nodes)) {
+      if (bid.schain && isPlainObject(bid.schain) && Array.isArray(bid.schain.nodes)) {
         query.schain = createSchainString(bid.schain)
       }
     })
@@ -96,12 +98,13 @@ export const spec = {
       })
 
       if (matchedBid) {
-        const adUnitSize = bidRequest.sizes.length === 2 && !utils.isArray(bidRequest.sizes[0]) ? bidRequest.sizes : bidRequest.sizes[0]
+        const adUnitSize = bidRequest.sizes.length === 2 && !isArray(bidRequest.sizes[0]) ? bidRequest.sizes : bidRequest.sizes[0]
         const adSize = bidRequest.params.adSize !== undefined ? parseSize(bidRequest.params.adSize) : (matchedBid.adsize !== undefined) ? parseSize(matchedBid.adsize) : adUnitSize
         const extId = bidRequest.params.extId !== undefined ? '&id=' + bidRequest.params.extId : ''
         const adType = matchedBid.adtype !== undefined ? matchedBid.adtype : ''
         const gdprApplies = reqParams.gdpr ? '&gdpr=' + reqParams.gdpr : ''
         const gdprConsent = reqParams.consent ? '&consent=' + reqParams.consent : ''
+        const pvId = matchedBid.pvid !== undefined ? '&pvid=' + matchedBid.pvid : ''
 
         const bidResponse = {
           requestId: bidRequest.bidId,
@@ -114,7 +117,10 @@ export const spec = {
           netRevenue: false,
           ttl: BID_RESPONSE_TTL_SEC,
           referrer: '',
-          ad: `<script src="${ENDPOINT}/d/${matchedBid.id}/${bidRequest.params.supplyId}/?ts=${timestamp}${extId}${gdprApplies}${gdprConsent}"></script>`
+          ad: `<script src="${ENDPOINT}/d/${matchedBid.id}/${bidRequest.params.supplyId}/?ts=${timestamp}${extId}${gdprApplies}${gdprConsent}${pvId}"></script>`,
+          meta: {
+            advertiserDomains: (matchedBid.advertiser) ? matchedBid.advertiser : 'n/a'
+          }
         }
 
         if (isVideo(bidRequest, adType)) {
@@ -124,7 +130,7 @@ export const spec = {
             bidResponse.height = playersize[1]
           }
           bidResponse.mediaType = VIDEO
-          bidResponse.vastUrl = `${ENDPOINT}/d/${matchedBid.id}/${bidRequest.params.supplyId}/?ts=${timestamp}${extId}${gdprApplies}${gdprConsent}`
+          bidResponse.vastUrl = `${ENDPOINT}/d/${matchedBid.id}/${bidRequest.params.supplyId}/?ts=${timestamp}${extId}${gdprApplies}${gdprConsent}${pvId}`
           if (isOutstream(bidRequest)) {
             const renderer = Renderer.install({
               id: bidRequest.bidId,
@@ -150,7 +156,7 @@ export const spec = {
  * @returns {Boolean}
  */
 function isVideo (format, adtype) {
-  return utils.deepAccess(format, 'mediaTypes.video') && adtype.toLowerCase() === 'video'
+  return deepAccess(format, 'mediaTypes.video') && adtype.toLowerCase() === 'video'
 }
 
 /**
@@ -159,7 +165,7 @@ function isVideo (format, adtype) {
  * @returns {Boolean}
  */
 function isOutstream (format) {
-  let context = utils.deepAccess(format, 'mediaTypes.video.context')
+  let context = deepAccess(format, 'mediaTypes.video.context')
   return (context === 'outstream')
 }
 
@@ -169,8 +175,8 @@ function isOutstream (format) {
  * @returns {Array}
  */
 function getPlayerSize (format) {
-  let playerSize = utils.deepAccess(format, 'mediaTypes.video.playerSize')
-  return (playerSize && utils.isArray(playerSize[0])) ? playerSize[0] : playerSize
+  let playerSize = deepAccess(format, 'mediaTypes.video.playerSize')
+  return (playerSize && isArray(playerSize[0])) ? playerSize[0] : playerSize
 }
 
 /**

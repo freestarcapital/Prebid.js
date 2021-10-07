@@ -28,7 +28,15 @@ describe('Adkernel adapter', function () {
         banner: {
           sizes: [[728, 90]]
         }
-      }
+      },
+      userIdAsEids: [
+        {
+          source: 'crwdcntrl.net',
+          uids: [
+            {atype: 1, id: '97d09fbba28542b7acbb6317c9534945a702b74c5993c352f332cfe83f40cdd9'}
+          ]
+        }
+      ]
     }, bid3_host2 = {
       bidder: 'adkernel',
       params: {zoneId: 1, host: 'rtb-private.adkernel.com'},
@@ -171,8 +179,7 @@ describe('Adkernel adapter', function () {
           nurl: 'https://rtb.com/win?i=ZjKoPYSFI3Y_0',
           adm: '<!-- admarkup here -->',
           w: 300,
-          h: 250,
-          dealid: 'deal'
+          h: 250
         }]
       }],
       ext: {
@@ -251,6 +258,7 @@ describe('Adkernel adapter', function () {
 
   function buildRequest(bidRequests, bidderRequest = DEFAULT_BIDDER_REQUEST, dnt = true) {
     let dntmock = sandbox.stub(utils, 'getDNT').callsFake(() => dnt);
+    bidderRequest.bids = bidRequests;
     let pbRequests = spec.buildRequests(bidRequests, bidderRequest);
     dntmock.restore();
     let rtbRequests = pbRequests.map(r => JSON.parse(r.data));
@@ -322,7 +330,6 @@ describe('Adkernel adapter', function () {
     it('should fill device with caller macro', function () {
       expect(bidRequest).to.have.property('device');
       expect(bidRequest.device).to.have.property('ip', 'caller');
-      expect(bidRequest.device).to.have.property('ipv6', 'caller');
       expect(bidRequest.device).to.have.property('ua', 'caller');
       expect(bidRequest.device).to.have.property('dnt', 1);
     });
@@ -380,6 +387,17 @@ describe('Adkernel adapter', function () {
       };
       let [_, bidRequests] = buildRequest([bid]);
       expect(bidRequests[0].imp[0]).to.have.property('bidfloor', 0.145);
+    });
+
+    it('should forward user ids if available', function() {
+      let bid = Object.assign({}, bid2_zone2);
+      let [_, bidRequests] = buildRequest([bid]);
+      expect(bidRequests[0]).to.have.property('user');
+      expect(bidRequests[0].user).to.have.property('ext');
+      expect(bidRequests[0].user.ext).to.have.property('eids');
+      expect(bidRequests[0].user.ext.eids).to.be.an('array').that.is.not.empty;
+      expect(bidRequests[0].user.ext.eids[0]).to.have.property('source');
+      expect(bidRequests[0].user.ext.eids[0]).to.have.property('uids');
     });
   });
 
@@ -531,7 +549,6 @@ describe('Adkernel adapter', function () {
       expect(resp).to.have.property('ttl');
       expect(resp).to.have.property('mediaType', BANNER);
       expect(resp).to.have.property('ad');
-      expect(resp).to.have.property('dealId', 'deal');
       expect(resp.ad).to.have.string('<!-- admarkup here -->');
     });
 

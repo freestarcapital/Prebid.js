@@ -1471,7 +1471,7 @@ describe('adapterManager tests', function () {
       checkServerCalled(2, 1, 0);
 
       // appnexus
-      sinon.assert.notCalled(appnexusAdapterMock.callBids);
+      checkClientCalled(appnexusAdapterMock, 2);
 
       // adequant
       sinon.assert.notCalled(adequantAdapterMock.callBids);
