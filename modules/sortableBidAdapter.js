@@ -216,6 +216,7 @@ export const spec = {
       if (bid.params.floorSizeMap) {
         rv.ext.floorSizeMap = bid.params.floorSizeMap;
       }
+      rv.ext.gpid = utils.deepAccess(bid, 'ortb2Imp.ext.data.pbadslot');
       return rv;
     });
     const gdprConsent = bidderRequest && bidderRequest.gdprConsent;
