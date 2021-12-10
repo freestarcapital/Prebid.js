@@ -49,5 +49,6 @@
     "intentIqIdSystem",
     "yieldmoBidAdapter",
     "enrichmentFpdModule",
-    "fabrickIdSystem"
+    "fabrickIdSystem",
+    "concertBidAdapter"
 ]
