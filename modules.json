@@ -1,6 +1,5 @@
 [
     "33acrossBidAdapter",
-    "aardvarkBidAdapter",
     "aolBidAdapter",
     "appnexusBidAdapter",
     "atsAnalyticsAdapter",
@@ -26,7 +25,6 @@
     "parrableIdSystem",
     "prebidServerBidAdapter",
     "pubCommonId",
-    "pubCommonIdSystem",
     "pubmaticBidAdapter",
     "rtdModule",
     "rubiconBidAdapter",
