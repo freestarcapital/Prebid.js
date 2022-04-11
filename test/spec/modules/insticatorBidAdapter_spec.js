@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { spec, storage } from '../../../modules/insticatorBidAdapter.js';
 import { newBidder } from 'src/adapters/bidderFactory.js'
+import { userSync } from '../../../src/userSync.js';
 
 const USER_ID_KEY = 'hb_insticator_uid';
 const USER_ID_DUMMY_VALUE = '74f78609-a92d-4cf1-869f-1b244bbfb5d2';
@@ -383,12 +384,14 @@ describe('InsticatorBidAdapter', function () {
         width: 300,
         height: 200,
         mediaType: 'banner',
+        meta: {
+          advertiserDomains: [
+            'test1.com'
+          ],
+          test: 1
+        },
         ad: 'adm1',
         adUnitCode: 'adunit-code-1',
-        meta: {
-          advertiserDomains: ['test1.com'],
-          test: 1
-        }
       },
       {
         requestId: 'bid2',
