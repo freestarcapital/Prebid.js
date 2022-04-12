@@ -48,5 +48,6 @@
     "yieldmoBidAdapter",
     "enrichmentFpdModule",
     "fabrickIdSystem",
-    "concertBidAdapter"
+    "concertBidAdapter",
+    "yahoosspBidAdapter"
 ]
