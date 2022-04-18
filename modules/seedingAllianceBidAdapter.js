@@ -152,10 +152,10 @@ export const spec = {
 
     const { seatbid, cur } = serverResponse.body;
 
-    const bidResponses = flatten(seatbid.map(seat => seat.bid)).reduce((result, bid) => {
+    const bidResponses = (typeof seatbid != 'undefined') ? flatten(seatbid.map(seat => seat.bid)).reduce((result, bid) => {
       result[bid.impid - 1] = bid;
       return result;
-    }, []);
+    }, []) : [];
 
     return bids
       .map((bid, id) => {
@@ -167,7 +167,7 @@ export const spec = {
             cpm: bidResponse.price,
             creativeId: bidResponse.crid,
             ttl: 1000,
-            netRevenue: bid.netRevenue === 'net',
+            netRevenue: (!bid.netRevenue || bid.netRevenue === 'net'),
             currency: cur,
             mediaType: NATIVE,
             bidderCode: BIDDER_CODE,
@@ -189,12 +189,12 @@ function parseNative(bid) {
 
   if (link.clicktrackers) {
     link.clicktrackers.forEach(function (clicktracker, index) {
-      link.clicktrackers[index] = clicktracker.replace(/\$\{AUCTION_PRICE\}/, bid.price);
+      link.clicktrackers[index] = clicktracker.replace(/\$\{AUCTION_PRICE\}/g, bid.price);
     });
   }
   if (imptrackers) {
     imptrackers.forEach(function (imptracker, index) {
-      imptrackers[index] = imptracker.replace(/\$\{AUCTION_PRICE\}/, bid.price);
+      imptrackers[index] = imptracker.replace(/\$\{AUCTION_PRICE\}/g, bid.price);
     });
   }
 

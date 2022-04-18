@@ -3,7 +3,7 @@ import {BANNER} from '../src/mediaTypes.js';
 import {registerBidder} from '../src/adapters/bidderFactory.js';
 import {deepAccess, generateUUID, logError, isArray} from '../src/utils.js';
 import {getStorageManager} from '../src/storageManager.js';
-import find from 'core-js-pure/features/array/find.js';
+import {find} from '../src/polyfill.js';
 
 const BIDDER_CODE = 'insticator';
 const ENDPOINT = 'https://ex.ingage.tech/v1/openrtb'; // production endpoint
@@ -12,7 +12,7 @@ const USER_ID_COOKIE_EXP = 2592000000; // 30 days
 const BID_TTL = 300; // 5 minutes
 const GVLID = 910;
 
-export const storage = getStorageManager(GVLID, BIDDER_CODE);
+export const storage = getStorageManager({gvlid: GVLID, bidderCode: BIDDER_CODE});
 
 config.setDefaults({
   insticator: {
@@ -139,7 +139,7 @@ function extractSchain(bids, requestId) {
 function extractEids(bids) {
   if (!bids) return;
 
-  const bid = find(bids, bid => isArray(bid.userIdAsEids) && bid.userIdAsEids.length > 0);
+  const bid = bids.find(bid => isArray(bid.userIdAsEids) && bid.userIdAsEids.length > 0);
   return bid ? bid.userIdAsEids : bids[0].userIdAsEids;
 }
 
@@ -181,13 +181,13 @@ function buildRequest(validBidRequests, bidderRequest) {
   const schain = extractSchain(validBidRequests, bidderRequest.bidderRequestId);
 
   if (schain) {
-    req.source.ext = {schain};
+    req.source.ext = { schain };
   }
 
   const eids = extractEids(validBidRequests);
 
   if (eids) {
-    req.user.ext = {eids};
+    req.user.ext = { eids };
   }
 
   return req;
@@ -195,14 +195,14 @@ function buildRequest(validBidRequests, bidderRequest) {
 
 function buildBid(bid, bidderRequest) {
   const originalBid = find(bidderRequest.bids, (b) => b.bidId === bid.impid);
-  let meta = {};
+  let meta = {}
 
   if (bid.ext && bid.ext.meta) {
-    meta = bid.ext.meta;
+    meta = bid.ext.meta
   }
 
   if (bid.adomain) {
-    meta.advertiserDomains = bid.adomain;
+    meta.advertiserDomains = bid.adomain
   }
 
   return {

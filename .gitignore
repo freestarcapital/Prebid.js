@@ -6,6 +6,7 @@ build
 test/app
 gpt.html
 gpt-each-bidder3.html
+fixConflict.sh
 
 # Selenium files
 bin

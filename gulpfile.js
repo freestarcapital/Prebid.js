@@ -8,7 +8,6 @@ var gutil = require('gulp-util');
 var connect = require('gulp-connect');
 var webpack = require('webpack');
 var webpackStream = require('webpack-stream');
-var terser = require('gulp-terser');
 var gulpClean = require('gulp-clean');
 var KarmaServer = require('karma').Server;
 var karmaConfMaker = require('./karma.conf.maker.js');
@@ -76,6 +75,7 @@ function lint(done) {
     'modules/**/*.js',
     'test/**/*.js',
     'plugins/**/*.js',
+    '!plugins/**/node_modules/**',
     './*.js'
   ], { base: './' })
     .pipe(gulpif(argv.nolintfix, eslint(), eslint({ fix: true })))
@@ -114,41 +114,12 @@ function viewReview(done) {
 
 viewReview.displayName = 'view-review';
 
-// Watch Task with Live Reload
-function watch(done) {
-  var mainWatcher = gulp.watch([
-    'src/**/*.js',
-    'modules/**/*.js',
-    'test/spec/**/*.js',
-    '!test/spec/loaders/**/*.js'
-  ]);
-  var loaderWatcher = gulp.watch([
-    'loaders/**/*.js',
-    'test/spec/loaders/**/*.js'
-  ]);
-
-  connect.server({
-    https: argv.https,
-    port: port,
-    host: FAKE_SERVER_HOST,
-    root: './',
-    livereload: true
-  });
-
-  mainWatcher.on('all', gulp.series(clean, gulp.parallel(lint, 'build-bundle-dev', test)));
-  loaderWatcher.on('all', gulp.series(lint));
-  done();
-};
-
-function makeModuleList(modules) {
-  return modules.map(module => {
-    return '"' + module + '"'
-  });
-}
-
 function makeDevpackPkg() {
   var cloned = _.cloneDeep(webpackConfig);
-  cloned.devtool = 'source-map';
+  Object.assign(cloned, {
+    devtool: 'source-map',
+    mode: 'development'
+  })
   var externalModules = helpers.getArgModules();
 
   const analyticsSources = helpers.getAnalyticsSources();
@@ -157,14 +128,15 @@ function makeDevpackPkg() {
   return gulp.src([].concat(moduleSources, analyticsSources, 'src/prebid.js'))
     .pipe(helpers.nameModules(externalModules))
     .pipe(webpackStream(cloned, webpack))
-    .pipe(replace(/('|")v\$prebid\.modulesList\$('|")/g, makeModuleList(externalModules)))
     .pipe(gulp.dest('build/dev'))
     .pipe(connect.reload());
 }
 
 function makeWebpackPkg() {
   var cloned = _.cloneDeep(webpackConfig);
-  delete cloned.devtool;
+  if (!argv.sourceMaps) {
+    delete cloned.devtool;
+  }
 
   var externalModules = helpers.getArgModules();
 
@@ -174,10 +146,17 @@ function makeWebpackPkg() {
   return gulp.src([].concat(moduleSources, analyticsSources, 'src/prebid.js'))
     .pipe(helpers.nameModules(externalModules))
     .pipe(webpackStream(cloned, webpack))
-    .pipe(terser())
-    .pipe(replace(/('|")v\$prebid\.modulesList\$('|")/g, makeModuleList(externalModules)))
-    .pipe(gulpif(file => file.basename === 'prebid-core.js', header(banner, { prebid: prebid })))
     .pipe(gulp.dest('build/dist'));
+}
+
+function addBanner() {
+  const sm = argv.sourceMaps;
+
+  return gulp.src(['build/dist/prebid-core.js'])
+    .pipe(gulpif(sm, sourcemaps.init({loadMaps: true})))
+    .pipe(header(banner, {prebid}))
+    .pipe(gulpif(sm, sourcemaps.write('.')))
+    .pipe(gulp.dest('build/dist'))
 }
 
 function getModulesListToAddInBanner(modules) {
@@ -204,6 +183,7 @@ function nodeBundle(modules) {
 function bundle(dev, moduleArr) {
   var modules = moduleArr || helpers.getArgModules();
   var allModules = helpers.getModuleNames(modules);
+  const sm = dev || argv.sourceMaps;
 
   if (modules.length === 0) {
     modules = allModules.filter(module => explicitModules.indexOf(module) === -1);
@@ -235,13 +215,13 @@ function bundle(dev, moduleArr) {
   )
     // Need to uodate the "Modules: ..." section in comment with the current modules list
     .pipe(replace(/(Modules: )(.*?)(\*\/)/, ('$1' + getModulesListToAddInBanner(helpers.getArgModules()) + ' $3')))
-    .pipe(gulpif(dev, sourcemaps.init({ loadMaps: true })))
+    .pipe(gulpif(sm, sourcemaps.init({ loadMaps: true })))
     .pipe(concat(outputFileName))
     .pipe(gulpif(!argv.manualEnable, footer('\n<%= global %>.processQueue();', {
       global: prebid.globalVarName
     }
     )))
-    .pipe(gulpif(dev, sourcemaps.write('.')));
+    .pipe(gulpif(sm, sourcemaps.write('.')));
 }
 
 // Run the unit tests.
@@ -254,59 +234,67 @@ function bundle(dev, moduleArr) {
 // If --browsers is given, browsers can be chosen explicitly. e.g. --browsers=chrome,firefox,ie9
 // If --notest is given, it will immediately skip the test task (useful for developing changes with `gulp serve --notest`)
 
-function test(done) {
-  if (argv.notest) {
-    done();
-  } else if (argv.e2e) {
-    let wdioCmd = path.join(__dirname, 'node_modules/.bin/wdio');
-    let wdioConf = path.join(__dirname, 'wdio.conf.js');
-    let wdioOpts;
+function testTaskMaker(options = {}) {
+  ['watch', 'e2e', 'file', 'browserstack', 'notest'].forEach(opt => {
+    options[opt] = options[opt] || argv[opt];
+  })
 
-    if (argv.file) {
-      wdioOpts = [
-        wdioConf,
-        `--spec`,
-        `${argv.file}`
-      ]
-    } else {
-      wdioOpts = [
-        wdioConf
-      ];
-    }
+  return function test(done) {
+    if (options.notest) {
+      done();
+    } else if (options.e2e) {
+      let wdioCmd = path.join(__dirname, 'node_modules/.bin/wdio');
+      let wdioConf = path.join(__dirname, 'wdio.conf.js');
+      let wdioOpts;
 
-    // run fake-server
-    const fakeServer = spawn('node', ['./test/fake-server/index.js', `--port=${FAKE_SERVER_PORT}`]);
-    fakeServer.stdout.on('data', (data) => {
-      console.log(`stdout: ${data}`);
-    });
-    fakeServer.stderr.on('data', (data) => {
-      console.log(`stderr: ${data}`);
-    });
+      if (options.file) {
+        wdioOpts = [
+          wdioConf,
+          `--spec`,
+          `${options.file}`
+        ]
+      } else {
+        wdioOpts = [
+          wdioConf
+        ];
+      }
 
-    execa(wdioCmd, wdioOpts, { stdio: 'inherit' })
-      .then(stdout => {
-        // kill fake server
-        fakeServer.kill('SIGINT');
-        done();
-        process.exit(0);
-      })
-      .catch(err => {
-        // kill fake server
-        fakeServer.kill('SIGINT');
-        done(new Error(`Tests failed with error: ${err}`));
-        process.exit(1);
+      // run fake-server
+      const fakeServer = spawn('node', ['./test/fake-server/index.js', `--port=${FAKE_SERVER_PORT}`]);
+      fakeServer.stdout.on('data', (data) => {
+        console.log(`stdout: ${data}`);
       });
-  } else {
-    var karmaConf = karmaConfMaker(false, argv.browserstack, argv.watch, argv.file);
+      fakeServer.stderr.on('data', (data) => {
+        console.log(`stderr: ${data}`);
+      });
 
-    var browserOverride = helpers.parseBrowserArgs(argv);
-    if (browserOverride.length > 0) {
-      karmaConf.browsers = browserOverride;
+      execa(wdioCmd, wdioOpts, { stdio: 'inherit' })
+        .then(stdout => {
+          // kill fake server
+          fakeServer.kill('SIGINT');
+          done();
+          process.exit(0);
+        })
+        .catch(err => {
+          // kill fake server
+          fakeServer.kill('SIGINT');
+          done(new Error(`Tests failed with error: ${err}`));
+          process.exit(1);
+        });
+    } else {
+      var karmaConf = karmaConfMaker(false, options.browserstack, options.watch, options.file);
+
+      var browserOverride = helpers.parseBrowserArgs(argv);
+      if (browserOverride.length > 0) {
+        karmaConf.browsers = browserOverride;
+      }
+
+      new KarmaServer(karmaConf, newKarmaCallback(done)).start();
     }
-
-    new KarmaServer(karmaConf, newKarmaCallback(done)).start();
   }
 }
+
+const test = testTaskMaker();
 
 function newKarmaCallback(done) {
   return function (exitCode) {
@@ -384,6 +372,35 @@ function startFakeServer() {
   });
 }
 
+// Watch Task with Live Reload
+function watchTaskMaker(options = {}) {
+  if (options.livereload == null) {
+    options.livereload = true;
+  }
+  options.alsoWatch = options.alsoWatch || [];
+
+  return function watch(done) {
+    var mainWatcher = gulp.watch([
+      'src/**/*.js',
+      'modules/**/*.js',
+    ].concat(options.alsoWatch));
+
+    connect.server({
+      https: argv.https,
+      port: port,
+      host: FAKE_SERVER_HOST,
+      root: './',
+      livereload: options.livereload
+    });
+
+    mainWatcher.on('all', options.task());
+    done();
+  }
+}
+
+const watch = watchTaskMaker({alsoWatch: ['test/**/*.js'], task: () => gulp.series(clean, gulp.parallel(lint, 'build-bundle-dev', test))});
+const watchFast = watchTaskMaker({livereload: false, task: () => gulp.series('build-bundle-dev')});
+
 // support tasks
 gulp.task(lint);
 gulp.task(watch);
@@ -393,10 +410,11 @@ gulp.task(clean);
 gulp.task(escapePostbidConfig);
 
 gulp.task('build-bundle-dev', gulp.series(makeDevpackPkg, gulpBundle.bind(null, true)));
-gulp.task('build-bundle-prod', gulp.series(makeWebpackPkg, gulpBundle.bind(null, false)));
+gulp.task('build-bundle-prod', gulp.series(makeWebpackPkg, addBanner, gulpBundle.bind(null, false)));
 
 // public tasks (dependencies are needed for each task since they can be ran on their own)
-gulp.task('test', gulp.series(clean, lint, test));
+gulp.task('test-only', test);
+gulp.task('test', gulp.series(clean, lint, 'test-only'));
 
 gulp.task('test-coverage', gulp.series(clean, testCoverage));
 gulp.task(viewCoverage);
@@ -407,10 +425,11 @@ gulp.task('build', gulp.series(clean, 'build-bundle-prod'));
 gulp.task('build-postbid', gulp.series(escapePostbidConfig, buildPostbid));
 
 gulp.task('serve', gulp.series(clean, lint, gulp.parallel('build-bundle-dev', watch, test)));
-gulp.task('serve-fast', gulp.series(clean, gulp.parallel('build-bundle-dev', watch)));
+gulp.task('serve-fast', gulp.series(clean, gulp.parallel('build-bundle-dev', watchFast)));
+gulp.task('serve-and-test', gulp.series(clean, gulp.parallel('build-bundle-dev', watchFast, testTaskMaker({watch: true}))));
 gulp.task('serve-fake', gulp.series(clean, gulp.parallel('build-bundle-dev', watch), injectFakeServerEndpointDev, test, startFakeServer));
 
-gulp.task('default', gulp.series(clean, makeWebpackPkg));
+gulp.task('default', gulp.series(clean, 'build-bundle-prod'));
 
 gulp.task('e2e-test', gulp.series(clean, setupE2e, gulp.parallel('build-bundle-prod', watch), injectFakeServerEndpoint, test));
 // other tasks

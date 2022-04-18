@@ -3,7 +3,38 @@ import {registerBidder} from '../src/adapters/bidderFactory.js';
 import { getStorageManager } from '../src/storageManager.js';
 import { BANNER, NATIVE } from '../src/mediaTypes.js';
 
-const storageManager = getStorageManager();
+const storageManager = getStorageManager({bidderCode: 'orbidder'});
+
+/**
+ * Determines whether or not the given bid response is valid.
+ *
+ * @param {object} bidResponse The bid response to validate.
+ * @return boolean True if this is a valid bid response, and false if it is not valid.
+ */
+function isBidResponseValid(bidResponse) {
+  let requiredKeys = ['requestId', 'cpm', 'ttl', 'creativeId', 'netRevenue', 'currency'];
+
+  switch (bidResponse.mediaType) {
+    case BANNER:
+      requiredKeys = requiredKeys.concat(['width', 'height', 'ad']);
+      break;
+    case NATIVE:
+      if (!bidResponse.native.hasOwnProperty('impressionTrackers')) {
+        return false
+      }
+      break;
+    default:
+      return false
+  }
+
+  for (const key of requiredKeys) {
+    if (!bidResponse.hasOwnProperty(key)) {
+      return false
+    }
+  }
+
+  return true
+}
 
 /**
  * Determines whether or not the given bid response is valid.
