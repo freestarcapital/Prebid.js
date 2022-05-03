@@ -41,6 +41,7 @@ export const identityLinkSubmodule = {
    * @returns {IdResponse|undefined}
    */
   getId(config, consentData) {
+    console.log('USER', 'identitylink', 'getId', config, consentData)
     const configParams = (config && config.params) || {};
     if (!configParams || typeof configParams.pid !== 'string') {
       utils.logError('identityLink: requires partner id to be defined');
@@ -49,6 +50,7 @@ export const identityLinkSubmodule = {
     const hasGdpr = (consentData && typeof consentData.gdprApplies === 'boolean' && consentData.gdprApplies) ? 1 : 0;
     const gdprConsentString = hasGdpr ? consentData.consentString : '';
     const tcfPolicyV2 = utils.deepAccess(consentData, 'vendorData.tcfPolicyVersion') === 2;
+    console.log('USER', 'identitylink', 'getId', 'hasGdpr', gdprConsentString)
     // use protocol relative urls for http or https
     if (hasGdpr && (!gdprConsentString || gdprConsentString === '')) {
       utils.logInfo('identityLink: Consent string is required to call envelope API.');
@@ -56,7 +58,9 @@ export const identityLinkSubmodule = {
     }
     const url = `https://api.rlcdn.com/api/identity/envelope?pid=${configParams.pid}${hasGdpr ? (tcfPolicyV2 ? '&ct=4&cv=' : '&ct=1&cv=') + gdprConsentString : ''}`;
     let resp;
+    console.log('USER', 'identitylink', 'getId', 'url', url)
     resp = function (callback) {
+      console.log('USER', 'identitylink', 'getId', 'resp', callback.toString())
       // Check ats during callback so it has a chance to initialise.
       // If ats library is available, use it to retrieve envelope. If not use standard third party endpoint
       if (window.ats) {
@@ -67,10 +71,12 @@ export const identityLinkSubmodule = {
             setEnvelopeSource(true);
             callback(JSON.parse(envelope).envelope);
           } else {
+            console.log('USER', 'identitylink', 'no envelop', 'calling getEnvelope')
             getEnvelope(url, callback, configParams);
           }
         });
       } else {
+        console.log('USER', 'identitylink', 'no ats', 'calling getEnvelope')
         getEnvelope(url, callback, configParams);
       }
     };
@@ -80,6 +86,7 @@ export const identityLinkSubmodule = {
 };
 // return envelope from third party endpoint
 function getEnvelope(url, callback, configParams) {
+  console.log('USER', 'identityLink', 'getEnvelope', ...arguments)
   const callbacks = {
     success: response => {
       let responseObj;
@@ -97,8 +104,8 @@ function getEnvelope(url, callback, configParams) {
       callback();
     }
   };
-
-  if (!configParams.notUse3P && !storage.getCookie('_lr_retry_request')) {
+  console.log('USER', 'identityLink', 'getEnvelope', "!configParams.notUse3P, !storage.getCookie('_lr_retry_request')", !configParams.notUse3P, !storage.getCookie('_lr_retry_request'))
+  if (/*!configParams.notUse3P && !storage.getCookie('_lr_retry_request')*/ 1 === 1) {
     setRetryCookie();
     utils.logInfo('identityLink: A 3P retrieval is attempted!');
     setEnvelopeSource(false);

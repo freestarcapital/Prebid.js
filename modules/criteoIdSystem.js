@@ -41,6 +41,9 @@ function saveOnAllStorages(key, value, hostname) {
 }
 
 function setCookieOnAllDomains(key, value, expiration, hostname, stopOnSuccess) {
+  if (!hostname) {
+    return;
+  }
   const subDomains = hostname.split('.');
   for (let i = 0; i < subDomains.length; ++i) {
     // Try to write the cookie on this subdomain (we want it to be stored only on the TLD+1)

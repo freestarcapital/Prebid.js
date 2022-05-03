@@ -523,15 +523,18 @@ function addIdDataToAdUnitBids(adUnits, submodules) {
  * This is a common function that will initialize subModules if not already done and it will also execute subModule callbacks
  */
 function initializeSubmodulesAndExecuteCallbacks(continueAuction) {
+  console.log('USER', 'initializeSubmodulesAndExecuteCallbacks', initializedSubmodules)
   let delayed = false;
 
   // initialize submodules only when undefined
   if (typeof initializedSubmodules === 'undefined') {
     initializedSubmodules = initSubmodules(submodules, gdprDataHandler.getConsentData());
+    console.log('USER', 'initializeSubmodulesAndExecuteCallbacks', 'initializedSubmodules', initializedSubmodules)
     if (initializedSubmodules.length) {
       setPrebidServerEidPermissions(initializedSubmodules);
       // list of submodules that have callbacks that need to be executed
       const submodulesWithCallbacks = initializedSubmodules.filter(item => isFn(item.callback));
+      console.log('USER', 'initializeSubmodulesAndExecuteCallbacks', 'submodulesWithCallbacks',submodulesWithCallbacks)
 
       if (submodulesWithCallbacks.length) {
         if (continueAuction && auctionDelay > 0) {
@@ -582,6 +585,7 @@ function initializeSubmodulesAndExecuteCallbacks(continueAuction) {
  * @param {function} fn required; The next function in the chain, used by hook.js
  */
 export function requestBidsHook(fn, reqBidsConfigObj) {
+  console.log('USER', 'requestBidsHook')
   // initialize submodules only when undefined
   initializeSubmodulesAndExecuteCallbacks(function () {
     // pass available user id data to bid adapters
@@ -766,6 +770,7 @@ export const validateGdprEnforcement = hook('sync', function (submodules, consen
 }, 'validateGdprEnforcement');
 
 function populateSubmoduleId(submodule, consentData, storedConsentData, forceRefresh) {
+  console.log('USER', 'populateSubmoduleId', ...arguments)
   // There are two submodule configuration types to handle: storage or value
   // 1. storage: retrieve user id data from cookie/html storage or with the submodule's getId method
   // 2. value: pass directly to bids
@@ -786,7 +791,7 @@ function populateSubmoduleId(submodule, consentData, storedConsentData, forceRef
       // If the id exists already, give submodule a chance to decide additional actions that need to be taken
       response = submodule.submodule.extendId(submodule.config, consentData, storedId);
     }
-
+    console.log('USER', 'populateSubmoduleId', 'response', response)
     if (isPlainObject(response)) {
       if (response.id) {
         // A getId/extendId result assumed to be valid user id data, which should be saved to users local storage or cookies
@@ -799,6 +804,7 @@ function populateSubmoduleId(submodule, consentData, storedConsentData, forceRef
         submodule.callback = response.callback;
       }
     }
+    console.log('USER', 'populateSubmoduleId', submodule)
 
     if (storedId) {
       // cache decoded value (this is copied to every adUnit bid)
@@ -893,10 +899,12 @@ function getValidSubmoduleConfigs(configRegistry, submoduleRegistry, activeStora
  * update submodules by validating against existing configs and storage types
  */
 function updateSubmodules() {
+  console.log('USER', 'updateSubmodules')
   const configs = getValidSubmoduleConfigs(configRegistry, submoduleRegistry, validStorageTypes);
   if (!configs.length) {
     return;
   }
+  console.log('USER', 'updateSubmodules', configs)
   // do this to avoid reprocessing submodules
   const addedSubmodules = submoduleRegistry.filter(i => !find(submodules, j => j.name === i.name));
 
@@ -913,6 +921,7 @@ function updateSubmodules() {
       idObj: undefined
     } : null;
   }).filter(submodule => submodule !== null);
+  console.log('USER', 'updateSubmodules', submodules)
 
   if (!addedUserIdHook && submodules.length) {
     // priority value 40 will load after consentManagement with a priority of 50
