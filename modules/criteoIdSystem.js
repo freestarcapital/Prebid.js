@@ -33,7 +33,7 @@ function getFromAllStorages(key) {
   return storage.getCookie(key) || storage.getDataFromLocalStorage(key);
 }
 
-function saveOnAllStorages(key, value, hostname) {
+function saveOnAllStorages(key, value, hostname = window.location.hostname) {
   if (key && value) {
     storage.setDataInLocalStorage(key, value);
     setCookieOnAllDomains(key, value, expirationString, hostname, true);
