@@ -3,6 +3,7 @@
     "aolBidAdapter",
     "appnexusBidAdapter",
     "atsAnalyticsAdapter",
+    "colossussspBidAdapter",
     "consentManagement",
     "consentManagementUsp",
     "conversantBidAdapter",
