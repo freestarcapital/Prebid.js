@@ -52,5 +52,6 @@
     "unifiedIdSystem",
     "unifiedIdSystem",
     "yahoosspBidAdapter",
-    "yieldmoBidAdapter"
+    "yieldmoBidAdapter",
+    "ttdBidAdapter"
 ]
