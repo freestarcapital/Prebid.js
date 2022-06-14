@@ -42,6 +42,7 @@
     "schain",
     "sharedIdSystem",
     "sharethroughBidAdapter",
+    "sonobiBidAdapter",
     "sortableBidAdapter",
     "sovrnBidAdapter",
     "teadsBidAdapter",
