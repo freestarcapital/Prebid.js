@@ -1,6 +1,6 @@
-import adapter from 'src/AnalyticsAdapter';
-import adapterManager from 'src/adapterManager';
-import { auctionManager } from 'src/auctionManager'; 
+import adapter from '../libraries/analyticsAdapter/AnalyticsAdapter.js';
+import adapterManager from '../src/adapterManager';
+import { auctionManager } from '../src/auctionManager'; 
 
 const analyticsType = 'endpoint';
 /**
@@ -21,7 +21,6 @@ let freestarAnalytics = Object.assign(adapter({ analyticsType }),
       }
     }
   });
-
 
 // save the base class function
 freestarAnalytics.originEnableAnalytics = freestarAnalytics.enableAnalytics;
