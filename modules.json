@@ -33,6 +33,7 @@
     "medianetBidAdapter",
     "openxBidAdapter",
     "parrableIdSystem",
+    "permutiveRtdProvider",
     "prebidServerBidAdapter",
     "pubCommonId",
     "pubmaticBidAdapter",
