@@ -1,6 +1,5 @@
 [
     "33acrossBidAdapter",
-    "33acrossIdSystem",
     "adprimeBidAdapter",
     "aolBidAdapter",
     "apacdexBidAdapter",
@@ -39,6 +38,7 @@
     "pubCommonId",
     "pubmaticBidAdapter",
     "pubProvidedIdSystem",
+    "priceFloors",
     "rtdModule",
     "rubiconBidAdapter",
     "schain",
