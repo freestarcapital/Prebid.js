@@ -91,11 +91,6 @@ export const spec = {
         queryString = tryAppendQueryString(queryString, 'sua', JSON.stringify(sua));
       }
 
-      const sua = deepAccess(bidRequest, 'ortb2.device.sua');
-      if (sua) {
-        queryString = tryAppendQueryString(queryString, 'sua', JSON.stringify(sua));
-      }
-
       bidRequests.push({
         method: 'GET',
         url: URL,
