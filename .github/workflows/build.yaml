@@ -21,3 +21,28 @@ jobs:
           scope: '@freestarcapital'
       - run: npm install
       - run: gulp build --modules=modules.json
+      - name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v0'
+        with:
+          credentials_json: '${{ secrets.GCR_JSON_KEY }}'
+      - uses: actions-hub/gcloud@master
+        with:
+          args: cp build/prebid.js gs://a.pub.network/core/prebid/${GITHUB_SHA}/prebid.min.js
+          cli: gsutil
+      - uses: actions-hub/gcloud@master
+        with:
+          args: acl ch -u AllUsers:R gs://a.pub.network/core/prebid/${GITHUB_SHA}/prebid.min.js
+          cli: gsutil
+      - name: Add var
+        run: echo "hash=${GITHUB_SHA}" >> $GITHUB_ENV
+      - name: Add comment to PR
+        env:
+          URL: ${{ github.event.pull_request.comments_url }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          curl \
+            -X POST \
+            $URL \
+            -H "Content-Type: application/json" \
+            -H "Authorization: token $GITHUB_TOKEN" \
+            --data '{ "body": "Current TEST URL:\nhttps://a.pub.network/core/prebid/${{ env.hash }}/prebid.min.js\n\nRedirect traffic to this URL in local setups to TEST." }'
