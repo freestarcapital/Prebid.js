@@ -51,7 +51,7 @@ export class GreedyPromise {
       const continuation = () => {
         let value = result[1];
         let [handler, resolveFn] = result[0] === SUCCESS ? [onSuccess, resolve] : [onError, reject];
-        if (typeof handler === 'function') {
+        if (typeof handler === 'function' && value !== undefined && value !== null) {
           try {
             value = handler(value);
           } catch (e) {
