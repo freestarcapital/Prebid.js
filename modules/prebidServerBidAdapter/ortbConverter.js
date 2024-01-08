@@ -310,7 +310,7 @@ export function buildPBSRequest(s2sBidRequest, bidderRequests, adUnits, requeste
     fledgeEnabled: bidderRequests.some(req => req.fledgeEnabled)
   }
 
-  return PBS_CONVERTER.toORTB({
+  const result = PBS_CONVERTER.toORTB({
     bidderRequest: proxyBidderRequest,
     bidRequests: proxyBidRequests,
     context: {
@@ -326,6 +326,24 @@ export function buildPBSRequest(s2sBidRequest, bidderRequests, adUnits, requeste
       transmitTids: isActivityAllowed(ACTIVITY_TRANSMIT_TID, s2sParams),
     }
   });
+  const jbkUnalias = true;
+  if (jbkUnalias) {
+    const aliases = result?.ext?.prebid?.aliases;
+    if (aliases) {
+      result.imp.forEach(impElement => {
+        const bidder = impElement?.ext?.prebid?.bidder;
+        if (bidder) {
+          Object.entries(aliases).forEach(([aliasName, originalName]) => {
+            bidder[originalName] = bidder[aliasName];
+            delete bidder[aliasName];
+          });
+        }
+      });
+      delete result.ext.prebid.aliases
+    }
+  }
+  console.log('jbk', 'buildPBSRequest', result);
+  return result;
 }
 
 export function interpretPBSResponse(response, request) {
