@@ -326,8 +326,7 @@ export function buildPBSRequest(s2sBidRequest, bidderRequests, adUnits, requeste
       transmitTids: isActivityAllowed(ACTIVITY_TRANSMIT_TID, s2sParams),
     }
   });
-  const jbkUnalias = true;
-  if (jbkUnalias) {
+  if (result?.ext?.prebid?.fsUnalias) {
     const aliases = result?.ext?.prebid?.aliases;
     if (aliases) {
       result.imp.forEach(impElement => {
@@ -342,7 +341,7 @@ export function buildPBSRequest(s2sBidRequest, bidderRequests, adUnits, requeste
       delete result.ext.prebid.aliases
     }
   }
-  console.log('jbk', 'buildPBSRequest', result);
+  delete result?.ext?.prebid?.fsUnalias;
   return result;
 }
 
