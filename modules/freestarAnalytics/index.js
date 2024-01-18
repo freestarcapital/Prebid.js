@@ -40,7 +40,7 @@ const sendEvent = (args, url) => {
   ajax(url, undefined, JSON.stringify(args), {method: 'POST'});
 }
 
-let fsAnalytics = Object.assign(adapter({url, analyticsType}), {
+let freestarAnalytics = Object.assign(adapter({url, analyticsType}), {
   track: function(event) {
     const { eventType, args } = event;
 
@@ -56,18 +56,18 @@ let fsAnalytics = Object.assign(adapter({url, analyticsType}), {
   }
 });
 
-fsAnalytics.originEnableAnalytics = fsAnalytics.enableAnalytics;
+freestarAnalytics.originEnableAnalytics = freestarAnalytics.enableAnalytics;
 
-fsAnalytics.enableAnalytics = function (config) {
+freestarAnalytics.enableAnalytics = function (config) {
   initOptions = config.options;
-  fsAnalytics.originEnableAnalytics(config);
+  freestarAnalytics.originEnableAnalytics(config);
   handlePageview();
 };
 
 adapterManager.registerAnalyticsAdapter({
-  adapter: fsAnalytics,
-  code: 'fsAnalytics',
+  adapter: freestarAnalytics,
+  code: 'freestarAnalytics',
   gvlid: 1
 });
 
-export default fsAnalytics;
+export default freestarAnalytics;
