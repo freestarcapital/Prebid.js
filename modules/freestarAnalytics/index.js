@@ -2,11 +2,12 @@ import {ajax} from '../../src/ajax.js';
 import adapter from '../../libraries/analyticsAdapter/AnalyticsAdapter.js';
 import CONSTANTS from '../../src/constants.json';
 import {default as adapterManager} from '../../src/adapterManager.js';
+import {generateUUID, logError} from '../../src/utils.js';
 
 const analyticsType = 'endpoint';
 const url = 'https://us-central1-freestar-157323.cloudfunctions.net/';
 
-const pageviewId = (Math.random() + 1).toString(36).substring(7);
+const pageviewId = generateUUID();
 const siteId = window.freestar.fsdata.siteId || 0;
 
 const URLS = {
@@ -21,17 +22,20 @@ const handlePageview = () => {
 }
 
 const handlerBidWon = (args) => {
+  args = JSON.stringify(JSON.parse(args));
+  const keys = Object.keys(args);
+  for(let i = 0; i < keys.length; i++) {
+    if (allowedParams.indexOf(keys[i]) === -1) {
+      delete args[keys[i]];
+    }
+  }
   sendEvent(args, URLS.BIDWON);
 }
 
 const disallowedParams = ['ad'];
+const allowedParams = ['pageviewId','bidder','width','height','adId','requestId','transactionId','auctionId','mediaType','source','cpm','creativeId','originalCpm','responseTime','requestTime','adUnitCode','timeToRespond','size']
 
 const sendEvent = (args, url) => {
-  for(let i = 0; i < disallowedParams.length; i++) {
-    if (args[disallowedParams[i]]) {
-      delete args[disallowedParams[i]];
-    }
-  }
   args = Object.assign(args, {
     pageviewId,
     siteId
@@ -43,7 +47,6 @@ const sendEvent = (args, url) => {
 let freestarAnalytics = Object.assign(adapter({url, analyticsType}), {
   track: function(event) {
     const { eventType, args } = event;
-
     try {
       switch (eventType) {
         case CONSTANTS.EVENTS.BID_WON:
