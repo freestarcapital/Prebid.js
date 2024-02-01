@@ -87,7 +87,8 @@ const PBS_CONVERTER = ortbConverter({
     // - filter out ones that come from an "unknown" bidder (if allowUnknownBidderCode is not set)
     // - overwrite context.bidRequest with the actual bid request for this seat / imp combination
 
-    let bidRequest = context.actualBidRequests.get(context.seatbid.seat);
+    // jbk TODO here!!!
+    let bidRequest = context.actualBidRequests.get(context.seatbid.seat) || context.actualBidRequests.get(context.seatbid.seat + 'FsServerAux');
     if (bidRequest == null) {
       // for stored impressions, a request was made with bidder code `null`. Pick it up here so that NO_BID, BID_WON, etc events
       // can work as expected (otherwise, the original request will always result in NO_BID).
@@ -338,13 +339,25 @@ export function buildPBSRequest(s2sBidRequest, bidderRequests, adUnits, requeste
           });
         }
       });
-      delete result.ext.prebid.aliases
+      // delete result.ext.prebid.aliases
     }
   }
-  delete result?.ext?.prebid?.fsUnalias;
+  // delete result?.ext?.prebid?.fsUnalias;
   return result;
 }
 
 export function interpretPBSResponse(response, request) {
+  // console.log('jbk', 'pbs', 'interpretPBSResponse', { response, request });
+  const aliases = request?.ext?.prebid?.aliases;
+  if (request?.ext?.prebid?.fsUnalias && aliases) {
+    const reverseAliases = Object.fromEntries(
+      Object.entries(aliases).map(([k, v]) => [v, k]));
+    response?.seatbid.forEach(sb => {
+      if (sb.seat && reverseAliases[sb.seat]) {
+        // console.log('jbk', 'interpretPBSResponse', 'swapped', sb.seat, 'for', reverseAliases[sb.seat]);
+        sb.seat = reverseAliases[sb.seat];
+      }
+    });
+  }
   return PBS_CONVERTER.fromORTB({response, request});
 }

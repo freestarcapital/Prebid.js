@@ -52,9 +52,6 @@ const ALLOWED_ORTB2_PARAMETERS = [
 const sendingDataStatistic = initSendingDataStatistic();
 events.on(CONSTANTS.EVENTS.AUCTION_INIT, auctionInitHandler);
 
-const sendingDataStatistic = initSendingDataStatistic();
-events.on(CONSTANTS.EVENTS.AUCTION_INIT, auctionInitHandler);
-
 const EXPIRENCE_WURL = 20 * 60000;
 const wurlMap = {};
 cleanWurl();

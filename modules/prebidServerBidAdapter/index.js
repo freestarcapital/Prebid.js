@@ -487,6 +487,7 @@ export function PrebidServer() {
           done();
         },
         onBid: function ({adUnit, bid}) {
+          // console.log('jbk', 'onBid', adUnit, {bid});
           const metrics = bid.metrics = s2sBidRequest.metrics.fork().renameWith();
           metrics.checkpoint('addBidResponse');
           if ((bid.requestId == null || bid.requestBidder == null) && !s2sBidRequest.s2sConfig.allowUnknownBidderCodes) {
@@ -555,6 +556,7 @@ export const processPBSRequest = hook('sync', function (s2sBidRequest, bidReques
           try {
             result = JSON.parse(response);
             const {bids, fledgeAuctionConfigs} = s2sBidRequest.metrics.measureTime('interpretResponse', () => interpretPBSResponse(result, request));
+            // console.log('jbk', 'after interpretPBSResponse', bids.length, 'bids', bids.filter(b => b.bid.source === 's2s').length , 's2s bids');
             bids.forEach(onBid);
             if (fledgeAuctionConfigs) {
               fledgeAuctionConfigs.forEach(onFledge);

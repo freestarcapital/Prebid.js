@@ -453,7 +453,9 @@ export function auctionCallbacks(auctionDone, auctionInstance, {index = auctionM
   }
 
   function acceptBidResponse(adUnitCode, bid) {
+    // console.log('jbk', 'acceptBidResponse', adUnitCode, bid.bidderCode, bid.source);
     handleBidResponse(adUnitCode, bid, (done) => {
+      // console.log('jbk', 'acceptBidResponse', 'handleBidResponse', adUnitCode, bid.bidderCode, bid.source);
       let bidResponse = getPreparedBidForAuction(bid);
 
       if (FEATURES.VIDEO && bidResponse.mediaType === VIDEO) {
@@ -467,6 +469,7 @@ export function auctionCallbacks(auctionDone, auctionInstance, {index = auctionM
         addBidToAuction(auctionInstance, bidResponse);
         done();
       }
+      // console.log('jbk', 'acceptBidResponse', 'handleBidResponse', 'end', adUnitCode, bid.bidderCode, bid.source);
     });
   }
 

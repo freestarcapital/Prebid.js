@@ -542,7 +542,9 @@ export const startAuction = hook('async', function ({ bidsBackHandler, timeout: 
   adUnits = useMetrics(metrics).measureTime('requestBids.validate', () => checkAdUnitSetup(adUnits));
 
   function auctionDone(bids, timedOut, auctionId) {
+    // console.log('jbk', 'auctionDone', {bids, timedOut, auctionId});
     if (typeof bidsBackHandler === 'function') {
+      // console.log('jbk', 'auctionDone', 'bidsBackHandler', {bidsBackHandler});
       try {
         bidsBackHandler(bids, timedOut, auctionId);
       } catch (e) {

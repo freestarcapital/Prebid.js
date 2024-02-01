@@ -68,6 +68,7 @@ export const getHighestCpmBidsFromBidPool = hook('sync', function(bidsReceived, 
     Object.keys(buckets).forEach(bucketKey => {
       let bucketBids = [];
       let bidsByBidder = groupBy(buckets[bucketKey], 'bidderCode');
+      // console.log('jbk', 'bidsByBidder', bidsByBidder);
       Object.keys(bidsByBidder).forEach(key => bucketBids.push(bidsByBidder[key].reduce(highestCpmCallback)));
       // if adUnitBidLimit is set, pass top N number bids
       if (adUnitBidLimit > 0) {

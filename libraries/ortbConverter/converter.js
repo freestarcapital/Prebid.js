@@ -123,7 +123,9 @@ export function ortbConverter({
       const bidResponses = (response.seatbid || []).flatMap(seatbid =>
         (seatbid.bid || []).map((bid) => {
           if (impsById.hasOwnProperty(bid.impid) && ctx.imp.hasOwnProperty(bid.impid)) {
-            return buildBidResponse(bid, augmentContext(ctx.imp[bid.impid], {imp: impsById[bid.impid], seatbid, ortbResponse: response}));
+            const buildBidResponseResult = buildBidResponse(bid, augmentContext(ctx.imp[bid.impid], {imp: impsById[bid.impid], seatbid, ortbResponse: response}));
+            // console.log('jbk', 'fromORTB', {buildBidResponseResult});
+            return buildBidResponseResult;
           }
           logError('ORTB response seatbid[].bid[].impid does not match any imp in request; ignoring bid', bid);
         })
