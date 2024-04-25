@@ -55,5 +55,6 @@
     "topicsFpdModule",
     "carbonRtdProvider",
     "carbonAnalyticsAdapter",
-    "paapi"
+    "paapi",
+    "fledgeForGpt"
 ]
