@@ -13,6 +13,7 @@
     "gridBidAdapter",
     "gumgumBidAdapter",
     "hadronRtdProvider",
+    "insticatorBidAdapter",
     "ixBidAdapter",
     "justpremiumBidAdapter",
     "kargoBidAdapter",
