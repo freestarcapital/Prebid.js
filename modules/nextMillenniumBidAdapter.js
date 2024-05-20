@@ -53,15 +53,6 @@ const ALLOWED_ORTB2_PARAMETERS = [
   'user.keywords',
 ];
 
-const sendingDataStatistic = initSendingDataStatistic();
-events.on(CONSTANTS.EVENTS.AUCTION_INIT, auctionInitHandler);
-
-const EXPIRENCE_WURL = 20 * 60000;
-const wurlMap = {};
-cleanWurl();
-
-events.on(CONSTANTS.EVENTS.BID_WON, bidWonHandler);
-
 export const spec = {
   code: BIDDER_CODE,
   supportedMediaTypes: [BANNER, VIDEO],
