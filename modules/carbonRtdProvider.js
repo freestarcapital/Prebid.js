@@ -1,10 +1,10 @@
 /**
-* This module adds the carbon provider to the Real Time Data module (rtdModule)
-* The {@link module:modules/realTimeData} module is required
-* The module will add contextual and audience targeting data to bid requests
-* @module modules/carbonRtdProvider
-* @requires module:modules/realTimeData
-*/
+ * This module adds the carbon provider to the Real Time Data module (rtdModule)
+ * The {@link module:modules/realTimeData} module is required
+ * The module will add contextual and audience targeting data to bid requests
+ * @module modules/carbonRtdProvider
+ * @requires module:modules/realTimeData
+ */
 import { submodule } from '../src/hook.js';
 import { ajax } from '../src/ajax.js';
 import {getGlobal} from '../src/prebidGlobal.js';

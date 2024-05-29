@@ -3,7 +3,6 @@ import { getTimeoutUrl, spec } from 'modules/seedtagBidAdapter.js';
 import * as utils from 'src/utils.js';
 import * as mockGpt from 'test/spec/integration/faker/googletag.js';
 import { config } from '../../../src/config.js';
-import * as mockGpt from 'test/spec/integration/faker/googletag.js';
 
 const PUBLISHER_ID = '0000-0000-01';
 const ADUNIT_ID = '000000';
