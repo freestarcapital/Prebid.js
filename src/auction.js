@@ -125,6 +125,14 @@ export function resetAuctionState() {
   queuedCalls.length = 0;
   [outstandingRequests, sourceInfo].forEach((ob) => Object.keys(ob).forEach((k) => { delete ob[k] }));
 }
+/**
+ * Normalize custom timeout to be not less than 1500 ms
+ * @param timeout
+ * @returns {number}
+ */
+function normalizeCbTimeout (timeout) {
+  return Math.max(timeout, 1500);
+}
 
 /**
  * Creates new auction instance
@@ -147,7 +155,7 @@ export function newAuction({adUnits, adUnitCodes, callback, cbTimeout, labels, a
   const _labels = labels;
   const _adUnitCodes = adUnitCodes;
   const _auctionId = auctionId || generateUUID();
-  const _timeout = cbTimeout;
+  const _timeout = normalizeCbTimeout(cbTimeout);
   const _timelyRequests = new Set();
   const done = defer();
   let _bidsRejected = [];

@@ -67,9 +67,7 @@ export function fetcherFactory(timeout = 3000, {request, done} = {}) {
   let fetcher = (resource, options) => {
     let to;
     if (timeout != null && options?.signal == null && !config.getConfig('disableAjaxTimeout')) {
-      const minTimout = 1500;
-      const normalizedTimeout = timeout > minTimout ? timeout : minTimout;
-      to = dep.timeout(normalizedTimeout, resource);
+      to = dep.timeout(timeout, resource);
       options = Object.assign({signal: to.signal}, options);
     }
     let pm = dep.fetch(resource, options);
