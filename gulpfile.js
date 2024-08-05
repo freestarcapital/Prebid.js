@@ -90,6 +90,7 @@ function lint(done) {
     'test/**/*.js',
     'plugins/**/*.js',
     '!plugins/**/node_modules/**',
+    '!prebid-analytics-*.js',
     './*.js'
   ], { base: './' })
     .pipe(eslint({ fix: !argv.nolintfix, quiet: !(typeof argv.lintWarnings === 'boolean' ? argv.lintWarnings : true) }))
