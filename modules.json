@@ -58,5 +58,7 @@
     "vidazooBidAdapter",
     "videojsVideoProvider",
     "yahoosspBidAdapter",
-    "yieldmoBidAdapter"
+    "yieldmoBidAdapter",
+    "pulsepointBidAdapter",
+    "pulsepointAnalyticsAdapter"
 ]
