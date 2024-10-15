@@ -46,6 +46,7 @@
     "sharethroughBidAdapter",
     "sizeMappingV2",
     "sonobiBidAdapter",
+    "symitriDapRtdProvider",
     "teadsBidAdapter",
     "topicsFpdModule",
     "tripleliftBidAdapter",
