@@ -94,4 +94,8 @@ gulp serve --modules=rtdModule,symitriDapRtdProvider,appnexusBidAdapter,sovrnBid
 ```
 
 and then point your browser at:
+<<<<<<< HEAD
 "<http://localhost:9999/integrationExamples/gpt/symitridap_segments_example.html>"
+=======
+"<http://localhost:9999/integrationExamples/gpt/symitridap_segments_example.html>"
+>>>>>>> main

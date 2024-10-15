@@ -1,40 +1,51 @@
-import {includes} from './polyfill.js';
-import { logError, logWarn, insertElement, setScriptAttributes } from './utils.js';
+import { includes } from "./polyfill.js";
+import {
+    logError,
+    logWarn,
+    insertElement,
+    setScriptAttributes,
+} from "./utils.js";
 
 const _requestCache = new WeakMap();
 // The below list contains modules or vendors whom Prebid allows to load external JS.
 const _approvedLoadExternalJSList = [
-  'debugging',
-  'adloox',
-  'criteo',
-  'outstream',
-  'adagio',
-  'spotx',
-  'browsi',
-  'brandmetrics',
-  'justtag',
-  'tncId',
-  'akamaidap',
-  'ftrackId',
-  'inskin',
-  'hadron',
-  'medianet',
-  'improvedigital',
-  'azerionedge',
-  'aaxBlockmeter',
-  'confiant',
-  'arcspan',
-  'airgrid',
-  'clean.io',
-  'a1Media',
-  'geoedge',
-  'mediafilter',
-  'qortex',
-  'dynamicAdBoost',
-  'contxtful',
-  'id5',
-  'lucead',
-  'symitridap',
+    // Prebid maintained modules:
+    "debugging",
+    "outstream",
+    // Bid Modules - only exception is on rendering edge cases, to clean up in Prebid 10:
+    "improvedigital",
+    "showheroes-bs",
+    // RTD modules:
+    "aaxBlockmeter",
+    "adagio",
+    "adloox",
+    "akamaidap",
+    "arcspan",
+    "airgrid",
+    "browsi",
+    "brandmetrics",
+    "clean.io",
+    "humansecurity",
+    "confiant",
+    "contxtful",
+    "hadron",
+    "mediafilter",
+    "medianet",
+    "azerionedge",
+    "a1Media",
+    "geoedge",
+    "qortex",
+    "dynamicAdBoost",
+    "51Degrees",
+    "symitridap",
+    "wurfl",
+    // UserId Submodules
+    "justtag",
+    "tncId",
+    "ftrackId",
+    "id5",
+    "lucead",
+    "symitridap",
 ];
 
 /**
@@ -47,98 +58,112 @@ const _approvedLoadExternalJSList = [
  * @param {object} attributes an object of attributes to be added to the script with setAttribute by [key] and [value]; Only the attributes passed in the first request of a url will be added.
  */
 export function loadExternalScript(url, moduleCode, callback, doc, attributes) {
-  if (!moduleCode || !url) {
-    logError('cannot load external script without url and moduleCode');
-    return;
-  }
-  if (!includes(_approvedLoadExternalJSList, moduleCode)) {
-    logError(`${moduleCode} not whitelisted for loading external JavaScript`);
-    return;
-  }
-  if (!doc) {
-    doc = document; // provide a "valid" key for the WeakMap
-  }
-  // only load each asset once
-  const storedCachedObject = getCacheObject(doc, url);
-  if (storedCachedObject) {
-    if (callback && typeof callback === 'function') {
-      if (storedCachedObject.loaded) {
-        // invokeCallbacks immediately
-        callback();
-      } else {
-        // queue the callback
-        storedCachedObject.callbacks.push(callback);
-      }
+    if (!moduleCode || !url) {
+        logError("cannot load external script without url and moduleCode");
+        return;
     }
-    return storedCachedObject.tag;
-  }
-  const cachedDocObj = _requestCache.get(doc) || {};
-  const cacheObject = {
-    loaded: false,
-    tag: null,
-    callbacks: []
-  };
-  cachedDocObj[url] = cacheObject;
-  _requestCache.set(doc, cachedDocObj);
-
-  if (callback && typeof callback === 'function') {
-    cacheObject.callbacks.push(callback);
-  }
-
-  logWarn(`module ${moduleCode} is loading external JavaScript`);
-  return requestResource(url, function () {
-    cacheObject.loaded = true;
-    try {
-      for (let i = 0; i < cacheObject.callbacks.length; i++) {
-        cacheObject.callbacks[i]();
-      }
-    } catch (e) {
-      logError('Error executing callback', 'adloader.js:loadExternalScript', e);
+    if (!includes(_approvedLoadExternalJSList, moduleCode)) {
+        logError(
+            `${moduleCode} not whitelisted for loading external JavaScript`
+        );
+        return;
     }
-  }, doc, attributes);
-
-  function requestResource(tagSrc, callback, doc, attributes) {
     if (!doc) {
-      doc = document;
+        doc = document; // provide a "valid" key for the WeakMap
     }
-    var jptScript = doc.createElement('script');
-    jptScript.type = 'text/javascript';
-    jptScript.async = true;
-
-    const cacheObject = getCacheObject(doc, url);
-    if (cacheObject) {
-      cacheObject.tag = jptScript;
-    }
-
-    if (jptScript.readyState) {
-      jptScript.onreadystatechange = function () {
-        if (jptScript.readyState === 'loaded' || jptScript.readyState === 'complete') {
-          jptScript.onreadystatechange = null;
-          callback();
+    // only load each asset once
+    const storedCachedObject = getCacheObject(doc, url);
+    if (storedCachedObject) {
+        if (callback && typeof callback === "function") {
+            if (storedCachedObject.loaded) {
+                // invokeCallbacks immediately
+                callback();
+            } else {
+                // queue the callback
+                storedCachedObject.callbacks.push(callback);
+            }
         }
-      };
-    } else {
-      jptScript.onload = function () {
-        callback();
-      };
+        return storedCachedObject.tag;
+    }
+    const cachedDocObj = _requestCache.get(doc) || {};
+    const cacheObject = {
+        loaded: false,
+        tag: null,
+        callbacks: [],
+    };
+    cachedDocObj[url] = cacheObject;
+    _requestCache.set(doc, cachedDocObj);
+
+    if (callback && typeof callback === "function") {
+        cacheObject.callbacks.push(callback);
     }
 
-    jptScript.src = tagSrc;
+    logWarn(`module ${moduleCode} is loading external JavaScript`);
+    return requestResource(
+        url,
+        function () {
+            cacheObject.loaded = true;
+            try {
+                for (let i = 0; i < cacheObject.callbacks.length; i++) {
+                    cacheObject.callbacks[i]();
+                }
+            } catch (e) {
+                logError(
+                    "Error executing callback",
+                    "adloader.js:loadExternalScript",
+                    e
+                );
+            }
+        },
+        doc,
+        attributes
+    );
 
-    if (attributes) {
-      setScriptAttributes(jptScript, attributes);
+    function requestResource(tagSrc, callback, doc, attributes) {
+        if (!doc) {
+            doc = document;
+        }
+        var jptScript = doc.createElement("script");
+        jptScript.type = "text/javascript";
+        jptScript.async = true;
+
+        const cacheObject = getCacheObject(doc, url);
+        if (cacheObject) {
+            cacheObject.tag = jptScript;
+        }
+
+        if (jptScript.readyState) {
+            jptScript.onreadystatechange = function () {
+                if (
+                    jptScript.readyState === "loaded" ||
+                    jptScript.readyState === "complete"
+                ) {
+                    jptScript.onreadystatechange = null;
+                    callback();
+                }
+            };
+        } else {
+            jptScript.onload = function () {
+                callback();
+            };
+        }
+
+        jptScript.src = tagSrc;
+
+        if (attributes) {
+            setScriptAttributes(jptScript, attributes);
+        }
+
+        // add the new script tag to the page
+        insertElement(jptScript, doc);
+
+        return jptScript;
     }
-
-    // add the new script tag to the page
-    insertElement(jptScript, doc);
-
-    return jptScript;
-  }
-  function getCacheObject(doc, url) {
-    const cachedDocObj = _requestCache.get(doc);
-    if (cachedDocObj && cachedDocObj[url]) {
-      return cachedDocObj[url];
+    function getCacheObject(doc, url) {
+        const cachedDocObj = _requestCache.get(doc);
+        if (cachedDocObj && cachedDocObj[url]) {
+            return cachedDocObj[url];
+        }
+        return null; // return new cache object?
     }
-    return null; // return new cache object?
-  }
-};
+}
