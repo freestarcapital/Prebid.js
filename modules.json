@@ -1,7 +1,5 @@
 [
     "33acrossIdSystem",
-    "adprimeBidAdapter",
-    "adyoulikeBidAdapter",
     "airgridRtdProvider",
     "appnexusBidAdapter",
     "atsAnalyticsAdapter",
@@ -15,7 +13,6 @@
     "criteoBidAdapter",
     "criteoIdSystem",
     "dfpAdServerVideo",
-    "enrichmentFpdModule",
     "fabrickIdSystem",
     "gptPreAuction",
     "gridBidAdapter",
@@ -25,7 +22,6 @@
     "id5IdSystem",
     "identityLinkIdSystem",
     "insticatorBidAdapter",
-    "intentIqIdSystem",
     "ixBidAdapter",
     "justpremiumBidAdapter",
     "kargoBidAdapter",
@@ -61,6 +57,5 @@
     "videojsVideoProvider",
     "yahoosspBidAdapter",
     "yieldmoBidAdapter",
-    "pulsepointBidAdapter",
-    "pulsepointAnalyticsAdapter"
+    "pulsepointBidAdapter"
 ]
