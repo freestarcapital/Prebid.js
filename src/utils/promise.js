@@ -53,7 +53,7 @@ export class GreedyPromise {
         let [handler, resolveFn] = result[0] === SUCCESS ? [onSuccess, resolve] : [onError, reject];
         if (typeof handler === 'function') {
           try {
-            value = handler(value);
+            handler(value);
           } catch (e) {
             reject(e);
             return;
