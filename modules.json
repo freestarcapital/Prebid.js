@@ -8,7 +8,7 @@
     "concertBidAdapter",
     "connectIdSystem",
     "consentManagementUsp",
-    "consentManagement",
+    "consentManagementTcf",
     "conversantBidAdapter",
     "criteoBidAdapter",
     "criteoIdSystem",
@@ -55,7 +55,8 @@
     "userId",
     "vidazooBidAdapter",
     "videojsVideoProvider",
-    "yahoosspBidAdapter",
+    "yahooAdsBidAdapter",
     "yieldmoBidAdapter",
-    "pulsepointBidAdapter"
+    "pulsepointBidAdapter",
+    "sovrnBidAdapter"
 ]
