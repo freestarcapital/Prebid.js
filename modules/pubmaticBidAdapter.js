@@ -12,12 +12,6 @@ import { NATIVE_IMAGE_TYPES, NATIVE_KEYS_THAT_ARE_NOT_ASSETS, NATIVE_KEYS, NATIV
  * @typedef {import('../src/adapters/bidderFactory.js').validBidRequests} validBidRequests
  */
 
-/**
- * @typedef {import('../src/adapters/bidderFactory.js').BidRequest} BidRequest
- * @typedef {import('../src/adapters/bidderFactory.js').Bid} Bid
- * @typedef {import('../src/adapters/bidderFactory.js').validBidRequests} validBidRequests
- */
-
 const BIDDER_CODE = 'pubmatic';
 const LOG_WARN_PREFIX = 'PubMatic: ';
 const ENDPOINT = 'https://hbopenbid.pubmatic.com/translator?source=prebid-client';
@@ -67,7 +61,8 @@ const VIDEO_CUSTOM_PARAMS = {
   'plcmt': DATA_TYPES.NUMBER,
   'minbitrate': DATA_TYPES.NUMBER,
   'maxbitrate': DATA_TYPES.NUMBER,
-  'skip': DATA_TYPES.NUMBER
+  'skip': DATA_TYPES.NUMBER,
+  'pos': DATA_TYPES.NUMBER
 }
 
 const NATIVE_ASSET_IMAGE_TYPE = {
@@ -76,7 +71,8 @@ const NATIVE_ASSET_IMAGE_TYPE = {
 }
 
 const BANNER_CUSTOM_PARAMS = {
-  'battr': DATA_TYPES.ARRAY
+  'battr': DATA_TYPES.ARRAY,
+  'pos': DATA_TYPES.NUMBER,
 }
 
 const NET_REVENUE = true;
