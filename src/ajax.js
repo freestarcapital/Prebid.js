@@ -59,9 +59,6 @@ export function toFetchRequest(url, data, options = {}) {
   if (options.keepalive) {
     rqOpts.keepalive = true;
   }
-  if (options.keepalive) {
-    rqOpts.keepalive = true;
-  }
   return dep.makeRequest(url, rqOpts);
 }
 

@@ -16,17 +16,6 @@ import {browserTypes, osTypes} from '../libraries/userAgentUtils/userAgentTypes.
  * @typedef {import('../src/auction').BidderRequest} BidderRequest
  */
 
-/**
- * @typedef {import('../src/adapters/bidderFactory').Bid} Bid
- * @typedef {import('../src/adapters/bidderFactory').BidRequest} BidRequest
- * @typedef {import('../src/adapters/bidderFactory').BidderSpec} BidderSpec
- * @typedef {import('../src/adapters/bidderFactory').ServerRequest} ServerRequest
- * @typedef {import('../src/adapters/bidderFactory').ServerResponse} ServerResponse
- * @typedef {import('../src/adapters/bidderFactory').SyncOptions} SyncOptions
- * @typedef {import('../src/adapters/bidderFactory').UserSync} UserSync
- * @typedef {import('../src/auction').BidderRequest} BidderRequest
- */
-
 const BIDDER_CODE = 'yieldone';
 const ENDPOINT_URL = 'https://y.one.impact-ad.jp/h_bid';
 const USER_SYNC_URL = 'https://y.one.impact-ad.jp/push_sync';
