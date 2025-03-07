@@ -4,6 +4,7 @@
     "airgridRtdProvider",
     "appnexusBidAdapter",
     "atsAnalyticsAdapter",
+    "bidResponseFilter",
     "carbonAnalyticsAdapter",
     "concertBidAdapter",
     "connectIdSystem",
