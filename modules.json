@@ -8,6 +8,8 @@
     "beachfrontBidAdapter",
     "consentManagement",
     "consentManagementUsp",
+    "consentManagementTcf",
+    "consentManagementGpp",
     "conversantBidAdapter",
     "criteoBidAdapter",
     "districtmDMXBidAdapter",
