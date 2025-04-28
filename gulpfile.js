@@ -149,7 +149,7 @@ function makeModuleList(modules) {
 function makeDevpackPkg() {
   var cloned = _.cloneDeep(webpackConfig);
   cloned.devtool = 'source-map';
-  var externalModules = helpers.getArgModules();
+  var externalModules = [...helpers.getArgModules(), 'consentManagementGpp'];
 
   const analyticsSources = helpers.getAnalyticsSources();
   const moduleSources = helpers.getModulePaths(externalModules);
