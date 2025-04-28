@@ -143,10 +143,7 @@ function makeVerbose(config = webpackConfig) {
 }
 
 function prebidSource(webpackCfg) {
-  var externalModules = [
-      ...helpers.getArgModules()
-          .filter(m => m === 'consentManagementUsp'),
-      'consentManagementGpp'];
+  var externalModules = [...helpers.getArgModules(), 'consentManagementGpp'];
 
   const analyticsSources = helpers.getAnalyticsSources();
   const moduleSources = helpers.getModulePaths(externalModules);
