@@ -172,7 +172,8 @@ function getImpression(bidRequest) {
   const secure = utils.deepAccess(bidRequest, 'ortb2Imp.secure');
   impression.secure = isNumber(secure) ? secure : 1
 
-  utils.mergeDeep(impression, bidRequest.ortb2Imp)
+  const {video: _, ...ortb2ImplWithoutVideo} = bidRequest.ortb2Imp; // if enabled, video is already assigned above
+  utils.mergeDeep(impression, ortb2ImplWithoutVideo)
 
   return impression;
 }
