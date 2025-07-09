@@ -27,6 +27,7 @@
     "mantisBidAdapter",
     "openxBidAdapter",
     "prebidServerBidAdapter",
+    "priceFloors",
     "pubCommonId",
     "pubmaticBidAdapter",
     "pulsepointBidAdapter",
