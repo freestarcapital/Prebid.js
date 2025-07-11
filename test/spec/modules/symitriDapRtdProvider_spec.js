@@ -61,8 +61,12 @@ describe('symitriDapRtdProvider', function() {
       'apiVersion': 'x1',
       'domain': 'prebid.org',
       'identityType': 'dap-signature:1.0.0',
+<<<<<<<< HEAD:test/spec/modules/akamaiDapRtdProvider_spec.js
+      'segtax': 710
+========
       'segtax': 710,
       'pixelUrl': 'https://www.test.com/pixel'
+>>>>>>>> 10.1.0:test/spec/modules/symitriDapRtdProvider_spec.js
     }
   }
 
@@ -71,6 +75,8 @@ describe('symitriDapRtdProvider', function() {
     'api_version': 'x1',
     'domain': 'prebid.org',
     'segtax': 708,
+<<<<<<<< HEAD:test/spec/modules/akamaiDapRtdProvider_spec.js
+========
     'identity': sampleIdentity
   }
 
@@ -79,6 +85,7 @@ describe('symitriDapRtdProvider', function() {
     'api_version': 'x2',
     'domain': 'prebid.org',
     'segtax': 708,
+>>>>>>>> 10.1.0:test/spec/modules/symitriDapRtdProvider_spec.js
     'identity': sampleIdentity
   }
 
@@ -656,7 +663,7 @@ describe('symitriDapRtdProvider', function() {
     let sandbox;
 
     beforeEach(() => {
-      sandbox = sinon.sandbox.create();
+      sandbox = sinon.createSandbox();
     });
 
     afterEach(() => {

@@ -1,7 +1,9 @@
 import { expect } from 'chai';
 import { spec } from 'modules/kargoBidAdapter.js';
 import { config } from 'src/config.js';
+import { getStorageManager } from 'src/storageManager.js';
 const utils = require('src/utils');
+const STORAGE = getStorageManager({bidderCode: 'kargo'});
 
 describe('kargo adapter tests', function() {
   let bid, outstreamBid, testBids, sandbox, clock, frozenNow = new Date(), oldBidderSettings;
@@ -201,7 +203,7 @@ describe('kargo adapter tests', function() {
 
     testBids = [{ ...minimumBidParams }];
 
-    sandbox = sinon.sandbox.create();
+    sandbox = sinon.createSandbox();
     clock = sinon.useFakeTimers(frozenNow.getTime());
   });
 
@@ -456,6 +458,57 @@ describe('kargo adapter tests', function() {
       );
     });
 
+    it('clones ortb2 and removes user.ext.eids without mutating original input', function () {
+      const ortb2WithEids = {
+        user: {
+          ext: {
+            eids: [{ source: 'adserver.org', uids: [{ id: 'abc', atype: 1 }] }],
+            other: 'data'
+          },
+          gender: 'M'
+        },
+        site: {
+          domain: 'example.com',
+          page: 'https://example.com/page'
+        },
+        source: {
+          tid: 'test-tid'
+        }
+      };
+
+      const expectedClonedOrtb2 = {
+        user: {
+          ext: {
+            other: 'data'
+          },
+          gender: 'M'
+        },
+        site: {
+          domain: 'example.com',
+          page: 'https://example.com/page'
+        },
+        source: {
+          tid: 'test-tid'
+        }
+      };
+
+      const testBid = {
+        ...minimumBidParams,
+        ortb2: utils.deepClone(ortb2WithEids)
+      };
+
+      const payload = getPayloadFromTestBids([testBid]);
+
+      // Confirm eids were removed from the payload
+      expect(payload.ext.ortb2.user.ext.eids).to.be.undefined;
+
+      // Confirm original object was not mutated
+      expect(testBid.ortb2.user.ext.eids).to.exist.and.be.an('array');
+
+      // Confirm the rest of the ortb2 object is intact
+      expect(payload.ext.ortb2).to.deep.equal(expectedClonedOrtb2);
+    });
+
     it('copies the refererInfo object from bidderRequest if present', function() {
       let payload;
       payload = getPayloadFromTestBids(testBids);
@@ -510,39 +563,57 @@ describe('kargo adapter tests', function() {
         schain: {}
       }, {
         ...minimumBidParams,
-        schain: {
-          complete: 1,
-          nodes: [{
-            asi: 'test-page.com',
-            hp: 1,
-            rid: '57bdd953-6e57-4d5b-9351-ed67ca238890',
-            sid: '8190248274'
-          }]
+        ortb2: {
+          source: {
+            ext: {
+              schain: {
+                complete: 1,
+                nodes: [{
+                  asi: 'test-page.com',
+                  hp: 1,
+                  rid: '57bdd953-6e57-4d5b-9351-ed67ca238890',
+                  sid: '8190248274'
+                }]
+              }
+            }
+          }
         }
       }]);
       expect(payload.schain).to.be.undefined;
 
       payload = getPayloadFromTestBids([{
         ...minimumBidParams,
-        schain: {
-          complete: 1,
-          nodes: [{
-            asi: 'test-page.com',
-            hp: 1,
-            rid: '57bdd953-6e57-4d5b-9351-ed67ca238890',
-            sid: '8190248274'
-          }]
+        ortb2: {
+          source: {
+            ext: {
+              schain: {
+                complete: 1,
+                nodes: [{
+                  asi: 'test-page.com',
+                  hp: 1,
+                  rid: '57bdd953-6e57-4d5b-9351-ed67ca238890',
+                  sid: '8190248274'
+                }]
+              }
+            }
+          }
         }
       }, {
         ...minimumBidParams,
-        schain: {
-          complete: 1,
-          nodes: [{
-            asi: 'test-page-2.com',
-            hp: 1,
-            rid: 'other-rid',
-            sid: 'other-sid'
-          }]
+        ortb2: {
+          source: {
+            ext: {
+              schain: {
+                complete: 1,
+                nodes: [{
+                  asi: 'test-page-2.com',
+                  hp: 1,
+                  rid: 'other-rid',
+                  sid: 'other-sid'
+                }]
+              }
+            }
+          }
         }
       }]);
       expect(payload.schain).to.deep.equal({
@@ -784,18 +855,15 @@ describe('kargo adapter tests', function() {
         expect(payload.imp[3].native).to.deep.equal(nativeImp);
       });
 
-      it('pulls gpid from ortb2Imp.ext.gpid then ortb2Imp.ext.data.pbadslot', function () {
+      it('pulls gpid from ortb2Imp.ext.gpid', function () {
         const gpidGpid = 'ortb2Imp.ext.gpid-gpid';
-        const gpidPbadslot = 'ortb2Imp.ext.data.pbadslot-gpid'
         const testBids = [
           {
             ...minimumBidParams,
             ortb2Imp: {
               ext: {
                 gpid: gpidGpid,
-                data: {
-                  pbadslot: gpidPbadslot
-                }
+                data: {}
               }
             }
           },
@@ -812,9 +880,7 @@ describe('kargo adapter tests', function() {
             ...minimumBidParams,
             ortb2Imp: {
               ext: {
-                data: {
-                  pbadslot: gpidPbadslot
-                }
+                data: {}
               }
             }
           },
@@ -838,8 +904,6 @@ describe('kargo adapter tests', function() {
         expect(payload.imp[0].fpd).to.deep.equal({ gpid: gpidGpid });
         // Only ext.gpid
         expect(payload.imp[1].fpd).to.deep.equal({ gpid: gpidGpid });
-        // Only ext.data.pbadslot
-        expect(payload.imp[2].fpd).to.deep.equal({ gpid: gpidPbadslot });
         // Neither present
         expect(payload.imp[3].fpd).to.be.undefined;
         expect(payload.imp[4].fpd).to.be.undefined;
@@ -1001,9 +1065,9 @@ describe('kargo adapter tests', function() {
       });
 
       it('retrieves CRB from cookies if localstorage is not functional', function() {
-        // Note: this does not cause localStorage to throw an error in Firefox so in that browser this
-        // test is not 100% true to its name
-        sandbox.stub(localStorage, 'getItem').throws();
+        // Safari does not allow stubbing localStorage methods directly.
+        // Stub the storage manager instead so all browsers behave consistently.
+        sandbox.stub(STORAGE, 'getDataFromLocalStorage').throws();
         setCrb('valid', 'invalid');
 
         const payload = getPayloadFromTestBids(testBids, bidderRequest);
@@ -1269,7 +1333,9 @@ describe('kargo adapter tests', function() {
       });
 
       it('fails gracefully if there is no localStorage', function() {
-        sandbox.stub(localStorage, 'getItem').throws();
+        sandbox.stub(STORAGE, 'getDataFromLocalStorage').throws();
+        localStorage.removeItem('krg_crb');
+        document.cookie = 'krg_crb=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
         let payload = getPayloadFromTestBids(testBids);
         expect(payload.user).to.deep.equal({
           crbIDs: {},
@@ -1589,7 +1655,9 @@ describe('kargo adapter tests', function() {
       });
 
       it('fails gracefully without localStorage', function() {
-        sandbox.stub(localStorage, 'getItem').throws();
+        sandbox.stub(STORAGE, 'getDataFromLocalStorage').throws();
+        localStorage.removeItem('krg_crb');
+        document.cookie = 'krg_crb=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
         let payload = getPayloadFromTestBids(testBids);
         expect(payload.page).to.be.undefined;
       });
@@ -1913,13 +1981,7 @@ describe('kargo adapter tests', function() {
       sandbox.stub(spec, '_getCrb').callsFake(function() { return crb; });
 
       // Makes the seed in the URLs predictable
-      sandbox.stub(crypto, 'getRandomValues').callsFake(function (buf) {
-        var bytes = [50, 5, 232, 133, 141, 55, 49, 57, 244, 126, 248, 44, 255, 38, 128, 0];
-        for (var i = 0; i < bytes.length; i++) {
-          buf[i] = bytes[i];
-        }
-        return buf;
-      });
+      sandbox.stub(utils, 'generateUUID').returns('3205e885-8d37-4139-b47e-f82cff268000');
     });
 
     it('returns user syncs when an ID is present', function() {
