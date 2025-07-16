@@ -173,8 +173,8 @@ export const id5IdSubmodule = {
       const responseObj = {};
       const eids = {};
       Object.entries(value.ids).forEach(([key, value]) => {
-        let eid = value.eid;
-        let uid = eid?.uids?.[0]
+        const eid = value.eid;
+        const uid = eid?.uids?.[0]
         responseObj[key] = {
           uid: uid?.id,
           ext: uid?.ext
@@ -198,7 +198,7 @@ export const id5IdSubmodule = {
       return undefined;
     }
     this.eids = DEFAULT_EIDS;
-    let responseObj = {
+    const responseObj = {
       id5id: {
         uid: universalUid,
         ext: ext
@@ -335,7 +335,6 @@ export class IdFetchFlow {
     return typeof this.submoduleConfig.params.externalModuleUrl === 'string';
   }
 
-
   async #externalModuleFlow(configCallPromise) {
     await loadExternalModule(this.submoduleConfig.params.externalModuleUrl);
     const fetchFlowConfig = await configCallPromise;
@@ -343,11 +342,9 @@ export class IdFetchFlow {
     return this.#getExternalIntegration().fetchId5Id(fetchFlowConfig, this.submoduleConfig.params, getRefererInfo(), this.gdprConsentData, this.usPrivacyData, this.gppData);
   }
 
-
   #getExternalIntegration() {
     return window.id5Prebid && window.id5Prebid.integration;
   }
-
 
   async #regularFlow(configCallPromise) {
     const fetchFlowConfig = await configCallPromise;
@@ -356,9 +353,8 @@ export class IdFetchFlow {
     return this.#processFetchCallResponse(fetchCallResponse);
   }
 
-
   async #callForConfig() {
-    let url = this.submoduleConfig.params.configUrl || ID5_API_CONFIG_URL; // override for debug/test purposes only
+    const url = this.submoduleConfig.params.configUrl || ID5_API_CONFIG_URL; // override for debug/test purposes only
     const response = await fetch(url, {
       method: 'POST',
       body: JSON.stringify({
@@ -374,7 +370,6 @@ export class IdFetchFlow {
     logInfo(LOG_PREFIX + 'config response received from the server', dynamicConfig);
     return dynamicConfig;
   }
-
 
   async #callForExtensions(extensionsCallConfig) {
     if (extensionsCallConfig === undefined) {
@@ -392,7 +387,6 @@ export class IdFetchFlow {
     return extensions;
   }
 
-
   async #callId5Fetch(fetchCallConfig, extensionsData) {
     const fetchUrl = fetchCallConfig.url;
     const additionalData = fetchCallConfig.overrides || {};
@@ -409,7 +403,6 @@ export class IdFetchFlow {
     logInfo(LOG_PREFIX + 'fetch response received from the server', fetchResponse);
     return fetchResponse;
   }
-
 
   #createFetchRequestData() {
     const params = this.submoduleConfig.params;
@@ -466,7 +459,6 @@ export class IdFetchFlow {
     return data;
   }
 
-
   #processFetchCallResponse(fetchCallResponse) {
     try {
       if (fetchCallResponse.privacy) {
@@ -504,7 +496,7 @@ function validateConfig(config) {
 
   const partner = config.params.partner;
   if (typeof partner === 'string' || partner instanceof String) {
-    let parsedPartnerId = parseInt(partner);
+    const parsedPartnerId = parseInt(partner);
     if (isNaN(parsedPartnerId) || parsedPartnerId < 0) {
       logError(LOG_PREFIX + 'partner required to be a number or a String parsable to a positive integer');
       return false;
