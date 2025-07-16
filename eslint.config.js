@@ -1,19 +1,25 @@
 const jsdoc = require('eslint-plugin-jsdoc')
 const lintImports = require('eslint-plugin-import')
 const neostandard = require('neostandard')
-const babelParser = require('@babel/eslint-parser');
 const globals = require('globals');
 const prebid = require('./plugins/eslint/index.js');
 const {includeIgnoreFile} = require('@eslint/compat');
 const path = require('path');
 const _ = require('lodash');
+const tseslint = require('typescript-eslint');
+const {getSourceFolders, getIgnoreSources} = require('./gulpHelpers.js');
 
-function sourcePattern(name) {
+function jsPattern(name) {
   return [`${name}/**/*.js`, `${name}/**/*.mjs`]
 }
 
-const sources = ['src', 'modules', 'libraries', 'creative'].flatMap(sourcePattern)
-const autogen = 'libraries/creative-renderer-*/**/*'
+function tsPattern(name) {
+  return [`${name}/**/*.ts`]
+}
+
+function sourcePattern(name) {
+  return jsPattern(name).concat(tsPattern(name));
+}
 
 const allowedImports = {
   modules: [
@@ -44,8 +50,29 @@ function noGlobals(names) {
   }
 }
 
-function commonConfig(overrides) {
-  return _.merge({
+
+module.exports = [
+  includeIgnoreFile(path.resolve(__dirname, '.gitignore')),
+  {
+    ignores: [
+      ...getIgnoreSources(),
+      'integrationExamples/**/*',
+      // do not lint build-related stuff
+      '*.js',
+      'metadata/**/*',
+      ...jsPattern('plugins'),
+      ...jsPattern('.github'),
+    ],
+  },
+  jsdoc.configs['flat/recommended'],
+  ...tseslint.configs.recommended,
+  ...neostandard({
+    files: getSourceFolders().flatMap(jsPattern),
+    ts: true,
+    filesTs: getSourceFolders().flatMap(tsPattern)
+  }),
+  {
+    files: getSourceFolders().flatMap(sourcePattern),
     plugins: {
       jsdoc,
       import: lintImports,
@@ -59,7 +86,6 @@ function commonConfig(overrides) {
       }
     },
     languageOptions: {
-      parser: babelParser,
       sourceType: 'module',
       ecmaVersion: 2018,
       globals: {
@@ -74,6 +100,17 @@ function commonConfig(overrides) {
       semi: 'off',
       'space-before-function-paren': 'off',
       'import/extensions': ['error', 'ignorePackages'],
+      'no-restricted-syntax': [
+        'error',
+        {
+          selector: "FunctionDeclaration[id.name=/^log(Message|Info|Warn|Error|Result)$/]",
+          message: "Defining a function named 'logResult, 'logMessage', 'logInfo', 'logWarn', or 'logError' is not allowed."
+        },
+        {
+          selector: "VariableDeclarator[id.name=/^log(Message|Info|Warn|Error|Result)$/][init.type=/FunctionExpression|ArrowFunctionExpression/]",
+          message: "Assigning a function to 'logResult, 'logMessage', 'logInfo', 'logWarn', or 'logError' is not allowed."
+        },
+      ],
 
       // Exceptions below this line are temporary (TM), so that eslint can be added into the CI process.
       // Violations of these styles should be fixed, and the exceptions removed over time.
@@ -110,7 +147,6 @@ function commonConfig(overrides) {
       'no-empty': 'off',
       'no-void': 'off',
       'array-callback-return': 'off',
-      'import-x/no-named-default': 'off',
       'prefer-const': 'off',
       'no-prototype-builtins': 'off',
       'object-shorthand': 'off',
@@ -130,38 +166,16 @@ function commonConfig(overrides) {
       '@stylistic/comma-dangle': 'off',
       '@stylistic/object-curly-newline': 'off',
       '@stylistic/object-property-newline': 'off',
-      '@stylistic/no-multiple-empty-lines': 'off',
 
     }
-  }, overrides);
-}
-
-module.exports = [
-  includeIgnoreFile(path.resolve(__dirname, '.gitignore')),
-  {
-    ignores: [
-      autogen,
-      'integrationExamples/**/*',
-      // do not lint build-related stuff
-      '*.js',
-      ...sourcePattern('plugins'),
-      ...sourcePattern('.github'),
-    ],
   },
-  jsdoc.configs['flat/recommended'],
-  ...neostandard({
-    files: sources,
-  }),
-  commonConfig({
-    files: sources,
-  }),
   ...Object.entries(allowedImports).map(([path, allowed]) => {
     const {globals, props} = noGlobals({
       require: 'use import instead',
       ...Object.fromEntries(['localStorage', 'sessionStorage'].map(k => [k, 'use storageManager instead'])),
       XMLHttpRequest: 'use ajax.js instead'
     })
-    return commonConfig({
+    return {
       files: sourcePattern(path),
       plugins: {
         prebid,
@@ -200,7 +214,7 @@ module.exports = [
           }))
         ]
       }
-    })
+    }
   }),
   {
     files: ['**/*BidAdapter.js'],
@@ -215,7 +229,7 @@ module.exports = [
       ]
     }
   },
-  commonConfig({
+  {
     files: sourcePattern('test'),
     languageOptions: {
       globals: {
@@ -228,21 +242,28 @@ module.exports = [
       // tests were not subject to many rules and they are now a nightmare
       'no-template-curly-in-string': 'off',
       'no-unused-expressions': 'off',
-      'one-var': 'off',
       'no-undef': 'off',
       'no-unused-vars': 'off',
-      'import/extensions': 'off',
       'camelcase': 'off',
-      'no-array-constructor': 'off',
-      'import-x/no-duplicates': 'off',
-      'import-x/no-absolute-path': 'off',
-      'no-loss-of-precision': 'off',
-      'no-redeclare': 'off',
-      'no-global-assign': 'off',
-      'default-case-last': 'off',
-      '@stylistic/no-mixed-spaces-and-tabs': 'off',
-      '@stylistic/no-tabs': 'off',
-      '@stylistic/no-trailing-spaces': 'off'
+      'no-global-assign': 'off'
     }
-  })
+  },
+  {
+    files: getSourceFolders().flatMap(tsPattern),
+    rules: {
+      // turn off no-undef for TS files - type checker does better
+      'no-undef': 'off',
+      '@typescript-eslint/no-explicit-any': 'off'
+    }
+  },
+  {
+    files: getSourceFolders().flatMap(jsPattern),
+    rules: {
+      // turn off typescript rules on js files - just too many violations
+      '@typescript-eslint/no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-expressions': 'off',
+      '@typescript-eslint/no-this-alias': 'off',
+      '@typescript-eslint/no-require-imports': 'off'
+    }
+  },
 ]
