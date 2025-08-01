@@ -1,5 +1,5 @@
 import { expect } from 'chai';
-import { spec, cpmAdjustment, addViewabilityToImp } from 'modules/pubmaticBidAdapter.js';
+import { spec, cpmAdjustment, addViewabilityToImp, shouldAddDealTargeting } from 'modules/pubmaticBidAdapter.js';
 import * as utils from 'src/utils.js';
 import { bidderSettings } from 'src/bidderSettings.js';
 import { config } from 'src/config.js';
@@ -52,12 +52,19 @@ describe('PubMatic adapter', () => {
         connectiontype: 6
       },
       site: {domain: 'ebay.com', page: 'https://ebay.com'},
-      source: {}
+      source: {},
+      user: {
+        ext: {
+          data: {
+            im_segments: ['segment1', 'segment2']
+          }
+        }
+      }
     },
     ortb2Imp: {
       ext: {
-          tid: '92489f71-1bf2-49a0-adf9-000cea934729',
-          gpid: '/1111/homepage-leftnav',
+        tid: '92489f71-1bf2-49a0-adf9-000cea934729',
+        gpid: '/1111/homepage-leftnav',
         data: {
           pbadslot: '/1111/homepage-leftnav',
           adserver: {
@@ -150,7 +157,14 @@ describe('PubMatic adapter', () => {
         connectiontype: 6
       },
       site: {domain: 'ebay.com', page: 'https://ebay.com'},
-      source: {}
+      source: {},
+      user: {
+        ext: {
+          data: {
+            im_segments: ['segment1', 'segment2']
+          }
+        }
+      }
     },
     timeout: 2000
   };
@@ -273,12 +287,12 @@ describe('PubMatic adapter', () => {
         expect(imp[0]).to.have.property('ext').to.have.property('key_val');
       });
 
-      it('should not add key_val if dctr is absent in parameters', () => {
+      it('adds key_val when dctr is missing but RTD provides custom targeting via ortb2', () => {
         delete validBidRequests[0].params.dctr;
         const request = spec.buildRequests(validBidRequests, bidderRequest);
         const { imp } = request?.data;
         expect(imp).to.be.an('array');
-        expect(imp[0]).to.have.property('ext').to.not.have.property('key_val');
+        expect(imp[0]).to.have.property('ext').to.have.property('key_val');
       });
 
       it('should set w and h to the primary size for banner', () => {
@@ -392,6 +406,15 @@ describe('PubMatic adapter', () => {
         expect(imp[0]).to.have.property('banner').to.have.property('pos');
         expect(imp[0]).to.have.property('banner').to.have.property('pos').equal(0);
       });
+
+      it('should include custom targeting data in imp.ext when provided by RTD', () => {
+        const request = spec.buildRequests(validBidRequests, bidderRequest);
+        const { imp } = request?.data;
+        expect(imp).to.be.an('array');
+        expect(imp[0]).to.have.property('ext');
+        expect(imp[0].ext).to.have.property('key_val');
+        expect(imp[0].ext.key_val).to.deep.equal('im_segments=segment1,segment2');
+      })
 
       if (FEATURES.VIDEO) {
         describe('VIDEO', () => {
@@ -512,60 +535,73 @@ describe('PubMatic adapter', () => {
             expect(imp[0]).to.have.property('native');
           });
         });
-       }
-      //   describe('MULTIFORMAT', () => {
-      //     let multiFormatBidderRequest;
-      //     it('should have both banner & video impressions', () => {
-      //       multiFormatBidderRequest = utils.deepClone(bidderRequest);
-      //       multiFormatBidderRequest.bids[0].mediaTypes.video = {
-      //         skip: 1,
-      //         mimes: ['video/mp4', 'video/x-flv'],
-      //         minduration: 5,
-      //         maxduration: 30,
-      //         startdelay: 5,
-      //         playbackmethod: [1, 3],
-      //         api: [1, 2],
-      //         protocols: [2, 3],
-      //         battr: [13, 14],
-      //         linearity: 1,
-      //         placement: 2,
-      //         plcmt: 1,
-      //         minbitrate: 10,
-      //         maxbitrate: 10,
-      //         playerSize: [640, 480]
-      //       }
-      //       const request = spec.buildRequests(validBidRequests, multiFormatBidderRequest);
-      //       const { imp } = request?.data;
-      //       expect(imp).to.be.an('array');
-      //       expect(imp[0]).to.have.property('banner');
-      //       expect(imp[0].banner).to.have.property('topframe');
-      //       expect(imp[0].banner).to.have.property('format');
-      //       expect(imp[0]).to.have.property('video');
-      //     });
-
-    //     it('should have both banner & native impressions', () => {
-    //       multiFormatBidderRequest = utils.deepClone(bidderRequest);
-    //       multiFormatBidderRequest.bids[0].nativeOrtbRequest = {
-    //         ver: '1.2',
-    //         assets: [{
-    //           id: 0,
-    //           img: {
-    //             'type': 3,
-    //             'w': 300,
-    //             'h': 250
-    //           },
-    //           required: 1,
-    //         }]
-    //       };
-    //       const request = spec.buildRequests(validBidRequests, multiFormatBidderRequest);
-    //       const { imp } = request?.data;
-    //       expect(imp).to.be.an('array');
-    //       expect(imp[0]).to.have.property('banner');
-    //       expect(imp[0].banner).to.have.property('topframe');
-    //       expect(imp[0].banner).to.have.property('format');
-    //       expect(imp[0]).to.have.property('native');
-    //     });
-    //   });
+      }
+      describe('ShouldAddDealTargeting', () => {
+        it('should return im_segment targeting', () => {
+          const ortb2 = {
+            user: {
+              ext: {
+                data: {
+                  im_segments: ['segment1', 'segment2']
+                }
+              }
+            }
+          };
+          const result = shouldAddDealTargeting(ortb2);
+          expect(result).to.have.property('im_segments');
+          expect(result.im_segments).to.deep.equal('im_segments=segment1,segment2');
+        });
+        it('should return ias-brand-safety targeting', () => {
+          const ortb2 = {
+            site: {
+              ext: {
+                data: {
+                  'ias-brand-safety': {
+                    'content': 'news',
+                    'sports': 'cricket',
+                    'cricket': 'player'
+                  }
+                }
+              }
+            }
+          };
+          const result = shouldAddDealTargeting(ortb2);
+          expect(result).to.have.property('ias-brand-safety');
+          expect(result['ias-brand-safety']).to.deep.equal('content=news|sports=cricket|cricket=player');
+        });
+        it('should return undefined if no targeting is present', () => {
+          const ortb2 = {};
+          const result = shouldAddDealTargeting(ortb2);
+          expect(result).to.be.undefined;
+        });
+        it('should return both im_segment and ias-brand-safety targeting', () => {
+          const ortb2 = {
+            user: {
+              ext: {
+                data: {
+                  im_segments: ['segment1', 'segment2']
+                }
+              }
+            },
+            site: {
+              ext: {
+                data: {
+                  'ias-brand-safety': {
+                    'content': 'news',
+                    'sports': 'cricket',
+                    'cricket': 'player'
+                  }
+                }
+              }
+            }
+          };
+          const result = shouldAddDealTargeting(ortb2);
+          expect(result).to.have.property('im_segments');
+          expect(result.im_segments).to.deep.equal('im_segments=segment1,segment2');
+          expect(result).to.have.property('ias-brand-safety');
+          expect(result['ias-brand-safety']).to.deep.equal('content=news|sports=cricket|cricket=player');
+        });
+      })
     });
 
     describe('rest of ORTB request', () => {
@@ -638,6 +674,76 @@ describe('PubMatic adapter', () => {
         it('should have tmax', () => {
           const request = spec.buildRequests(validBidRequests, bidderRequest);
           expect(request.data).to.have.property('tmax').to.equal(2000);
+        });
+
+        describe('Gzip Configuration', () => {
+          let configStub;
+          let bidderConfigStub;
+
+          beforeEach(() => {
+            configStub = sinon.stub(config, 'getConfig');
+            bidderConfigStub = sinon.stub(config, 'getBidderConfig');
+          });
+
+          afterEach(() => {
+            configStub.restore();
+            if (bidderConfigStub && bidderConfigStub.restore) {
+              bidderConfigStub.restore();
+            }
+          });
+
+          it('should enable gzip compression by default', () => {
+            // No specific configuration set, should use default
+            const request = spec.buildRequests(validBidRequests, bidderRequest);
+            expect(request.options.endpointCompression).to.be.true;
+          });
+
+          it('should respect bidder-specific boolean configuration set via setBidderConfig', () => {
+            // Mock bidder-specific config to return false
+            bidderConfigStub.returns({
+              pubmatic: {
+                gzipEnabled: false
+              }
+            });
+
+            const request = spec.buildRequests(validBidRequests, bidderRequest);
+            expect(request.options.endpointCompression).to.be.false;
+          });
+
+          it('should handle bidder-specific string configuration ("true")', () => {
+            bidderConfigStub.returns({
+              pubmatic: {
+                gzipEnabled: 'true'
+              }
+            });
+
+            const request = spec.buildRequests(validBidRequests, bidderRequest);
+            expect(request.options.endpointCompression).to.be.true;
+          });
+
+          it('should handle bidder-specific string configuration ("false")', () => {
+            bidderConfigStub.returns({
+              pubmatic: {
+                gzipEnabled: 'false'
+              }
+            });
+
+            const request = spec.buildRequests(validBidRequests, bidderRequest);
+            expect(request.options.endpointCompression).to.be.false;
+          });
+
+          it('should fall back to default when bidder-specific value is invalid', () => {
+            // Mock bidder-specific config to return invalid value
+            bidderConfigStub.returns({
+              pubmatic: {
+                gzipEnabled: 'invalid'
+              }
+            });
+
+            const request = spec.buildRequests(validBidRequests, bidderRequest);
+            // Should fall back to default (true)
+            expect(request.options.endpointCompression).to.be.true;
+          });
         });
 
         it('should remove test if pubmaticTest is not set', () => {
