@@ -223,9 +223,6 @@ module.exports = {
     }
     const disabled = parseFlags(argv.disable || '');
     const enabled = parseFlags(argv.enable || '');
-    if (!argv.disable) {
-      disabled.push('GREEDY');
-    }
     return disabled.filter(feature => !enabled.includes(feature));
   },
   getTestDisableFeatures() {
