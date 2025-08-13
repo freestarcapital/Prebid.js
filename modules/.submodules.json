@@ -95,6 +95,7 @@
       "geolocationRtdProvider",
       "goldfishAdsRtdProvider",
       "greenbidsRtdProvider",
+      "groupMToPubmaticRtdProvider",
       "growthCodeRtdProvider",
       "hadronRtdProvider",
       "humansecurityRtdProvider",
