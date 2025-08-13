@@ -21,7 +21,7 @@
     "serve": "gulp serve",
     "test": "gulp test",
     "lint": "gulp lint",
-    "build": "gulp build --modules=modules.json"
+    "build": "gulp build --enable GREEDY --modules=modules.json"
   },
   "repository": {
     "type": "git",
