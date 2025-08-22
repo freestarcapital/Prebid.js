@@ -42,7 +42,6 @@ import type {EventHandler, EventIDs, Event} from "./events.js";
 import * as events from './events.js';
 import {type Metrics, newMetrics, useMetrics} from './utils/perfMetrics.js';
 import {type Defer, defer, PbPromise} from './utils/promise.js';
-import {pbYield} from './utils/yield.js';
 import {enrichFPD} from './fpd/enrichment.js';
 import {allConsent} from './consentHandler.js';
 import {
@@ -651,8 +650,7 @@ type RenderAdOptions = {
  * @param  id adId of the bid to render
  * @param options
  */
-async function renderAd(doc: Document, id: Bid['adId'], options?: RenderAdOptions) {
-  await pbYield();
+function renderAd(doc: Document, id: Bid['adId'], options?: RenderAdOptions) {
   renderAdDirect(doc, id, options);
 }
 addApiMethod('renderAd', renderAd);
@@ -1211,7 +1209,6 @@ async function _processQueue(queue) {
         logError('Error processing command :', 'prebid.js', e);
       }
     }
-    await pbYield();
   }
 }
 
