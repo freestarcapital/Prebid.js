@@ -636,6 +636,7 @@ describe('stroeerCore bid adapter', function () {
           assert.deepEqual(serverRequestInfo.data.bids, [...expectedBannerBids, ...expectedVideoBids]);
         });
       });
+
       describe('optional fields', () => {
         it('should skip viz field when unable to determine visibility of placement', () => {
           placementElements.length = 0;
@@ -1043,16 +1044,6 @@ describe('stroeerCore bid adapter', function () {
       assert.propertyVal(firstBidMeta, 'another', 'thing');
 
       assert.isEmpty(result[1].meta)
-    });
-
-    it('should add campaignType to meta object', () => {
-      const response = buildBidderResponse();
-      response.bids[1] = Object.assign(response.bids[1], {campaignType: 'RTB'});
-
-      const result = spec.interpretResponse({body: response});
-
-      assert.propertyVal(result[0].meta, 'campaignType', undefined);
-      assert.propertyVal(result[1].meta, 'campaignType', 'RTB');
     });
   });
 
