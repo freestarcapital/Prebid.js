@@ -22,9 +22,6 @@ const SOURCE_FOLDERS = [
   'test',
   'public'
 ]
-const IGNORE_SOURCES = [
-  'libraries/creative-renderer-*/**/*',
-]
 
 // get only subdirectories that contain package.json with 'main' property
 function isModuleDirectory(filePath) {
@@ -43,9 +40,6 @@ module.exports = {
   },
   getSourcePatterns() {
     return SOURCE_FOLDERS.flatMap(dir => [`./${dir}/**/*.js`, `./${dir}/**/*.mjs`, `./${dir}/**/*.ts`])
-  },
-  getIgnoreSources() {
-    return IGNORE_SOURCES
   },
   parseBrowserArgs: function (argv) {
     return (argv.browsers) ? argv.browsers.split(',') : [];
@@ -68,13 +62,13 @@ module.exports = {
       throw new PluginError('modules', 'failed reading: ' + argv.modules + '. Ensure the file exists and contains valid JSON.');
     }
 
-    try {
-      const moduleAliases = JSON.parse(
-        fs.readFileSync('module-alias.json', 'utf8')
-      );
+      try {
+          const moduleAliases = JSON.parse(
+              fs.readFileSync('module-alias.json', 'utf8')
+          );
 
-      modules = modules.map(module => moduleAliases[module] || module);
-    } catch (_e) {}
+          modules = modules.map(module => moduleAliases[module] || module);
+      } catch (_e) {}
 
     // we need to forcefuly include the parentModule if the subModule is present in modules list and parentModule is not present in modules list
     Object.keys(submodules).forEach(parentModule => {
@@ -147,6 +141,14 @@ module.exports = {
 
   getPrecompiledPath(filePath) {
     return path.resolve(filePath ? path.join(PRECOMPILED_PATH, filePath) : PRECOMPILED_PATH)
+  },
+
+  getCreativeRendererPath(renderer) {
+    let path = 'creative-renderers';
+    if (renderer != null) {
+      path = `${path}/${renderer}.js`;
+    }
+    return this.getPrecompiledPath(path);
   },
 
   getBuiltModules: function(dev, externalModules) {

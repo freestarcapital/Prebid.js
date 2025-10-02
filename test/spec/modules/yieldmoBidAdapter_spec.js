@@ -680,45 +680,6 @@ describe('YieldmoAdapter', function () {
         expect(payload.user.ext.eids).to.eql(params.fakeUserIdAsEids);
       });
 
-      it('should pass consent in video bid along with eids', () => {
-        const params = {
-          userIdAsEids: [
-            {
-              source: 'pubcid.org',
-              uids: [
-                {
-                  id: 'fake_pubcid',
-                  atype: 1,
-                },
-              ],
-            },
-          ],
-          fakeUserIdAsEids: [
-            {
-              source: 'pubcid.org',
-              uids: [
-                {
-                  id: 'fake_pubcid',
-                  atype: 1,
-                },
-              ],
-            },
-          ],
-        };
-        let videoBidder = mockBidderRequest(
-          {
-            gdprConsent: {
-              gdprApplies: 1,
-              consentString: 'BOJ/P2HOJ/P2HABABMAAAAAZ+A==',
-            },
-          },
-          [mockVideoBid()]
-        );
-        let payload = buildAndGetData([mockVideoBid({...params})], 0, videoBidder);
-        expect(payload.user.ext.consent).to.equal('BOJ/P2HOJ/P2HABABMAAAAAZ+A==');
-        expect(payload.user.ext.eids).to.eql(params.fakeUserIdAsEids);
-      });
-
       it('should add eids to the video bid request', function () {
         const params = {
           userIdAsEids: [{

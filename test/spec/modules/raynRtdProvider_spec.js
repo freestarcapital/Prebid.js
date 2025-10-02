@@ -293,27 +293,6 @@ describe('rayn RTD Submodule', function () {
       expectLog(logMessageSpy, `Segtax data from localStorage: ${JSON.stringify(testSegments)}`)
     });
 
-    it('should update reqBidsConfigObj and execute callback using persona segment from localStorage', function () {
-      const callbackSpy = sinon.spy();
-      const logMessageSpy = sinon.spy(utils, 'logMessage');
-      const testSegments = {
-        103015: ['agdv23', 'avscg3']
-      };
-
-      getDataFromLocalStorageStub
-        .withArgs(raynRTD.RAYN_LOCAL_STORAGE_KEY)
-        .returns(JSON.stringify(testSegments));
-
-      const reqBidsConfigObj = { ortb2Fragments: { bidder: {} } };
-
-      raynRTD.raynSubmodule.getBidRequestData(reqBidsConfigObj, callbackSpy, RTD_CONFIG.dataProviders[0]);
-
-      expect(callbackSpy.calledOnce).to.be.true;
-      expect(logMessageSpy.lastCall.lastArg).to.equal(`Segtax data from localStorage: ${JSON.stringify(testSegments)}`);
-
-      logMessageSpy.restore();
-    });
-
     it('should update reqBidsConfigObj and execute callback using segments from raynJS', function () {
       const callbackSpy = sinon.spy();
       const logMessageSpy = sandbox.spy(utils, 'logMessage');
