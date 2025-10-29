@@ -84,6 +84,7 @@
       "geoedgeRtdProvider",
       "geolocationRtdProvider",
       "greenbidsRtdProvider",
+      "groupMToPubmaticRtdProvider",
       "growthCodeRtdProvider",
       "hadronRtdProvider",
       "humansecurityRtdProvider",
