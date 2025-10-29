@@ -36,6 +36,7 @@
     "liveIntentIdSystem",
     "mediafuseBidAdapter",
     "medianetBidAdapter",
+    "minutemediaBidAdapter",
     "mobkoiBidAdapter",
     "newspassidBidAdapter",
     "onetagBidAdapter",
