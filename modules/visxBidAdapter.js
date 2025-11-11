@@ -87,8 +87,7 @@ export const spec = {
         imp.push(impObj);
         bidsMap[bid.bidId] = bid;
       }
-      const { params: { uid }, userId, userIdAsEids } = bid;
-      const schain = bid?.ortb2?.source?.ext?.schain;
+      const { params: { uid }, schain, userId, userIdAsEids } = bid;
       if (!payloadSchain && schain) {
         payloadSchain = schain;
       }
@@ -334,13 +333,13 @@ function _addBidResponse(serverBid, bidsMap, currency, bidResponses) {
           cpm: serverBid.price,
           width: serverBid.w,
           height: serverBid.h,
-          creativeId: serverBid.crid,
+          creativeId: serverBid.auid,
           currency: reqCurrency,
           netRevenue: true,
           ttl: TIME_TO_LIVE,
           dealId: serverBid.dealid,
           meta: {
-            advertiserDomains: serverBid.adomain ? serverBid.adomain : [],
+            advertiserDomains: serverBid.advertiserDomains ? serverBid.advertiserDomains : [],
             mediaType: serverBid.mediaType
           },
         };

@@ -1,5 +1,5 @@
-import { getDNT } from '../libraries/navigatorData/dnt.js';
-import {deepAccess, deepSetValue, isEmpty, isNumber, logError, logInfo} from '../src/utils.js';
+import {deepAccess, deepSetValue, getDNT, isEmpty, isNumber, logError, logInfo} from '../src/utils.js';
+import {find} from '../src/polyfill.js';
 import {registerBidder} from '../src/adapters/bidderFactory.js';
 import {config} from '../src/config.js';
 import {ADPOD, BANNER, NATIVE, VIDEO} from '../src/mediaTypes.js';
@@ -81,7 +81,7 @@ export const spec = {
   buildRequests: (bidRequests, bidderRequest) => {
     logInfo('[SMAATO] Client version:', SMAATO_CLIENT);
 
-    const requests = [];
+    let requests = [];
     bidRequests.forEach(bid => {
       // separate requests per mediaType
       SUPPORTED_MEDIA_TYPES.forEach(mediaType => {
@@ -93,7 +93,8 @@ export const spec = {
             data: JSON.stringify(data),
             options: {
               withCredentials: true,
-              crossOrigin: true},
+              crossOrigin: true,
+            },
             bidderRequest
           })
         }
@@ -129,7 +130,7 @@ export const spec = {
     const bids = [];
     response.seatbid.forEach(seatbid => {
       seatbid.bid.forEach(bid => {
-        const resultingBid = {
+        let resultingBid = {
           requestId: bid.impid,
           cpm: bid.price || 0,
           width: bid.w,
@@ -339,7 +340,7 @@ const converter = ortbConverter({
 
     request.source = {
       ext: {
-        schain: bidRequest?.ortb2?.source?.ext?.schain
+        schain: bidRequest.schain
       }
     };
     request.ext = {
@@ -419,7 +420,7 @@ const createNativeAd = (adm) => {
 };
 
 function getNativeMainImageSize(nativeRequest) {
-  const mainImage = ((nativeRequest.assets) || []).find(asset => asset.hasOwnProperty('img') && asset.img.type === NATIVE_IMAGE_TYPES.MAIN)
+  const mainImage = find(nativeRequest.assets, asset => asset.hasOwnProperty('img') && asset.img.type === NATIVE_IMAGE_TYPES.MAIN)
   if (mainImage) {
     if (isNumber(mainImage.img.w) && isNumber(mainImage.img.h)) {
       return [[mainImage.img.w, mainImage.img.h]]
@@ -439,7 +440,7 @@ function createAdPodImp(imp, videoMediaType) {
   };
 
   const numberOfPlacements = getAdPodNumberOfPlacements(videoMediaType)
-  const imps = fill(imp, numberOfPlacements)
+  let imps = fill(imp, numberOfPlacements)
 
   const durationRangeSec = videoMediaType.durationRangeSec
   if (videoMediaType.requireExactDuration) {
@@ -449,7 +450,7 @@ function createAdPodImp(imp, videoMediaType) {
 
     // each configured duration is set as min/maxduration for a subset of requests
     durationRangeSec.forEach((duration, index) => {
-      chunked[index].forEach(imp => {
+      chunked[index].map(imp => {
         const sequence = index + 1;
         imp.video.minduration = duration
         imp.video.maxduration = duration
@@ -459,7 +460,7 @@ function createAdPodImp(imp, videoMediaType) {
   } else {
     // all maxdurations should be the same
     const maxDuration = Math.max(...durationRangeSec);
-    imps.forEach((imp, index) => {
+    imps.map((imp, index) => {
       const sequence = index + 1;
       imp.video.maxduration = maxDuration
       imp.video.sequence = sequence

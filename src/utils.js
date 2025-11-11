@@ -1,21 +1,30 @@
 import {config} from './config.js';
-
+import {klona} from 'klona/json';
+import {includes} from './polyfill.js';
 import {EVENTS} from './constants.js';
 import {PbPromise} from './utils/promise.js';
-import deepAccess from 'dlv/index.js';
-import {isArray, isFn, isStr, isPlainObject} from './utils/objects.js';
+import {getGlobal} from './prebidGlobal.js';
+import { default as deepAccess } from 'dlv/index.js';
 
 export { deepAccess };
 export { dset as deepSetValue } from 'dset';
-export * from './utils/objects.js'
-export {getWinDimensions, resetWinDimensions, getScreenOrientation} from './utils/winDimensions.js';
-const consoleExists = Boolean(window.console);
-const consoleLogExists = Boolean(consoleExists && window.console.log);
-const consoleInfoExists = Boolean(consoleExists && window.console.info);
-const consoleWarnExists = Boolean(consoleExists && window.console.warn);
-const consoleErrorExists = Boolean(consoleExists && window.console.error);
+
+var tStr = 'String';
+var tFn = 'Function';
+var tNumb = 'Number';
+var tObject = 'Object';
+var tBoolean = 'Boolean';
+var toString = Object.prototype.toString;
+let consoleExists = Boolean(window.console);
+let consoleLogExists = Boolean(consoleExists && window.console.log);
+let consoleInfoExists = Boolean(consoleExists && window.console.info);
+let consoleWarnExists = Boolean(consoleExists && window.console.warn);
+let consoleErrorExists = Boolean(consoleExists && window.console.error);
 
 let eventEmitter;
+let windowDimensions;
+
+const pbjsInstance = getGlobal();
 
 export function _setEventEmitter(emitFn) {
   // called from events.js - this hoop is to avoid circular imports
@@ -26,6 +35,54 @@ function emitEvent(...args) {
   if (eventEmitter != null) {
     eventEmitter(...args);
   }
+}
+
+export const getWinDimensions = (function() {
+  let lastCheckTimestamp;
+  const CHECK_INTERVAL_MS = 20;
+  return () => {
+    if (!windowDimensions || !lastCheckTimestamp || (Date.now() - lastCheckTimestamp > CHECK_INTERVAL_MS)) {
+      internal.resetWinDimensions();
+      lastCheckTimestamp = Date.now();
+    }
+    return windowDimensions;
+  }
+})();
+
+export function resetWinDimensions() {
+  const top = canAccessWindowTop() ? internal.getWindowTop() : internal.getWindowSelf();
+
+  windowDimensions = {
+    screen: {
+      width: top.screen?.width,
+      height: top.screen?.height,
+      availWidth: top.screen?.availWidth,
+      availHeight: top.screen?.availHeight,
+      colorDepth: top.screen?.colorDepth,
+    },
+    innerHeight: top.innerHeight,
+    innerWidth: top.innerWidth,
+    outerWidth: top.outerWidth,
+    outerHeight: top.outerHeight,
+    visualViewport: {
+      height: top.visualViewport?.height,
+      width: top.visualViewport?.width,
+    },
+    document: {
+      documentElement: {
+        clientWidth: top.document?.documentElement?.clientWidth,
+        clientHeight: top.document?.documentElement?.clientHeight,
+        scrollTop: top.document?.documentElement?.scrollTop,
+        scrollLeft: top.document?.documentElement?.scrollLeft,
+      },
+      body: {
+        scrollTop: document.body?.scrollTop,
+        scrollLeft: document.body?.scrollLeft,
+        clientWidth: document.body?.clientWidth,
+        clientHeight: document.body?.clientHeight,
+      },
+    }
+  };
 }
 
 // this allows stubbing of utility functions that are used internally by other utility functions
@@ -47,9 +104,10 @@ export const internal = {
   parseQS,
   formatQS,
   deepEqual,
+  resetWinDimensions
 };
 
-const prebidInternal = {};
+let prebidInternal = {};
 /**
  * Returns object that is used as internal prebid namespace
  */
@@ -209,7 +267,6 @@ export function canAccessWindowTop() {
 /**
  * Wrappers to console.(log | info | warn | error). Takes N arguments, the same as the native methods
  */
-// eslint-disable-next-line no-restricted-syntax
 export function logMessage() {
   if (debugTurnedOn() && consoleLogExists) {
     // eslint-disable-next-line no-console
@@ -217,7 +274,6 @@ export function logMessage() {
   }
 }
 
-// eslint-disable-next-line no-restricted-syntax
 export function logInfo() {
   if (debugTurnedOn() && consoleInfoExists) {
     // eslint-disable-next-line no-console
@@ -225,7 +281,6 @@ export function logInfo() {
   }
 }
 
-// eslint-disable-next-line no-restricted-syntax
 export function logWarn() {
   if (debugTurnedOn() && consoleWarnExists) {
     // eslint-disable-next-line no-console
@@ -236,7 +291,6 @@ export function logWarn() {
   }
 }
 
-// eslint-disable-next-line no-restricted-syntax
 export function logError() {
   if (debugTurnedOn() && consoleErrorExists) {
     // eslint-disable-next-line no-console
@@ -263,7 +317,7 @@ export function prefixLog(prefix) {
 
 function decorateLog(args, prefix) {
   args = [].slice.call(args);
-  const bidder = config.getCurrentBidder();
+  let bidder = config.getCurrentBidder();
 
   prefix && args.unshift(prefix);
   if (bidder) {
@@ -325,6 +379,39 @@ export function createInvisibleIframe() {
  */
 export function getParameterByName(name) {
   return parseQS(getWindowLocation().search)[name] || '';
+}
+
+/**
+ * Return if the object is of the
+ * given type.
+ * @param {*} object to test
+ * @param {String} _t type string (e.g., Array)
+ * @return {Boolean} if object is of type _t
+ */
+export function isA(object, _t) {
+  return toString.call(object) === '[object ' + _t + ']';
+}
+
+export function isFn(object) {
+  return isA(object, tFn);
+}
+
+export function isStr(object) {
+  return isA(object, tStr);
+}
+
+export const isArray = Array.isArray.bind(Array);
+
+export function isNumber(object) {
+  return isA(object, tNumb);
+}
+
+export function isPlainObject(object) {
+  return isA(object, tObject);
+}
+
+export function isBoolean(object) {
+  return isA(object, tBoolean);
 }
 
 /**
@@ -398,7 +485,7 @@ export function insertElement(elm, doc, target, asLastChildChild) {
     parentEl = parentEl.length ? parentEl : doc.getElementsByTagName('body');
     if (parentEl.length) {
       parentEl = parentEl[0];
-      const insertBeforeEl = asLastChildChild ? null : parentEl.firstChild;
+      let insertBeforeEl = asLastChildChild ? null : parentEl.firstChild;
       return parentEl.insertBefore(elm, insertBeforeEl);
     }
   } catch (e) {}
@@ -471,10 +558,10 @@ export function insertHtmlIntoIframe(htmlCode) {
  * @param  {Number} [timeout] an optional timeout in milliseconds for the iframe to load before calling `done`
  */
 export function insertUserSyncIframe(url, done, timeout) {
-  const iframeHtml = internal.createTrackPixelIframeHtml(url, false, 'allow-scripts allow-same-origin');
-  const div = document.createElement('div');
+  let iframeHtml = internal.createTrackPixelIframeHtml(url, false, 'allow-scripts allow-same-origin');
+  let div = document.createElement('div');
   div.innerHTML = iframeHtml;
-  const iframe = div.firstChild;
+  let iframe = div.firstChild;
   if (done && internal.isFn(done)) {
     waitForElementToLoad(iframe, timeout).then(done);
   }
@@ -492,7 +579,7 @@ export function createTrackPixelHtml(url, encode = encodeURI) {
     return '';
   }
 
-  const escapedUrl = encode(url);
+  let escapedUrl = encode(url);
   let img = '<div style="position:absolute;left:0px;top:0px;visibility:hidden;">';
   img += '<img src="' + escapedUrl + '"></div>';
   return img;
@@ -559,7 +646,7 @@ export function getValue(obj, key) {
   return obj[key];
 }
 
-export function getBidderCodes(adUnits) {
+export function getBidderCodes(adUnits = pbjsInstance.adUnits) {
   // this could memoize adUnits
   return adUnits.map(unit => unit.bids.map(bid => bid.bidder)
     .reduce(flatten, [])).reduce(flatten, []).filter((bidder) => typeof bidder !== 'undefined').filter(uniques);
@@ -593,18 +680,22 @@ export function shuffle(array) {
   // while there are elements in the array
   while (counter > 0) {
     // pick a random index
-    const index = Math.floor(Math.random() * counter);
+    let index = Math.floor(Math.random() * counter);
 
     // decrease counter by 1
     counter--;
 
     // and swap the last element with it
-    const temp = array[counter];
+    let temp = array[counter];
     array[counter] = array[index];
     array[index] = temp;
   }
 
   return array;
+}
+
+export function deepClone(obj) {
+  return klona(obj) || {};
 }
 
 export function inIframe() {
@@ -758,22 +849,42 @@ export function groupBy(xs, key) {
 }
 
 /**
+ * Build an object consisting of only defined parameters to avoid creating an
+ * object with defined keys and undefined values.
+ * @param {Object} object The object to pick defined params out of
+ * @param {string[]} params An array of strings representing properties to look for in the object
+ * @returns {Object} An object containing all the specified values that are defined
+ */
+export function getDefinedParams(object, params) {
+  return params
+    .filter(param => object[param])
+    .reduce((bid, param) => Object.assign(bid, { [param]: object[param] }), {});
+}
+
+/**
+ * @typedef {Object} MediaTypes
+ * @property {Object} banner banner configuration
+ * @property {Object} native native configuration
+ * @property {Object} video video configuration
+ */
+
+/**
  * Validates an adunit's `mediaTypes` parameter
- * @param mediaTypes mediaTypes parameter to validate
- * @return If object is valid
+ * @param {MediaTypes} mediaTypes mediaTypes parameter to validate
+ * @return {boolean} If object is valid
  */
 export function isValidMediaTypes(mediaTypes) {
-  const SUPPORTED_MEDIA_TYPES = ['banner', 'native', 'video', 'audio'];
+  const SUPPORTED_MEDIA_TYPES = ['banner', 'native', 'video'];
   const SUPPORTED_STREAM_TYPES = ['instream', 'outstream', 'adpod'];
 
   const types = Object.keys(mediaTypes);
 
-  if (!types.every(type => SUPPORTED_MEDIA_TYPES.includes(type))) {
+  if (!types.every(type => includes(SUPPORTED_MEDIA_TYPES, type))) {
     return false;
   }
 
   if (FEATURES.VIDEO && mediaTypes.video && mediaTypes.video.context) {
-    return SUPPORTED_STREAM_TYPES.includes(mediaTypes.video.context);
+    return includes(SUPPORTED_STREAM_TYPES, mediaTypes.video.context);
   }
 
   return true;
@@ -794,12 +905,19 @@ export function getUserConfiguredParams(adUnits, adUnitCode, bidder) {
     .map((bidderData) => bidderData.params || {});
 }
 
+/**
+ * Returns Do Not Track state
+ */
+export function getDNT() {
+  return navigator.doNotTrack === '1' || window.doNotTrack === '1' || navigator.msDoNotTrack === '1' || navigator.doNotTrack === 'yes';
+}
+
 export const compareCodeAndSlot = (slot, adUnitCode) => slot.getAdUnitPath() === adUnitCode || slot.getSlotElementId() === adUnitCode;
 
 /**
  * Returns filter function to match adUnitCode in slot
- * @param slot GoogleTag slot
- * @return filter function
+ * @param {Object} slot GoogleTag slot
+ * @return {function} filter function
  */
 export function isAdUnitCodeMatchingSlot(slot) {
   return (adUnitCode) => compareCodeAndSlot(slot, adUnitCode);
@@ -820,6 +938,13 @@ export function unsupportedBidderMessage(adUnit, bidder) {
     This bidder won't fetch demand.
   `;
 }
+
+/**
+ * Checks input is integer or not
+ * https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Number/isInteger
+ * @param {*} value
+ */
+export const isInteger = Number.isInteger.bind(Number);
 
 /**
  * Returns a new object with undefined properties removed from given object
@@ -844,7 +969,7 @@ export function pick(obj, properties) {
     }
 
     let newProp = prop;
-    const match = prop.match(/^(.+?)\sas\s(.+?)$/i);
+    let match = prop.match(/^(.+?)\sas\s(.+?)$/i);
 
     if (match) {
       prop = match[1];
@@ -861,6 +986,10 @@ export function pick(obj, properties) {
 
     return newObj;
   }, {});
+}
+
+export function isArrayOfNums(val, size) {
+  return (isArray(val)) && ((size) ? val.length === size : true) && (val.every(v => isInteger(v)));
 }
 
 export function parseQS(query) {
@@ -890,14 +1019,14 @@ export function formatQS(query) {
 }
 
 export function parseUrl(url, options) {
-  const parsed = document.createElement('a');
+  let parsed = document.createElement('a');
   if (options && 'noDecodeWholeURL' in options && options.noDecodeWholeURL) {
     parsed.href = url;
   } else {
     parsed.href = decodeURIComponent(url);
   }
   // in window.location 'search' is string, not object
-  const qsAsString = (options && 'decodeSearchAsString' in options && options.decodeSearchAsString);
+  let qsAsString = (options && 'decodeSearchAsString' in options && options.decodeSearchAsString);
   return {
     href: parsed.href,
     protocol: (parsed.protocol || '').replace(/:$/, ''),
@@ -1036,7 +1165,7 @@ function mergeDeepHelper(target, source) {
 export function cyrb53Hash(str, seed = 0) {
   // IE doesn't support imul
   // https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Math/imul#Polyfill
-  const imul = function(opA, opB) {
+  let imul = function(opA, opB) {
     if (isFn(Math.imul)) {
       return Math.imul(opA, opB);
     } else {
@@ -1091,7 +1220,7 @@ export function safeJSONEncode(data) {
  * @param fn
  * @param key cache key generator, invoked with the same arguments passed to `fn`.
  *        By default, the first argument is used as key.
- * @return {*}
+ * @return {function(): any}
  */
 export function memoize(fn, key = function (arg) { return arg; }) {
   const cache = new Map();
@@ -1229,7 +1358,7 @@ export function setOnAny(collection, key) {
 export function extractDomainFromHost(pageHost) {
   let domain = null;
   try {
-    const domains = /[-\w]+\.([-\w]+|[-\w]{3,}|[-\w]{1,3}\.[-\w]{2})$/i.exec(pageHost);
+    let domains = /[-\w]+\.([-\w]+|[-\w]{3,}|[-\w]{1,3}\.[-\w]{2})$/i.exec(pageHost);
     if (domains != null && domains.length > 0) {
       domain = domains[0];
       for (let i = 1; i < domains.length; i++) {

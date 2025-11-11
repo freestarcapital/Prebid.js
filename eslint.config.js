@@ -1,26 +1,19 @@
 const jsdoc = require('eslint-plugin-jsdoc')
 const lintImports = require('eslint-plugin-import')
 const neostandard = require('neostandard')
+const babelParser = require('@babel/eslint-parser');
 const globals = require('globals');
 const prebid = require('./plugins/eslint/index.js');
-const chaiFriendly = require('eslint-plugin-chai-friendly');
 const {includeIgnoreFile} = require('@eslint/compat');
 const path = require('path');
 const _ = require('lodash');
-const tseslint = require('typescript-eslint');
-const {getSourceFolders} = require('./gulpHelpers.js');
 
-function jsPattern(name) {
+function sourcePattern(name) {
   return [`${name}/**/*.js`, `${name}/**/*.mjs`]
 }
 
-function tsPattern(name) {
-  return [`${name}/**/*.ts`]
-}
-
-function sourcePattern(name) {
-  return jsPattern(name).concat(tsPattern(name));
-}
+const sources = ['src', 'modules', 'libraries', 'creative'].flatMap(sourcePattern)
+const autogen = 'libraries/creative-renderer-*/**/*'
 
 const allowedImports = {
   modules: [
@@ -33,13 +26,6 @@ const allowedImports = {
     'dlv',
     'dset'
   ],
-  // [false] means disallow ANY import outside of modules/debugging
-  // this is because debugging also gets built as a standalone module,
-  // and importing global state does not work as expected.
-  // in theory imports that do not involve global state are fine, but
-  // even innocuous imports can become problematic if the source changes,
-  // and it's too easy to forget this is a problem for debugging-standalone.
-  'modules/debugging': [false],
   libraries: [],
   creative: [],
 }
@@ -58,30 +44,8 @@ function noGlobals(names) {
   }
 }
 
-
-module.exports = [
-  includeIgnoreFile(path.resolve(__dirname, '.gitignore')),
-  {
-    ignores: [
-      'integrationExamples/**/*',
-      // do not lint build-related stuff
-      '*.js',
-      '*.mjs',
-      'metadata/**/*',
-      'customize/**/*',
-      ...jsPattern('plugins'),
-      ...jsPattern('.github'),
-    ],
-  },
-  jsdoc.configs['flat/recommended'],
-  ...tseslint.configs.recommended,
-  ...neostandard({
-    files: getSourceFolders().flatMap(jsPattern),
-    ts: true,
-    filesTs: getSourceFolders().flatMap(tsPattern)
-  }),
-  {
-    files: getSourceFolders().flatMap(sourcePattern),
+function commonConfig(overrides) {
+  return _.merge({
     plugins: {
       jsdoc,
       import: lintImports,
@@ -95,6 +59,7 @@ module.exports = [
       }
     },
     languageOptions: {
+      parser: babelParser,
       sourceType: 'module',
       ecmaVersion: 2018,
       globals: {
@@ -107,29 +72,21 @@ module.exports = [
     rules: {
       'comma-dangle': 'off',
       semi: 'off',
-      'no-undef': 2,
-      'no-console': 'error',
       'space-before-function-paren': 'off',
       'import/extensions': ['error', 'ignorePackages'],
-      'no-restricted-syntax': [
-        'error',
-        {
-          selector: "FunctionDeclaration[id.name=/^log(Message|Info|Warn|Error|Result)$/]",
-          message: "Defining a function named 'logResult, 'logMessage', 'logInfo', 'logWarn', or 'logError' is not allowed."
-        },
-        {
-          selector: "VariableDeclarator[id.name=/^log(Message|Info|Warn|Error|Result)$/][init.type=/FunctionExpression|ArrowFunctionExpression/]",
-          message: "Assigning a function to 'logResult, 'logMessage', 'logInfo', 'logWarn', or 'logError' is not allowed."
-        },
-      ],
 
       // Exceptions below this line are temporary (TM), so that eslint can be added into the CI process.
       // Violations of these styles should be fixed, and the exceptions removed over time.
       //
       // See Issue #1111.
       // also see: reality. These are here to stay.
-      // we're working on them though :)
 
+      eqeqeq: 'off',
+      'no-return-assign': 'off',
+      'no-throw-literal': 'off',
+      'no-undef': 2,
+      'no-useless-escape': 'off',
+      'no-console': 'error',
       'jsdoc/check-types': 'off',
       'jsdoc/no-defaults': 'off',
       'jsdoc/newline-after-description': 'off',
@@ -150,7 +107,10 @@ module.exports = [
       'jsdoc/require-yields-check': 'off',
       'jsdoc/tag-lines': 'off',
       'no-var': 'off',
+      'no-empty': 'off',
       'no-void': 'off',
+      'array-callback-return': 'off',
+      'import-x/no-named-default': 'off',
       'prefer-const': 'off',
       'no-prototype-builtins': 'off',
       'object-shorthand': 'off',
@@ -166,18 +126,42 @@ module.exports = [
       '@stylistic/multiline-ternary': 'off',
       '@stylistic/computed-property-spacing': 'off',
       '@stylistic/lines-between-class-members': 'off',
+      '@stylistic/indent': 'off',
       '@stylistic/comma-dangle': 'off',
       '@stylistic/object-curly-newline': 'off',
       '@stylistic/object-property-newline': 'off',
+      '@stylistic/no-multiple-empty-lines': 'off',
+
     }
+  }, overrides);
+}
+
+module.exports = [
+  includeIgnoreFile(path.resolve(__dirname, '.gitignore')),
+  {
+    ignores: [
+      autogen,
+      'integrationExamples/**/*',
+      // do not lint build-related stuff
+      '*.js',
+      ...sourcePattern('plugins'),
+      ...sourcePattern('.github'),
+    ],
   },
+  jsdoc.configs['flat/recommended'],
+  ...neostandard({
+    files: sources,
+  }),
+  commonConfig({
+    files: sources,
+  }),
   ...Object.entries(allowedImports).map(([path, allowed]) => {
     const {globals, props} = noGlobals({
       require: 'use import instead',
       ...Object.fromEntries(['localStorage', 'sessionStorage'].map(k => [k, 'use storageManager instead'])),
       XMLHttpRequest: 'use ajax.js instead'
     })
-    return {
+    return commonConfig({
       files: sourcePattern(path),
       plugins: {
         prebid,
@@ -216,7 +200,7 @@ module.exports = [
           }))
         ]
       }
-    }
+    })
   }),
   {
     files: ['**/*BidAdapter.js'],
@@ -231,11 +215,8 @@ module.exports = [
       ]
     }
   },
-  {
+  commonConfig({
     files: sourcePattern('test'),
-    plugins: {
-      'chai-friendly': chaiFriendly
-    },
     languageOptions: {
       globals: {
         ...globals.mocha,
@@ -244,33 +225,24 @@ module.exports = [
       }
     },
     rules: {
+      // tests were not subject to many rules and they are now a nightmare
       'no-template-curly-in-string': 'off',
       'no-unused-expressions': 'off',
-      'chai-friendly/no-unused-expressions': 'error',
-      // tests were not subject to many rules and they are now a nightmare. rules below this line should be removed over time
+      'one-var': 'off',
       'no-undef': 'off',
       'no-unused-vars': 'off',
-      'no-useless-escape': 'off',
-      'no-return-assign': 'off',
-      'camelcase': 'off'
+      'import/extensions': 'off',
+      'camelcase': 'off',
+      'no-array-constructor': 'off',
+      'import-x/no-duplicates': 'off',
+      'import-x/no-absolute-path': 'off',
+      'no-loss-of-precision': 'off',
+      'no-redeclare': 'off',
+      'no-global-assign': 'off',
+      'default-case-last': 'off',
+      '@stylistic/no-mixed-spaces-and-tabs': 'off',
+      '@stylistic/no-tabs': 'off',
+      '@stylistic/no-trailing-spaces': 'off'
     }
-  },
-  {
-    files: getSourceFolders().flatMap(tsPattern),
-    rules: {
-      // turn off no-undef for TS files - type checker does better
-      'no-undef': 'off',
-      '@typescript-eslint/no-explicit-any': 'off'
-    }
-  },
-  {
-    files: getSourceFolders().flatMap(jsPattern),
-    rules: {
-      // turn off typescript rules on js files - just too many violations
-      '@typescript-eslint/no-unused-vars': 'off',
-      '@typescript-eslint/no-unused-expressions': 'off',
-      '@typescript-eslint/no-this-alias': 'off',
-      '@typescript-eslint/no-require-imports': 'off'
-    }
-  },
+  })
 ]

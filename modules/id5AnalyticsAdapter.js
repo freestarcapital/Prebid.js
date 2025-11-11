@@ -1,14 +1,16 @@
 import buildAdapter from '../libraries/analyticsAdapter/AnalyticsAdapter.js';
-import {EVENTS} from '../src/constants.js';
+import { EVENTS } from '../src/constants.js';
 import adapterManager from '../src/adapterManager.js';
-import {ajax} from '../src/ajax.js';
-import {logError, logInfo} from '../src/utils.js';
+import { ajax } from '../src/ajax.js';
+import { logInfo, logError } from '../src/utils.js';
 import * as events from '../src/events.js';
 
 const {
   AUCTION_END,
   TCF2_ENFORCEMENT,
-  BID_WON
+  BID_WON,
+  BID_VIEWABLE,
+  AD_RENDER_FAILED
 } = EVENTS
 
 const GVLID = 131;
@@ -19,13 +21,25 @@ const STANDARD_EVENTS_TO_TRACK = [
   BID_WON,
 ];
 
+// These events cause the buffered events to be sent over
+const FLUSH_EVENTS = [
+  TCF2_ENFORCEMENT,
+  AUCTION_END,
+  BID_WON,
+  BID_VIEWABLE,
+  AD_RENDER_FAILED
+];
+
 const CONFIG_URL_PREFIX = 'https://api.id5-sync.com/analytics'
 const TZ = new Date().getTimezoneOffset();
 const PBJS_VERSION = 'v' + '$prebid.version$';
 const ID5_REDACTED = '__ID5_REDACTED__';
 const isArray = Array.isArray;
 
-const id5Analytics = Object.assign(buildAdapter({analyticsType: 'endpoint'}), {
+let id5Analytics = Object.assign(buildAdapter({analyticsType: 'endpoint'}), {
+  // Keeps an array of events for each auction
+  eventBuffer: {},
+
   eventsToTrack: STANDARD_EVENTS_TO_TRACK,
 
   track: (event) => {
@@ -36,16 +50,31 @@ const id5Analytics = Object.assign(buildAdapter({analyticsType: 'endpoint'}), {
     }
 
     try {
-      _this.sendEvent(_this.makeEvent(event.eventType, event.args));
+      const auctionId = event.args.auctionId;
+      _this.eventBuffer[auctionId] = _this.eventBuffer[auctionId] || [];
+
+      // Collect events and send them in a batch when the auction ends
+      const que = _this.eventBuffer[auctionId];
+      que.push(_this.makeEvent(event.eventType, event.args));
+
+      if (FLUSH_EVENTS.indexOf(event.eventType) >= 0) {
+        // Auction ended. Send the batch of collected events
+        _this.sendEvents(que);
+
+        // From now on just send events to server side as they come
+        que.push = (pushedEvent) => _this.sendEvents([pushedEvent]);
+      }
     } catch (error) {
       logError('id5Analytics: ERROR', error);
       _this.sendErrorEvent(error);
     }
   },
 
-  sendEvent: (eventToSend) => {
+  sendEvents: (eventsToSend) => {
+    const _this = id5Analytics;
     // By giving some content this will be automatically a POST
-    ajax(id5Analytics.options.ingestUrl, null, JSON.stringify(eventToSend));
+    eventsToSend.forEach((event) =>
+      ajax(_this.options.ingestUrl, null, JSON.stringify(event)));
   },
 
   makeEvent: (event, payload) => {
@@ -67,7 +96,7 @@ const id5Analytics = Object.assign(buildAdapter({analyticsType: 'endpoint'}), {
 
   sendErrorEvent: (error) => {
     const _this = id5Analytics;
-    _this.sendEvent([
+    _this.sendEvents([
       _this.makeEvent('analyticsError', {
         message: error.message,
         stack: error.stack,
@@ -112,10 +141,18 @@ const ENABLE_FUNCTION = (config) => {
       // Init the module only if we got lucky
       logInfo('id5Analytics: Selected by sampling. Starting up!');
 
-      // allow for replacing cleanup rules - remove existing ones and apply from server
-      if (configFromServer.replaceCleanupRules) {
-        cleanupRules = {};
+      // Clean start
+      _this.eventBuffer = {};
+
+      // Replay all events until now
+      if (!config.disablePastEventsProcessing) {
+        events.getEvents().forEach((event) => {
+          if (event && _this.eventsToTrack.indexOf(event.eventType) >= 0) {
+            _this.track(event);
+          }
+        });
       }
+
       // Merge in additional cleanup rules
       if (configFromServer.additionalCleanupRules) {
         const newRules = configFromServer.additionalCleanupRules;
@@ -128,20 +165,7 @@ const ENABLE_FUNCTION = (config) => {
               (eventRules.apply in TRANSFORM_FUNCTIONS))
           ) {
             logInfo('id5Analytics: merging additional cleanup rules for event ' + key);
-            if (!Array.isArray(cleanupRules[key])) {
-              cleanupRules[key] = newRules[key];
-            } else {
-              cleanupRules[key].push(...newRules[key]);
-            }
-          }
-        });
-      }
-
-      // Replay all events until now
-      if (!config.disablePastEventsProcessing) {
-        events.getEvents().forEach((event) => {
-          if (event && _this.eventsToTrack.indexOf(event.eventType) >= 0) {
-            _this.track(event);
+            CLEANUP_RULES[key].push(...newRules[key]);
           }
         });
       }
@@ -219,8 +243,8 @@ function deepTransformingClone(obj, transform, currentPath = []) {
 // In case of array, it represents alternatives which all would match.
 // Special path part '*' matches any subproperty or array index.
 // Prefixing a part with "!" makes it negative match (doesn't work with multiple alternatives)
-let cleanupRules = {};
-cleanupRules[AUCTION_END] = [{
+const CLEANUP_RULES = {};
+CLEANUP_RULES[AUCTION_END] = [{
   match: [['adUnits', 'bidderRequests'], '*', 'bids', '*', ['userId', 'crumbs'], '!id5id'],
   apply: 'redact'
 }, {
@@ -243,7 +267,7 @@ cleanupRules[AUCTION_END] = [{
   apply: 'redact'
 }];
 
-cleanupRules[BID_WON] = [{
+CLEANUP_RULES[BID_WON] = [{
   match: [['ad', 'native']],
   apply: 'erase'
 }];
@@ -255,7 +279,7 @@ const TRANSFORM_FUNCTIONS = {
 
 // Builds a rule function depending on the event type
 function transformFnFromCleanupRules(eventType) {
-  const rules = cleanupRules[eventType] || [];
+  const rules = CLEANUP_RULES[eventType] || [];
   return (path, obj, key) => {
     for (let i = 0; i < rules.length; i++) {
       let match = true;

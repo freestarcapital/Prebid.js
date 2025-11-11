@@ -1,4 +1,4 @@
-import { _each, isEmpty, buildUrl, deepAccess, pick, logError, isPlainObject, generateUUID, deepClone } from '../src/utils.js';
+import { _each, isEmpty, buildUrl, deepAccess, pick, logError, isPlainObject } from '../src/utils.js';
 import { config } from '../src/config.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { getStorageManager } from '../src/storageManager.js';
@@ -100,41 +100,40 @@ function buildRequests(validBidRequests, bidderRequest) {
   });
 
   // Add site.cat if it exists
-  if (firstBidRequest.ortb2?.site?.cat !== null && firstBidRequest.ortb2?.site?.cat !== undefined) {
+  if (firstBidRequest.ortb2?.site?.cat != null) {
     krakenParams.site = { cat: firstBidRequest.ortb2.site.cat };
   }
 
-  // Add schain - check for schain in the new location
-  const schain = firstBidRequest?.ortb2?.source?.ext?.schain;
-  if (schain && schain.nodes) {
-    krakenParams.schain = schain
+  // Add schain
+  if (firstBidRequest.schain && firstBidRequest.schain.nodes) {
+    krakenParams.schain = firstBidRequest.schain
   }
 
   // Add user data object if available
   krakenParams.user.data = deepAccess(firstBidRequest, REQUEST_KEYS.USER_DATA) || [];
 
   const reqCount = getRequestCount()
-  if (reqCount !== null && reqCount !== undefined) {
+  if (reqCount != null) {
     krakenParams.requestCount = reqCount;
   }
 
   // Add currency if not USD
-  if ((currency !== null && currency !== undefined) && currency !== CURRENCY.US_DOLLAR) {
+  if (currency != null && currency != CURRENCY.US_DOLLAR) {
     krakenParams.cur = currency;
   }
 
-  if (metadata.rawCRB !== null && metadata.rawCRB !== undefined) {
+  if (metadata.rawCRB != null) {
     krakenParams.rawCRB = metadata.rawCRB
   }
 
-  if (metadata.rawCRBLocalStorage !== null && metadata.rawCRBLocalStorage !== undefined) {
+  if (metadata.rawCRBLocalStorage != null) {
     krakenParams.rawCRBLocalStorage = metadata.rawCRBLocalStorage
   }
 
   // Pull Social Canvas segments and embed URL
   const socialCanvas = deepAccess(firstBidRequest, REQUEST_KEYS.SOCIAL_CANVAS);
 
-  if (socialCanvas !== null && socialCanvas !== undefined) {
+  if (socialCanvas != null) {
     krakenParams.socan = socialCanvas;
   }
 
@@ -150,7 +149,7 @@ function buildRequests(validBidRequests, bidderRequest) {
       }
 
       // Do not pass any empty strings
-      if (typeof suaValue === 'string' && suaValue.trim() === '') {
+      if (typeof suaValue == 'string' && suaValue.trim() === '') {
         return;
       }
 
@@ -166,9 +165,9 @@ function buildRequests(validBidRequests, bidderRequest) {
     krakenParams.device.sua = pick(uaClientHints, suaValidAttributes);
   }
 
-  const validPageId = getLocalStorageSafely(CERBERUS.PAGE_VIEW_ID) !== null && getLocalStorageSafely(CERBERUS.PAGE_VIEW_ID) !== undefined
-  const validPageTimestamp = getLocalStorageSafely(CERBERUS.PAGE_VIEW_TIMESTAMP) !== null && getLocalStorageSafely(CERBERUS.PAGE_VIEW_TIMESTAMP) !== undefined
-  const validPageUrl = getLocalStorageSafely(CERBERUS.PAGE_VIEW_URL) !== null && getLocalStorageSafely(CERBERUS.PAGE_VIEW_URL) !== undefined
+  const validPageId = getLocalStorageSafely(CERBERUS.PAGE_VIEW_ID) != null
+  const validPageTimestamp = getLocalStorageSafely(CERBERUS.PAGE_VIEW_TIMESTAMP) != null
+  const validPageUrl = getLocalStorageSafely(CERBERUS.PAGE_VIEW_URL) != null
 
   const page = {}
   if (validPageId) {
@@ -206,7 +205,7 @@ function interpretResponse(response, bidRequest) {
   }
 
   for (const [bidID, adUnit] of Object.entries(bids)) {
-    const meta = {
+    let meta = {
       mediaType: adUnit.mediaType && BIDDER.SUPPORTED_MEDIA_TYPES.includes(adUnit.mediaType) ? adUnit.mediaType : BANNER
     };
 
@@ -229,7 +228,7 @@ function interpretResponse(response, bidRequest) {
       meta: meta
     };
 
-    if (meta.mediaType === VIDEO) {
+    if (meta.mediaType == VIDEO) {
       if (adUnit.admUrl) {
         bidResponse.vastUrl = adUnit.admUrl;
       } else {
@@ -261,7 +260,7 @@ function interpretResponse(response, bidRequest) {
 
 function getUserSyncs(syncOptions, _, gdprConsent, usPrivacy, gppConsent) {
   const syncs = [];
-  const seed = generateUUID();
+  const seed = _generateRandomUUID();
   const clientId = getClientId();
 
   var gdpr = (gdprConsent && gdprConsent.gdprApplies) ? 1 : 0;
@@ -271,7 +270,7 @@ function getUserSyncs(syncOptions, _, gdprConsent, usPrivacy, gppConsent) {
   var gppApplicableSections = (gppConsent && gppConsent.applicableSections && Array.isArray(gppConsent.applicableSections)) ? gppConsent.applicableSections.join(',') : '';
 
   // don't sync if opted out via usPrivacy
-  if (typeof usPrivacy === 'string' && usPrivacy.length === 4 && usPrivacy[0] === '1' && usPrivacy[2] === 'Y') {
+  if (typeof usPrivacy == 'string' && usPrivacy.length == 4 && usPrivacy[0] == 1 && usPrivacy[2] == 'Y') {
     return syncs;
   }
   if (syncOptions.iframeEnabled && seed && clientId) {
@@ -290,7 +289,7 @@ function getUserSyncs(syncOptions, _, gdprConsent, usPrivacy, gppConsent) {
 }
 
 function onTimeout(timeoutData) {
-  if (timeoutData === null || timeoutData === undefined) {
+  if (timeoutData == null) {
     return;
   }
 
@@ -301,24 +300,29 @@ function onTimeout(timeoutData) {
 
 function getExtensions(ortb2, refererInfo) {
   const ext = {};
-
-  if (ortb2) {
-    ext.ortb2 = deepClone(ortb2);
-
-    if (ext.ortb2.user && ext.ortb2.user.ext) {
-      delete ext.ortb2.user.ext.eids;
-    }
-  }
-
-  if (refererInfo) {
-    ext.refererInfo = refererInfo;
-  }
-
+  if (ortb2) ext.ortb2 = ortb2;
+  if (refererInfo) ext.refererInfo = refererInfo;
   return ext;
 }
 
+function _generateRandomUUID() {
+  try {
+    // crypto.getRandomValues is supported everywhere but Opera Mini for years
+    var buffer = new Uint8Array(16);
+    crypto.getRandomValues(buffer);
+    buffer[6] = (buffer[6] & ~176) | 64;
+    buffer[8] = (buffer[8] & ~64) | 128;
+    var hex = Array.prototype.map.call(new Uint8Array(buffer), function(x) {
+      return ('00' + x.toString(16)).slice(-2);
+    }).join('');
+    return hex.slice(0, 8) + '-' + hex.slice(8, 12) + '-' + hex.slice(12, 16) + '-' + hex.slice(16, 20) + '-' + hex.slice(20);
+  } catch (e) {
+    return '';
+  }
+}
+
 function _getCrb() {
-  const localStorageCrb = getCrbFromLocalStorage();
+  let localStorageCrb = getCrbFromLocalStorage();
   if (Object.keys(localStorageCrb).length) {
     return localStorageCrb;
   }
@@ -327,7 +331,7 @@ function _getCrb() {
 
 function _getSessionId() {
   if (!sessionId) {
-    sessionId = generateUUID();
+    sessionId = _generateRandomUUID();
   }
   return sessionId;
 }
@@ -336,7 +340,7 @@ function getCrbFromCookie() {
   try {
     const crb = JSON.parse(STORAGE.getCookie(CERBERUS.KEY));
     if (crb && crb.v) {
-      const vParsed = JSON.parse(atob(crb.v));
+      let vParsed = JSON.parse(atob(crb.v));
       if (vParsed) {
         return vParsed;
       }
@@ -390,22 +394,22 @@ function getUserIds(tdidAdapter, usp, gdpr, eids, gpp) {
   }
 
   // Kargo ID
-  if (crb.lexId !== null && crb.lexId !== undefined) {
+  if (crb.lexId != null) {
     userIds.kargoID = crb.lexId;
   }
 
   // Client ID
-  if (crb.clientId !== null && crb.clientId !== undefined) {
+  if (crb.clientId != null) {
     userIds.clientID = crb.clientId;
   }
 
   // Opt Out
-  if (crb.optOut !== null && crb.optOut !== undefined) {
+  if (crb.optOut != null) {
     userIds.optOut = crb.optOut;
   }
 
   // User ID Sub-Modules (userIdAsEids)
-  if (eids !== null && eids !== undefined) {
+  if (eids != null) {
     userIds.sharedIDEids = eids;
   }
 
@@ -444,8 +448,7 @@ function getRequestCount() {
     return ++requestCounter;
   }
   lastPageUrl = window.location.pathname;
-  requestCounter = 0;
-  return requestCounter;
+  return requestCounter = 0;
 }
 
 function sendTimeoutData(auctionId, auctionTimeout) {
@@ -485,7 +488,7 @@ function getImpression(bid) {
     imp.bidderWinCount = bid.bidderWinsCount;
   }
 
-  const gpid = deepAccess(bid, 'ortb2Imp.ext.gpid');
+  const gpid = deepAccess(bid, 'ortb2Imp.ext.gpid') || deepAccess(bid, 'ortb2Imp.ext.data.pbadslot');
   if (gpid) {
     imp.fpd = {
       gpid: gpid

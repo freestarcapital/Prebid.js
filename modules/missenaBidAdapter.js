@@ -1,12 +1,9 @@
 import {
   buildUrl,
-  deepAccess,
   formatQS,
   generateUUID,
   getWinDimensions,
-  isEmpty,
   isFn,
-  isStr,
   logInfo,
   safeJSONParse,
   triggerPixel,
@@ -65,26 +62,18 @@ function toPayload(bidRequest, bidderRequest) {
   payload.params = bidRequest.params;
 
   payload.userEids = bidRequest.userIdAsEids || [];
-  payload.version = 'prebid.js@$prebid.version$';
+  payload.version = '$prebid.version$';
 
   const bidFloor = getFloor(bidRequest);
   payload.floor = bidFloor?.floor;
   payload.floor_currency = bidFloor?.currency;
   payload.currency = getCurrencyFromBidderRequest(bidderRequest);
-  payload.schain = bidRequest?.ortb2?.source?.ext?.schain;
+  payload.schain = bidRequest.schain;
   payload.autoplay = isAutoplayEnabled() === true ? 1 : 0;
   payload.screen = { height: getWinDimensions().screen.height, width: getWinDimensions().screen.width };
   payload.viewport = getViewportSize();
   payload.sizes = normalizeBannerSizes(bidRequest.mediaTypes.banner.sizes);
-
-  const gpid = deepAccess(bidRequest, 'ortb2Imp.ext.gpid');
-  payload.ortb2 = {
-    ...(bidderRequest.ortb2 || {}),
-    ext: {
-      ...(bidderRequest.ortb2?.ext || {}),
-      ...(isStr(gpid) && !isEmpty(gpid) ? { gpid } : {}),
-    },
-  };
+  payload.ortb2 = bidderRequest.ortb2;
 
   return {
     method: 'POST',
@@ -106,7 +95,7 @@ export const spec = {
    * @return boolean True if this is a valid bid, and false otherwise.
    */
   isBidRequestValid: function (bid) {
-    return typeof bid === 'object' && !!bid.params.apiKey;
+    return typeof bid == 'object' && !!bid.params.apiKey;
   },
 
   /**
@@ -123,7 +112,7 @@ export const spec = {
     if (
       typeof capping?.expiry === 'number' &&
       new Date().getTime() < capping?.expiry &&
-      (!capping?.referer || capping?.referer === referer)
+      (!capping?.referer || capping?.referer == referer)
     ) {
       logInfo('Missena - Capped');
       return [];

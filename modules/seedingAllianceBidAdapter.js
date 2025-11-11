@@ -53,7 +53,7 @@ export const spec = {
 
   buildRequests: (validBidRequests = [], bidderRequest) => {
     const oRtbRequest = converter.toORTB({bidRequests: validBidRequests, bidderRequest});
-    const eids = getEids(validBidRequests[0]);
+    let eids = getEids(validBidRequests[0]);
 
     // check for url in params and set in site object
     validBidRequests.forEach(bidRequest => {
@@ -70,7 +70,7 @@ export const spec = {
       deepSetValue(oRtbRequest, 'user.ext.eids', eids);
     }
 
-    const endpoint = config.getConfig('seedingAlliance.endpoint') || ENDPOINT_URL;
+    let endpoint = config.getConfig('seedingAlliance.endpoint') || ENDPOINT_URL;
 
     return {
       method: 'POST',
@@ -87,7 +87,7 @@ export const spec = {
 
     const { seatbid, cur } = serverResponse.body;
 
-    const bidResponses = (typeof seatbid !== 'undefined') ? flatten(seatbid.map(seat => seat.bid)).reduce((result, bid) => {
+    const bidResponses = (typeof seatbid != 'undefined') ? flatten(seatbid.map(seat => seat.bid)).reduce((result, bid) => {
       result[bid.impid] = bid;
       return result;
     }, []) : [];
@@ -125,7 +125,6 @@ export const spec = {
 
           return bidObject;
         }
-        return null;
       })
       .filter(Boolean);
   }
@@ -188,7 +187,7 @@ function parseNative(bid, nativeParams) {
 
   const { assets, link, imptrackers } = native;
 
-  const clickUrl = link.url.replace(/\$\{AUCTION_PRICE\}/g, bid.price);
+  let clickUrl = link.url.replace(/\$\{AUCTION_PRICE\}/g, bid.price);
 
   if (link.clicktrackers) {
     link.clicktrackers.forEach(function (clicktracker, index) {
@@ -209,12 +208,12 @@ function parseNative(bid, nativeParams) {
     impressionTrackers: imptrackers || undefined
   };
 
-  const nativeParamKeys = Object.keys(nativeParams);
+  let nativeParamKeys = Object.keys(nativeParams);
   let id = 0;
 
   nativeParamKeys.forEach(nativeParam => {
     assets.forEach(asset => {
-      if (asset.id === id) {
+      if (asset.id == id) {
         switch (nativeParam) {
           case 'title':
             result.title = asset.title.text;

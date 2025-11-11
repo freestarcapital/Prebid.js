@@ -39,7 +39,7 @@ describe('paapi module', () => {
   let sandbox;
   before(reset);
   beforeEach(() => {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
   });
   afterEach(() => {
     sandbox.restore();
@@ -73,7 +73,7 @@ describe('paapi module', () => {
       })
       function getWrappedAjax() {
         let wrappedAjax;
-        const next = sinon.stub().callsFake((spec, bids, br, ajax) => {
+        let next = sinon.stub().callsFake((spec, bids, br, ajax) => {
           wrappedAjax = ajax;
         });
         adAuctionHeadersHook(next, {}, [], bidderRequest, ajax);
@@ -1280,28 +1280,13 @@ describe('paapi module', () => {
           bidId: 'bidId',
           adUnitCode: 'au',
           auctionId: 'aid',
-          ortb2: {
-            source: {
-              tid: 'aid'
-            },
-          },
           mediaTypes: {
             banner: {
               sizes: [[123, 321]]
             }
           }
         }];
-        bidderRequest = {
-          auctionId: 'aid',
-          bidderCode: 'mockBidder',
-          paapi: {enabled: true},
-          bids,
-          ortb2: {
-            source: {
-              tid: 'aid'
-            }
-          }
-        };
+        bidderRequest = {auctionId: 'aid', bidderCode: 'mockBidder', paapi: {enabled: true}, bids};
         restOfTheArgs = [{more: 'args'}];
         mockConfig = {
           seller: 'mock.seller',
@@ -1616,7 +1601,7 @@ describe('paapi module', () => {
                   startParallel();
                   await mockAuction.requestsDone;
                   expectInvoked(!delayed);
-                  onAuctionConfig.resetHistory();
+                  onAuctionConfig.reset();
                   returnRemainder();
                   endAuction();
                   expectInvoked(delayed);

@@ -1,12 +1,12 @@
 import { getCurrencyFromBidderRequest } from '../libraries/ortb2Utils/currency.js';
 import { tryAppendQueryString } from '../libraries/urlUtils/urlUtils.js';
-import { getDNT } from '../libraries/navigatorData/dnt.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { BANNER } from '../src/mediaTypes.js';
 import {
   createTrackPixelHtml,
   deepAccess,
   deepSetValue, getBidIdParameter,
+  getDNT,
   getWindowTop,
   isEmpty,
   logError
@@ -90,9 +90,8 @@ export const spec = {
   /**
    * Unpack the response from the server into a list of bids.
    *
-   * @param {*} bidderResponse A successful response from the server.
-   * @param {Array} requests
-   * @return {Array} An array of bids which were nested inside the server.
+   * @param {*} serverResponse A successful response from the server.
+   * @return {Bid[]} An array of bids which were nested inside the server.
    */
   interpretResponse: function (bidderResponse, requests) {
     const res = bidderResponse.body;
@@ -165,9 +164,9 @@ function getUrlInfo(refererInfo) {
   let canonicalLink = refererInfo.canonicalUrl;
 
   if (!canonicalLink) {
-    const metaElements = getMetaElements();
+    let metaElements = getMetaElements();
     for (let i = 0; i < metaElements.length && !canonicalLink; i++) {
-      if (metaElements[i].getAttribute('property') === 'og:url') {
+      if (metaElements[i].getAttribute('property') == 'og:url') {
         canonicalLink = metaElements[i].content;
       }
     }

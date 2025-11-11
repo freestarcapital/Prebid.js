@@ -1,16 +1,10 @@
-import { BANNER, VIDEO } from '../src/mediaTypes.js'
-import { registerBidder } from '../src/adapters/bidderFactory.js'
-import {
-  generateUUID, isPlainObject, isArray, isStr,
-  isFn,
-  logInfo,
-  logWarn,
-  logError, deepClone
-} from '../src/utils.js'
-import { Renderer } from '../src/Renderer.js'
-import { OUTSTREAM } from '../src/video.js'
-import { config } from '../src/config.js'
-import { getStorageManager } from '../src/storageManager.js'
+import {BANNER, VIDEO} from '../src/mediaTypes.js'
+import {registerBidder} from '../src/adapters/bidderFactory.js'
+import {generateUUID, isPlainObject, isArray, logWarn, deepClone} from '../src/utils.js'
+import {Renderer} from '../src/Renderer.js'
+import {OUTSTREAM} from '../src/video.js'
+import {config} from '../src/config.js';
+import { getStorageManager } from '../src/storageManager.js';
 
 const BIDDER_CODE = 'mediaConsortium'
 
@@ -20,7 +14,7 @@ const ONE_PLUS_X_ID_USAGE_CONFIG_KEY = 'readOnePlusXId'
 const SYNC_ENDPOINT = 'https://relay.hubvisor.io/v1/sync/big'
 const AUCTION_ENDPOINT = 'https://relay.hubvisor.io/v1/auction/big'
 
-const OUTSTREAM_RENDERER_URL = 'https://cdn.hubvisor.io/big/player.js'
+const XANDR_OUTSTREAM_RENDERER_URL = 'https://acdn.adnxs.com/video/outstream/ANOutstreamVideo.js';
 
 export const OPTIMIZATIONS_STORAGE_KEY = 'media_consortium_optimizations'
 
@@ -30,7 +24,7 @@ const SYNC_TYPES = {
   iframe: 'iframe'
 }
 
-const storageManager = getStorageManager({ bidderCode: BIDDER_CODE })
+const storageManager = getStorageManager({ bidderCode: BIDDER_CODE });
 
 export const spec = {
   version: '0.0.1',
@@ -47,26 +41,26 @@ export const spec = {
     const {
       auctionId,
       bids,
-      gdprConsent: { gdprApplies = false, consentString } = {},
-      ortb2: { device, site }
+      gdprConsent: {gdprApplies = false, consentString} = {},
+      ortb2: {device, site}
     } = bidderRequest
 
     const currentTimestamp = Date.now()
     const optimizations = getOptimizationsFromLocalStorage()
 
     const impressions = bids.reduce((acc, bidRequest) => {
-      const { bidId, adUnitCode, mediaTypes } = bidRequest
+      const {bidId, adUnitCode, mediaTypes} = bidRequest
       const optimization = optimizations[adUnitCode]
 
       if (optimization) {
-        const { expiresAt, isEnabled } = optimization
+        const {expiresAt, isEnabled} = optimization
 
         if (expiresAt >= currentTimestamp && !isEnabled) {
           return acc
         }
       }
 
-      const finalizedMediatypes = deepClone(mediaTypes)
+      let finalizedMediatypes = deepClone(mediaTypes)
 
       if (mediaTypes.video && mediaTypes.video.context !== OUTSTREAM) {
         logWarn(`Filtering video request for adUnitCode ${adUnitCode} because context is not ${OUTSTREAM}`)
@@ -78,7 +72,7 @@ export const spec = {
         }
       }
 
-      return acc.concat({ id: bidId, adUnitCode, mediaTypes: finalizedMediatypes })
+      return acc.concat({id: bidId, adUnitCode, mediaTypes: finalizedMediatypes})
     }, [])
 
     if (!impressions.length) {
@@ -115,7 +109,7 @@ export const spec = {
 
     const syncData = {
       gdpr: gdprApplies,
-      ad_unit_codes: impressions.map(({ adUnitCode }) => adUnitCode).join(',')
+      ad_unit_codes: impressions.map(({adUnitCode}) => adUnitCode).join(',')
     }
 
     if (consentString) {
@@ -131,25 +125,24 @@ export const spec = {
       {
         method: 'POST',
         url: AUCTION_ENDPOINT,
-        data: request,
-        internal: { bidRequests: bidRequests.reduce((acc, bidRequest) => ({ ...acc, [bidRequest.bidId]: bidRequest }), {}) }
+        data: request
       }
     ]
   },
   interpretResponse(serverResponse, params) {
     if (!isValidResponse(serverResponse)) return []
 
-    const { body: { bids, optimizations } } = serverResponse
+    const {body: {bids, optimizations}} = serverResponse
 
     if (optimizations && isArray(optimizations)) {
       const currentTimestamp = Date.now()
 
       const optimizationsToStore = optimizations.reduce((acc, optimization) => {
-        const { adUnitCode, isEnabled, ttl } = optimization
+        const {adUnitCode, isEnabled, ttl} = optimization
 
         return {
           ...acc,
-          [adUnitCode]: { isEnabled, expiresAt: currentTimestamp + ttl }
+          [adUnitCode]: {isEnabled, expiresAt: currentTimestamp + ttl}
         }
       }, getOptimizationsFromLocalStorage())
 
@@ -158,18 +151,11 @@ export const spec = {
 
     return bids.map((bid) => {
       const {
-        id: bidId,
         impressionId,
-        price: { cpm, currency },
+        price: {cpm, currency},
         dealId,
         ad: {
-          creative: {
-            id: creativeId,
-            mediaType,
-            size: { width, height },
-            markup,
-            rendering = {}
-          }
+          creative: {id, mediaType, size: {width, height}, markup}
         },
         ttl = 360
       } = bid
@@ -181,7 +167,7 @@ export const spec = {
         dealId,
         ttl,
         netRevenue: true,
-        creativeId,
+        creativeId: id,
         mediaType,
         width,
         height,
@@ -190,19 +176,14 @@ export const spec = {
       }
 
       if (mediaType === VIDEO) {
-        const { data: { impressions: impressionRequests }, internal: { bidRequests } } = params
-        const impressionRequest = impressionRequests.find(({ id }) => id === impressionId)
-        const bidRequest = bidRequests[impressionId]
+        const impressionRequest = params.data.impressions.find(({id}) => id === impressionId)
 
         formattedBid.vastXml = markup
 
-        if (impressionRequest && bidRequest) {
-          const { adUnitCode } = impressionRequest
-          const localPlayerConfiguration = bidRequest.params?.video || {}
-
-          formattedBid.renderer = makeOutstreamRenderer(bidId, adUnitCode, localPlayerConfiguration, rendering.video?.player)
+        if (impressionRequest) {
+          formattedBid.renderer = buildXandrOutstreamRenderer(impressionId, impressionRequest.adUnitCode)
         } else {
-          logError(`Could not find adUnitCode or bidRequest matching the impressionId ${impressionId} to setup the renderer`)
+          logWarn(`Could not find adUnitCode matching the impressionId ${impressionId} to setup the renderer`)
         }
       }
 
@@ -216,14 +197,14 @@ export const spec = {
 
     const [sync] = serverResponses
 
-    return sync.body?.bidders?.reduce((acc, { type, url }) => {
+    return sync.body?.bidders?.reduce((acc, {type, url}) => {
       const syncType = SYNC_TYPES[type]
 
       if (!syncType || !url) {
         return acc
       }
 
-      return acc.concat({ type: syncType, url })
+      return acc.concat({type: syncType, url})
     }, [])
   }
 }
@@ -250,89 +231,43 @@ function getFpIdFromLocalStorage() {
 
 function isValidResponse(response) {
   return isPlainObject(response) &&
-    isPlainObject(response.body) &&
-    isArray(response.body.bids)
+      isPlainObject(response.body) &&
+      isArray(response.body.bids)
 }
 
-function makeOutstreamRenderer(bidId, adUnitCode, localPlayerConfiguration = {}, remotePlayerConfiguration = {}) {
+function buildXandrOutstreamRenderer(bidId, adUnitCode) {
   const renderer = Renderer.install({
     id: bidId,
-    url: OUTSTREAM_RENDERER_URL,
+    url: XANDR_OUTSTREAM_RENDERER_URL,
     loaded: false,
-    config: {
-      selector: formatSelector(adUnitCode),
-      ...remotePlayerConfiguration,
-      ...localPlayerConfiguration
-    },
-  })
+    adUnitCode,
+    targetId: adUnitCode
+  });
 
-  renderer.setRender(render)
+  try {
+    renderer.setRender(xandrOutstreamRenderer);
+  } catch (err) {
+    logWarn('Prebid Error calling setRender on renderer', err);
+  }
 
-  return renderer
+  return renderer;
 }
 
-function render(bid) {
-  const config = bid.renderer.getConfig()
+function xandrOutstreamRenderer(bid) {
+  const {width, height, adUnitCode, vastXml} = bid
 
   bid.renderer.push(() => {
-    const { impressionId, vastXml, vastUrl, width: targetWidth, height: targetHeight } = bid
-    const { selector } = config
-
-    const container = getContainer(selector)
-
-    if (!window.HbvPlayer) {
-      return logError("Failed to load player!")
-    }
-
-    window.HbvPlayer.playOutstream(container, {
-      vastXml,
-      vastUrl,
-      targetWidth,
-      targetHeight,
-      ...config,
-      expand: 'when-visible',
-      onEvent: (event) => {
-        switch (event) {
-          case 'impression':
-            logInfo(`Video impression for ad unit ${impressionId}`)
-            break
-          case 'error':
-            logWarn(`Error while playing video for ad unit ${impressionId}`)
-            break
-        }
-      },
-    })
-  })
-}
-
-function formatSelector(adUnitCode) {
-  return window.CSS ? `#${window.CSS.escape(adUnitCode)}` : `#${adUnitCode}`
-}
-
-function getContainer(containerOrSelector) {
-  if (isStr(containerOrSelector)) {
-    const container = document.querySelector(containerOrSelector)
-
-    if (container) {
-      return container
-    }
-
-    logError(`Player container not found for selector ${containerOrSelector}`)
-
-    return undefined
-  }
-
-  if (isFn(containerOrSelector)) {
-    const container = containerOrSelector()
-
-    if (container) {
-      return container
-    }
-
-    logError("Player container not found for selector function")
-
-    return undefined
-  }
-
-  return containerOrSelector
+    window.ANOutstreamVideo.renderAd({
+      sizes: [width, height],
+      targetId: adUnitCode,
+      rendererOptions: {
+        showBigPlayButton: false,
+        showProgressBar: 'bar',
+        content: vastXml,
+        showVolume: false,
+        allowFullscreen: true,
+        skippable: false
+      }
+    });
+  });
 }

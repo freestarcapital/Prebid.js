@@ -21,7 +21,7 @@ import { submodule } from '../src/hook.js';
 import { ajaxBuilder } from '../src/ajax.js';
 import { loadExternalScript } from '../src/adloader.js';
 import { getStorageManager } from '../src/storageManager.js';
-
+import { includes } from '../src/polyfill.js';
 import { getGlobal } from '../src/prebidGlobal.js';
 import * as events from '../src/events.js';
 import { EVENTS } from '../src/constants.js';
@@ -56,12 +56,19 @@ let _browsiData = null;
 /** @type {null | function} */
 let _dataReadyCallback = null;
 /** @type {null|Object} */
-const _ic = {};
+let _ic = {};
 /** @type {null|number} */
 let TIMESTAMP = null;
 
 export function setTimestamp() {
   TIMESTAMP = timestamp();
+}
+
+export function initAnalytics() {
+  getGlobal().enableAnalytics({
+    provider: 'browsi',
+    options: {}
+  })
 }
 
 export function sendPageviewEvent(eventType) {
@@ -138,7 +145,7 @@ function waitForData(callback) {
  * @param {Object} data
  */
 export function addBrowsiTag(data) {
-  const script = loadExternalScript(data.u, MODULE_TYPE_RTD, 'browsi');
+  let script = loadExternalScript(data.u, MODULE_TYPE_RTD, 'browsi');
   script.async = true;
   script.setAttribute('data-sitekey', _moduleParams.siteKey);
   script.setAttribute('data-pubkey', _moduleParams.pubKey);
@@ -260,7 +267,7 @@ function getKVObject(k, p) {
  * @param {string} url server url with query params
  */
 function getPredictionsFromServer(url) {
-  const ajax = ajaxBuilder();
+  let ajax = ajaxBuilder();
 
   ajax(url,
     {
@@ -306,7 +313,7 @@ function getAdUnitCodes(bidObj) {
   let adUnitCodes = bidObj.adUnitCodes;
   let adUnits = bidObj.adUnits || getGlobal().adUnits || [];
   if (adUnitCodes) {
-    adUnits = adUnits.filter(au => adUnitCodes.includes(au.code));
+    adUnits = adUnits.filter(au => includes(adUnitCodes, au.code));
   } else {
     adUnitCodes = adUnits.map(au => au.code);
   }
@@ -419,6 +426,7 @@ function init(moduleConfig) {
   _moduleParams = moduleConfig.params;
   _moduleParams.siteKey = moduleConfig.params.siteKey || moduleConfig.params.sitekey;
   _moduleParams.pubKey = moduleConfig.params.pubKey || moduleConfig.params.pubkey;
+  initAnalytics();
   setTimestamp();
   if (_moduleParams && _moduleParams.siteKey && _moduleParams.pubKey && _moduleParams.url) {
     sendModuleInitEvent();

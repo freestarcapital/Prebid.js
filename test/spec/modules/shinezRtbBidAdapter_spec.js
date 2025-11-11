@@ -17,10 +17,8 @@ import {
 import {parseUrl, deepClone} from 'src/utils.js';
 import {version} from 'package.json';
 import {useFakeTimers} from 'sinon';
-import {BANNER, VIDEO} from '../../../src/mediaTypes.js';
-import {config} from '../../../src/config.js';
-import {getGlobal} from '../../../src/prebidGlobal.js';
-import * as utils from 'src/utils.js';
+import {BANNER, VIDEO} from '../../../src/mediaTypes';
+import {config} from '../../../src/config';
 
 export const TEST_ID_SYSTEMS = ['criteoId', 'id5id', 'idl_env', 'lipb', 'netId', 'pubcid', 'tdid', 'pubProvidedId'];
 
@@ -51,7 +49,7 @@ const BID = {
   'ortb2Imp': {
     'ext': {
       'gpid': '0123456789',
-      'tid': 'c881914b-a3b5-4ecf-ad9c-1c2f37c6aabf'
+      'tid': '56e184c6-bde9-497b-b9b9-cf47a61381ee'
     }
   }
 };
@@ -194,13 +192,6 @@ const VIDEO_SERVER_RESPONSE = {
   }
 };
 
-const ORTB2_OBJ = {
-  "device": ORTB2_DEVICE,
-  "regs": {"coppa": 0, "gpp": "gpp_string", "gpp_sid": [7]},
-  "site": {"content": {"language": "en"}
-  }
-};
-
 const REQUEST = {
   data: {
     width: 300,
@@ -282,12 +273,12 @@ describe('ShinezRtbBidAdapter', function () {
   describe('build requests', function () {
     let sandbox;
     before(function () {
-      getGlobal().bidderSettings = {
+      $$PREBID_GLOBAL$$.bidderSettings = {
         shinezRtb: {
           storageAllowed: true
         }
       };
-      sandbox = sinon.createSandbox();
+      sandbox = sinon.sandbox.create();
       sandbox.stub(Date, 'now').returns(1000);
     });
 
@@ -368,8 +359,6 @@ describe('ShinezRtbBidAdapter', function () {
           contentData: [],
           isStorageAllowed: true,
           pagecat: [],
-          ortb2Imp: VIDEO_BID.ortb2Imp,
-          ortb2: ORTB2_OBJ,
           userData: [],
           coppa: 0
         }
@@ -398,7 +387,7 @@ describe('ShinezRtbBidAdapter', function () {
           bidderWinsCount: 1,
           bidderTimeout: 3000,
           bidderRequestId: '1fdb5ff1b6eaa7',
-          transactionId: 'c881914b-a3b5-4ecf-ad9c-1c2f37c6aabf',
+          transactionId: '56e184c6-bde9-497b-b9b9-cf47a61381ee',
           sizes: ['300x250', '300x600'],
           sua: {
             'source': 2,
@@ -439,8 +428,6 @@ describe('ShinezRtbBidAdapter', function () {
           contentData: [],
           isStorageAllowed: true,
           pagecat: [],
-          ortb2Imp: BID.ortb2Imp,
-          ortb2: ORTB2_OBJ,
           userData: [],
           coppa: 0
         }
@@ -448,7 +435,7 @@ describe('ShinezRtbBidAdapter', function () {
     });
 
     after(function () {
-      getGlobal().bidderSettings = {};
+      $$PREBID_GLOBAL$$.bidderSettings = {};
       sandbox.restore();
     });
   });
@@ -593,70 +580,6 @@ describe('ShinezRtbBidAdapter', function () {
         expect(requests[0].data[`uid.${idSystemProvider}`]).to.equal(id);
       });
     });
-    // testing bid.userIdAsEids handling
-    it("should include user ids from bid.userIdAsEids (length=1)", function() {
-      const bid = utils.deepClone(BID);
-      bid.userIdAsEids = [
-        {
-          "source": "audigent.com",
-          "uids": [{"id": "fakeidi6j6dlc6e"}]
-        }
-      ]
-      const requests = adapter.buildRequests([bid], BIDDER_REQUEST);
-      expect(requests[0].data['uid.audigent.com']).to.equal("fakeidi6j6dlc6e");
-    })
-    it("should include user ids from bid.userIdAsEids (length=2)", function() {
-      const bid = utils.deepClone(BID);
-      bid.userIdAsEids = [
-        {
-          "source": "audigent.com",
-          "uids": [{"id": "fakeidi6j6dlc6e"}]
-        },
-        {
-          "source": "rwdcntrl.net",
-          "uids": [{"id": "fakeid6f35197d5c", "atype": 1}]
-        }
-      ]
-      const requests = adapter.buildRequests([bid], BIDDER_REQUEST);
-      expect(requests[0].data['uid.audigent.com']).to.equal("fakeidi6j6dlc6e");
-      expect(requests[0].data['uid.rwdcntrl.net']).to.equal("fakeid6f35197d5c");
-    })
-    // testing user.ext.eid handling
-    it("should include user ids from user.ext.eid (length=1)", function() {
-      const bid = utils.deepClone(BID);
-      bid.user = {
-        ext: {
-          eids: [
-            {
-              "source": "pubcid.org",
-              "uids": [{"id": "fakeid8888dlc6e"}]
-            }
-          ]
-        }
-      }
-      const requests = adapter.buildRequests([bid], BIDDER_REQUEST);
-      expect(requests[0].data['uid.pubcid.org']).to.equal("fakeid8888dlc6e");
-    })
-    it("should include user ids from user.ext.eid (length=2)", function() {
-      const bid = utils.deepClone(BID);
-      bid.user = {
-        ext: {
-          eids: [
-            {
-              "source": "pubcid.org",
-              "uids": [{"id": "fakeid8888dlc6e"}]
-            },
-            {
-              "source": "adserver.org",
-              "uids": [{"id": "fakeid495ff1"}]
-            }
-          ]
-        }
-      }
-      const requests = adapter.buildRequests([bid], BIDDER_REQUEST);
-      expect(requests[0].data['uid.pubcid.org']).to.equal("fakeid8888dlc6e");
-      expect(requests[0].data['uid.adserver.org']).to.equal("fakeid495ff1");
-    })
   });
 
   describe('alternate param names extractors', function () {
@@ -681,14 +604,14 @@ describe('ShinezRtbBidAdapter', function () {
 
   describe('unique deal id', function () {
     before(function () {
-      getGlobal().bidderSettings = {
+      $$PREBID_GLOBAL$$.bidderSettings = {
         shinezRtb: {
           storageAllowed: true
         }
       };
     });
     after(function () {
-      getGlobal().bidderSettings = {};
+      $$PREBID_GLOBAL$$.bidderSettings = {};
     });
     const key = 'myKey';
     let uniqueDealId;
@@ -716,14 +639,14 @@ describe('ShinezRtbBidAdapter', function () {
 
   describe('storage utils', function () {
     before(function () {
-      getGlobal().bidderSettings = {
+      $$PREBID_GLOBAL$$.bidderSettings = {
         shinezRtb: {
           storageAllowed: true
         }
       };
     });
     after(function () {
-      getGlobal().bidderSettings = {};
+      $$PREBID_GLOBAL$$.bidderSettings = {};
     });
     it('should get value from storage with create param', function () {
       const now = Date.now();

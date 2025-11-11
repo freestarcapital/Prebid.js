@@ -1,5 +1,4 @@
 import * as utils from '../src/utils.js';
-import { getDNT } from '../libraries/dnt/index.js';
 import { config } from '../src/config.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { BANNER, VIDEO } from '../src/mediaTypes.js';
@@ -15,7 +14,7 @@ import { BANNER, VIDEO } from '../src/mediaTypes.js';
 
 var BIDDER_CODE = 'lemmadigital';
 var LOG_WARN_PREFIX = 'LEMMADIGITAL: ';
-var ENDPOINT = 'https://pbidj.lemmamedia.com/lemma/servad';
+var ENDPOINT = 'https://bid.lemmadigital.com/lemma/servad';
 var USER_SYNC = 'https://sync.lemmadigital.com/js/usersync.html?';
 var DEFAULT_CURRENCY = 'USD';
 var AUCTION_TYPE = 2;
@@ -63,9 +62,8 @@ export var spec = {
   /**
    * Make a server request from the list of BidRequests.
    *
-   * @param {Array} validBidRequests - an array of bids
-   * @param {Object} bidderRequest
-   * @return {Object} Info describing the request to the server.
+   * @param {validBidRequests[]} - an array of bids
+   * @return ServerRequest Info describing the request to the server.
    */
   buildRequests: (validBidRequests, bidderRequest) => {
     if (validBidRequests.length === 0) {
@@ -77,7 +75,7 @@ export var spec = {
     }
     var conf = spec._setRefURL(refererInfo);
     const request = spec._createoRTBRequest(validBidRequests, conf);
-    if (request && request.imp.length === 0) {
+    if (request && request.imp.length == 0) {
       return;
     }
     spec._setOtherParams(bidderRequest, request);
@@ -106,7 +104,7 @@ export var spec = {
    * @return {UserSync[]} The user syncs which should be dropped.
    */
   getUserSyncs: (syncOptions, serverResponses) => {
-    const syncurl = USER_SYNC + 'pid=' + pubId;
+    let syncurl = USER_SYNC + 'pid=' + pubId;
     if (syncOptions.iframeEnabled) {
       return [{
         type: 'iframe',
@@ -296,10 +294,10 @@ export var spec = {
     if (typeof bid.getFloor === 'function') {
       [BANNER, VIDEO].forEach(mediaType => {
         if (impObj.hasOwnProperty(mediaType)) {
-          const floorInfo = bid.getFloor({ currency: impObj.bidfloorcur, mediaType: mediaType, size: '*' });
+          let floorInfo = bid.getFloor({ currency: impObj.bidfloorcur, mediaType: mediaType, size: '*' });
           if (utils.isPlainObject(floorInfo) && floorInfo.currency === impObj.bidfloorcur && !isNaN(parseInt(floorInfo.floor))) {
-            const mediaTypeFloor = parseFloat(floorInfo.floor);
-            bidFloor = (bidFloor === -1 ? mediaTypeFloor : Math.min(mediaTypeFloor, bidFloor));
+            let mediaTypeFloor = parseFloat(floorInfo.floor);
+            bidFloor = (bidFloor == -1 ? mediaTypeFloor : Math.min(mediaTypeFloor, bidFloor));
           }
         }
       });
@@ -449,7 +447,7 @@ export var spec = {
     var params = request && request.params ? request.params : null;
     if (params) {
       return {
-        dnt: getDNT() ? 1 : 0,
+        dnt: utils.getDNT() ? 1 : 0,
         ua: navigator.userAgent,
         language: (navigator.language || navigator.browserLanguage || navigator.userLanguage || navigator.systemLanguage),
         w: (utils.getWinDimensions().screen.width || utils.getWinDimensions().innerWidth),
@@ -484,7 +482,7 @@ export var spec = {
       return {
         pchain: params.pchain,
         ext: {
-          schain: request?.ortb2?.source?.ext?.schain
+          schain: request.schain
         },
       };
     }
@@ -511,7 +509,7 @@ export var spec = {
       var params = bid ? bid.params : null;
       var bannerData = params && params.banner;
       var sizes = spec._getSizes(bid) || [];
-      if (sizes && sizes.length === 0) {
+      if (sizes && sizes.length == 0) {
         sizes = bid.mediaTypes.banner.sizes[0];
       }
       if (sizes && sizes.length > 0) {
@@ -549,7 +547,7 @@ export var spec = {
     if (utils.deepAccess(bid, 'mediaTypes.video')) {
       var params = bid ? bid.params : null;
       var videoData = utils.mergeDeep(utils.deepAccess(bid.mediaTypes, 'video'), params.video);
-      var sizes = bid.mediaTypes.video && bid.mediaTypes.video.playerSize ? bid.mediaTypes.video.playerSize[0] : []
+      var sizes = bid.mediaTypes.video ? bid.mediaTypes.video.playerSize : []
       if (sizes && sizes.length > 0) {
         vObj = {};
         if (videoData) {

@@ -35,7 +35,7 @@ describe('ownadx', function () {
   });
 
   describe('buildRequests', function () {
-    const bidderRequest = {
+    let bidderRequest = {
       refererInfo: {
         page: 'https://www.test.com',
         reachedTop: true,
@@ -63,7 +63,7 @@ describe('ownadx', function () {
   });
 
   describe('interpretResponse', function () {
-    const serverResponse = {
+    let serverResponse = {
       body: {
         tokenId: '3f2941af4f7e446f9a19ca6045f8cff4',
         bid: 'BID-XXXX-XXXX',
@@ -77,7 +77,7 @@ describe('ownadx', function () {
       }
     };
 
-    const expectedResponse = [{
+    let expectedResponse = [{
       token: '3f2941af4f7e446f9a19ca6045f8cff4',
       requestId: 'bid-id-123456',
       cpm: '0.7',
@@ -96,7 +96,7 @@ describe('ownadx', function () {
     }];
 
     it('should correctly interpret valid banner response', function () {
-      const result = spec.interpretResponse(serverResponse);
+      let result = spec.interpretResponse(serverResponse);
       expect(result).to.deep.equal(expectedResponse);
     });
   });

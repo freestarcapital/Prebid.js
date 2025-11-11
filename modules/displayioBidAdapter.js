@@ -1,4 +1,3 @@
-import { getDNT } from '../libraries/navigatorData/dnt.js';
 import {registerBidder} from '../src/adapters/bidderFactory.js';
 import {BANNER, VIDEO} from '../src/mediaTypes.js';
 import {Renderer} from '../src/Renderer.js';
@@ -22,7 +21,7 @@ export const spec = {
   },
   buildRequests: function (bidRequests, bidderRequest) {
     return bidRequests.map(bid => {
-      const url = '//' + bid.params.adsSrvDomain + '/srv?method=getPlacement&app=' +
+      let url = '//' + bid.params.adsSrvDomain + '/srv?method=getPlacement&app=' +
         bid.params.siteId + '&placement=' + bid.params.placementId;
       const data = getPayload(bid, bidderRequest);
       return {
@@ -76,8 +75,8 @@ function getPayload (bid, bidderRequest) {
     let us = storage.getDataFromLocalStorage(US_KEY);
     if (!us) {
       us = 'us_web_xxxxxxxxxxxx'.replace(/[x]/g, c => {
-        const r = Math.random() * 16 | 0;
-        const v = c === 'x' ? r : (r & 0x3 | 0x8);
+        let r = Math.random() * 16 | 0;
+        let v = c === 'x' ? r : (r & 0x3 | 0x8);
         return v.toString(16);
       });
       storage.setDataInLocalStorage(US_KEY, us);
@@ -119,7 +118,7 @@ function getPayload (bid, bidderRequest) {
       complianceData: {
         child: '-1',
         us_privacy: uspConsent,
-        dnt: getDNT(),
+        dnt: window.doNotTrack === '1' || window.navigator.doNotTrack === '1' || false,
         iabConsent: {},
         mediation: {
           gdprConsent: mediation.gdprConsent,

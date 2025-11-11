@@ -1,22 +1,22 @@
-import { convertSemantiqKeywordToOrtb, getOrtbKeywords, semantiqRtdSubmodule, storage } from '../../../modules/semantiqRtdProvider.js';
+import { convertSemantiqKeywordToOrtb, getOrtbKeywords, semantiqRtdSubmodule, storage } from '../../../modules/semantiqRtdProvider';
 import { expect } from 'chai';
 import { server } from '../../mocks/xhr.js';
 import * as utils from '../../../src/utils.js';
 
 describe('semantiqRtdProvider', () => {
   let clock;
-  let getDataFromSessionStorage;
+  let getDataFromLocalStorageStub;
   let getWindowLocationStub;
 
   beforeEach(() => {
     clock = sinon.useFakeTimers();
-    getDataFromSessionStorage = sinon.stub(storage, 'getDataFromSessionStorage').returns(null);
+    getDataFromLocalStorageStub = sinon.stub(storage, 'getDataFromLocalStorage').returns(null);
     getWindowLocationStub = sinon.stub(utils, 'getWindowLocation').returns(new URL('https://example.com/article'));
   });
 
   afterEach(() => {
     clock.restore();
-    getDataFromSessionStorage.restore();
+    getDataFromLocalStorageStub.restore();
     getWindowLocationStub.restore();
   });
 
@@ -44,7 +44,7 @@ describe('semantiqRtdProvider', () => {
       expect(body.event_type).to.be.equal('pageImpression');
       expect(body.page_impression_id).not.to.be.empty;
       expect(body.source).to.be.equal('semantiqPrebidModule');
-      expect(body.page_url).to.be.equal('https://example.com/article');
+      expect(body.url).to.be.equal('https://example.com/article');
     });
 
     it('uses the correct company ID', () => {
@@ -181,7 +181,7 @@ describe('semantiqRtdProvider', () => {
     });
 
     it('gets keywords from the cache if the data is present in the storage', async () => {
-      getDataFromSessionStorage.returns(JSON.stringify({ url: 'https://example.com/article', keywords: { sentiment: 'negative', ctx_segment: ['C001', 'C002'] } }));
+      getDataFromLocalStorageStub.returns(JSON.stringify({ url: 'https://example.com/article', keywords: { sentiment: 'negative', ctx_segment: ['C001', 'C002'] } }));
 
       const reqBidsConfigObj = {
         adUnits: [{ bids: [{ bidder: 'appnexus' }] }],
@@ -210,7 +210,7 @@ describe('semantiqRtdProvider', () => {
     });
 
     it('requests keywords from the server if the URL of the page is different from the cached one', async () => {
-      getDataFromSessionStorage.returns(JSON.stringify({ url: 'https://example.com/article', keywords: { cached: 'true' } }));
+      getDataFromLocalStorageStub.returns(JSON.stringify({ url: 'https://example.com/article', keywords: { cached: 'true' } }));
       getWindowLocationStub.returns(new URL('https://example.com/another-article'));
 
       const reqBidsConfigObj = {

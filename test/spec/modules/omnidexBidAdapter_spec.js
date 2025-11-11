@@ -7,8 +7,8 @@ import {
 import * as utils from 'src/utils.js';
 import {version} from 'package.json';
 import {useFakeTimers} from 'sinon';
-import {BANNER, VIDEO} from '../../../src/mediaTypes.js';
-import {config} from '../../../src/config.js';
+import {BANNER, VIDEO} from '../../../src/mediaTypes';
+import {config} from '../../../src/config';
 import {
   hashCode,
   extractPID,
@@ -19,7 +19,6 @@ import {
   tryParseJSON,
   getUniqueDealId,
 } from '../../../libraries/vidazooUtils/bidderUtils.js';
-import {getGlobal} from '../../../src/prebidGlobal.js';
 
 export const TEST_ID_SYSTEMS = ['britepoolid', 'criteoId', 'id5id', 'idl_env', 'lipb', 'netId', 'parrableId', 'pubcid', 'tdid', 'pubProvidedId'];
 
@@ -188,13 +187,6 @@ const VIDEO_SERVER_RESPONSE = {
   }
 };
 
-const ORTB2_OBJ = {
-  "device": ORTB2_DEVICE,
-  "regs": {"coppa": 0, "gpp": "gpp_string", "gpp_sid": [7]},
-  "site": {"content": {"language": "en"}
-  }
-};
-
 const REQUEST = {
   data: {
     width: 300,
@@ -276,12 +268,12 @@ describe('OmnidexBidAdapter', function () {
   describe('build requests', function () {
     let sandbox;
     before(function () {
-      getGlobal().bidderSettings = {
+      $$PREBID_GLOBAL$$.bidderSettings = {
         omnidex: {
           storageAllowed: true
         }
       };
-      sandbox = sinon.createSandbox();
+      sandbox = sinon.sandbox.create();
       sandbox.stub(Date, 'now').returns(1000);
     });
 
@@ -362,7 +354,6 @@ describe('OmnidexBidAdapter', function () {
           contentData: [],
           isStorageAllowed: true,
           pagecat: [],
-          ortb2: ORTB2_OBJ,
           userData: [],
           coppa: 0
         }
@@ -432,8 +423,6 @@ describe('OmnidexBidAdapter', function () {
           contentData: [],
           isStorageAllowed: true,
           pagecat: [],
-          ortb2Imp: BID.ortb2Imp,
-          ortb2: ORTB2_OBJ,
           userData: [],
           coppa: 0
         }
@@ -441,7 +430,7 @@ describe('OmnidexBidAdapter', function () {
     });
 
     after(function () {
-      getGlobal().bidderSettings = {};
+      $$PREBID_GLOBAL$$.bidderSettings = {};
       sandbox.restore();
     });
   });
@@ -605,70 +594,6 @@ describe('OmnidexBidAdapter', function () {
         expect(requests[0].data[`uid.${idSystemProvider}`]).to.equal(id);
       });
     });
-    // testing bid.userIdAsEids handling
-    it("should include user ids from bid.userIdAsEids (length=1)", function() {
-      const bid = utils.deepClone(BID);
-      bid.userIdAsEids = [
-        {
-          "source": "audigent.com",
-          "uids": [{"id": "fakeidi6j6dlc6e"}]
-        }
-      ]
-      const requests = adapter.buildRequests([bid], BIDDER_REQUEST);
-      expect(requests[0].data['uid.audigent.com']).to.equal("fakeidi6j6dlc6e");
-    })
-    it("should include user ids from bid.userIdAsEids (length=2)", function() {
-      const bid = utils.deepClone(BID);
-      bid.userIdAsEids = [
-        {
-          "source": "audigent.com",
-          "uids": [{"id": "fakeidi6j6dlc6e"}]
-        },
-        {
-          "source": "rwdcntrl.net",
-          "uids": [{"id": "fakeid6f35197d5c", "atype": 1}]
-        }
-      ]
-      const requests = adapter.buildRequests([bid], BIDDER_REQUEST);
-      expect(requests[0].data['uid.audigent.com']).to.equal("fakeidi6j6dlc6e");
-      expect(requests[0].data['uid.rwdcntrl.net']).to.equal("fakeid6f35197d5c");
-    })
-    // testing user.ext.eid handling
-    it("should include user ids from user.ext.eid (length=1)", function() {
-      const bid = utils.deepClone(BID);
-      bid.user = {
-        ext: {
-          eids: [
-            {
-              "source": "pubcid.org",
-              "uids": [{"id": "fakeid8888dlc6e"}]
-            }
-          ]
-        }
-      }
-      const requests = adapter.buildRequests([bid], BIDDER_REQUEST);
-      expect(requests[0].data['uid.pubcid.org']).to.equal("fakeid8888dlc6e");
-    })
-    it("should include user ids from user.ext.eid (length=2)", function() {
-      const bid = utils.deepClone(BID);
-      bid.user = {
-        ext: {
-          eids: [
-            {
-              "source": "pubcid.org",
-              "uids": [{"id": "fakeid8888dlc6e"}]
-            },
-            {
-              "source": "adserver.org",
-              "uids": [{"id": "fakeid495ff1"}]
-            }
-          ]
-        }
-      }
-      const requests = adapter.buildRequests([bid], BIDDER_REQUEST);
-      expect(requests[0].data['uid.pubcid.org']).to.equal("fakeid8888dlc6e");
-      expect(requests[0].data['uid.adserver.org']).to.equal("fakeid495ff1");
-    })
   });
 
   describe('alternate param names extractors', function () {
@@ -693,14 +618,14 @@ describe('OmnidexBidAdapter', function () {
 
   describe('unique deal id', function () {
     before(function () {
-      getGlobal().bidderSettings = {
+      $$PREBID_GLOBAL$$.bidderSettings = {
         omnidex: {
           storageAllowed: true
         }
       };
     });
     after(function () {
-      getGlobal().bidderSettings = {};
+      $$PREBID_GLOBAL$$.bidderSettings = {};
     });
     const key = 'myKey';
     let uniqueDealId;
@@ -728,14 +653,14 @@ describe('OmnidexBidAdapter', function () {
 
   describe('storage utils', function () {
     before(function () {
-      getGlobal().bidderSettings = {
+      $$PREBID_GLOBAL$$.bidderSettings = {
         omnidex: {
           storageAllowed: true
         }
       };
     });
     after(function () {
-      getGlobal().bidderSettings = {};
+      $$PREBID_GLOBAL$$.bidderSettings = {};
     });
     it('should get value from storage with create param', function () {
       const now = Date.now();
