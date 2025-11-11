@@ -4,7 +4,7 @@ Module Name: AdPlus Bidder Adapter
 
 Module Type: Bidder Adapter
 
-Maintainer: adplusdestek@turkcell.com.tr
+Maintainer: adplus.destek@yaani.com.tr
 
 # Description
 

@@ -1,4 +1,3 @@
-import { getDNT } from '../libraries/navigatorData/dnt.js';
 import {deepAccess, isArray, isEmpty, logError, replaceAuctionPrice, triggerPixel} from '../src/utils.js';
 import {registerBidder} from '../src/adapters/bidderFactory.js';
 import {BANNER, VIDEO} from '../src/mediaTypes.js';
@@ -45,7 +44,7 @@ function isConnectedTV() {
 }
 
 function getURL(params, path) {
-  const { supplyId, region, endpoint } = params;
+  let { supplyId, region, endpoint } = params;
   let url;
 
   if (endpoint) {
@@ -81,7 +80,7 @@ export const spec = {
 
   buildRequests: function(validBidRequests, bidderRequest) {
     // device.connectiontype
-    const connection = window.navigator && (window.navigator.connection || window.navigator.mozConnection || window.navigator.webkitConnection)
+    let connection = window.navigator && (window.navigator.connection || window.navigator.mozConnection || window.navigator.webkitConnection)
     let connectionType = 'unknown';
     let effectiveType = '';
 
@@ -116,7 +115,7 @@ export const spec = {
         effectiveType,
         devicetype: isMobile() ? 1 : isConnectedTV() ? 3 : 2,
         bidfloor: getBidFloor(validBidRequest),
-        dnt: getDNT() ? 1 : 0,
+        dnt: (navigator.doNotTrack === 'yes' || navigator.doNotTrack === '1' || navigator.msDoNotTrack === '1') ? 1 : 0,
         language: navigator.language,
         prebidVersion: '$prebid.version$',
         screenHeight: screen.height,

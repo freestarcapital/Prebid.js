@@ -1,4 +1,3 @@
-import { getDNT } from '../libraries/navigatorData/dnt.js';
 import { deepAccess, deepSetValue, mergeDeep, logWarn, generateUUID } from '../src/utils.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { BANNER } from '../src/mediaTypes.js'
@@ -21,7 +20,7 @@ export const spec = {
   },
 
   buildRequests: function(validBidRequests, bidderRequest) {
-    const ret = {
+    let ret = {
       method: 'POST',
       url: '',
       data: '',
@@ -41,7 +40,7 @@ export const spec = {
       url: bidderRequest.refererInfo?.page,
       referrer: bidderRequest.refererInfo?.ref,
       screensize: getScreenSize(),
-      dnt: getDNT() ? 1 : 0,
+      dnt: (navigator.doNotTrack == 'yes' || navigator.doNotTrack == '1' || navigator.msDoNotTrack == '1') ? 1 : 0,
       language: navigator.language,
       ua: navigator.userAgent,
       pversion: '$prebid.version$',
@@ -68,9 +67,8 @@ export const spec = {
     }
 
     // adding schain object
-    const schain = validBidRequests[0]?.ortb2?.source?.ext?.schain;
-    if (schain) {
-      deepSetValue(data, 'source.ext.schain', schain);
+    if (validBidRequests[0].schain) {
+      deepSetValue(data, 'source.ext.schain', validBidRequests[0].schain);
     }
 
     // Attaching GDPR Consent Params
@@ -113,7 +111,7 @@ export const spec = {
     }
     data.tmax = bidderRequest.timeout;
 
-    validBidRequests.forEach(bid => {
+    validBidRequests.map(bid => {
       const placement = Object.assign({
         id: generateUUID(),
         divName: bid.bidId,
@@ -126,7 +124,7 @@ export const spec = {
         tid: bid.ortb2Imp?.ext?.tid
       });
 
-      const gpid = deepAccess(bid, 'ortb2Imp.ext.gpid');
+      const gpid = deepAccess(bid, 'ortb2Imp.ext.gpid') || deepAccess(bid, 'ortb2Imp.ext.data.pbadslot');
       if (gpid) {
         placement.gpid = gpid;
       }
@@ -148,7 +146,7 @@ export const spec = {
     let bids;
     let bidId;
     let bidObj;
-    const bidResponses = [];
+    let bidResponses = [];
 
     bids = bidRequest.bidRequest;
 
@@ -193,10 +191,10 @@ export const spec = {
   },
 
   getUserSyncs: (syncOptions, responses, gdprConsent, uspConsent, gppConsent) => {
-    const pixelType = syncOptions.iframeEnabled ? 'iframe' : 'image';
+    let pixelType = syncOptions.iframeEnabled ? 'iframe' : 'image';
     let syncEndpoint;
 
-    if (pixelType === 'iframe') {
+    if (pixelType == 'iframe') {
       syncEndpoint = 'https://sync.connectad.io/iFrameSyncer?';
     } else {
       syncEndpoint = 'https://sync.connectad.io/ImageSyncer?';
@@ -245,7 +243,7 @@ function getBidFloor(bidRequest) {
     });
   }
 
-  const floor = floorInfo?.floor || bidRequest.params.bidfloor || bidRequest.params.floorprice || 0;
+  let floor = floorInfo?.floor || bidRequest.params.bidfloor || bidRequest.params.floorprice || 0;
 
   return floor;
 }

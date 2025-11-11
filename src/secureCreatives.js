@@ -6,6 +6,7 @@
 import {getAllAssetsMessage, getAssetMessage} from './native.js';
 import {BID_STATUS, MESSAGES} from './constants.js';
 import {isApnGetTagDefined, isGptPubadsDefined, logError, logWarn} from './utils.js';
+import {find, includes} from './polyfill.js';
 import {
   deferRendering,
   getBidToRender,
@@ -141,56 +142,46 @@ export function resizeRemoteCreative({instl, adId, adUnitCode, width, height}) {
   function getDimension(value) {
     return value ? value + 'px' : '100%';
   }
-
-  function resize(element) {
+  // resize both container div + iframe
+  ['div', 'iframe'].forEach(elmType => {
+    // not select element that gets removed after dfp render
+    let element = getElementByAdUnit(elmType + ':not([style*="display: none"])');
     if (element) {
-      const elementStyle = element.style;
+      let elementStyle = element.style;
       elementStyle.width = getDimension(width)
       elementStyle.height = getDimension(height);
     } else {
       logError(`Unable to locate matching page element for adUnitCode ${adUnitCode}.  Can't resize it to ad's dimensions.  Please review setup.`);
     }
-  }
-
-  // not select element that gets removed after dfp render
-  const iframe = getElementByAdUnit('iframe:not([style*="display: none"])');
-
-  // resize both container div + iframe
-  [iframe, iframe?.parentElement].forEach(resize);
+  });
 
   function getElementByAdUnit(elmType) {
-    const id = getElementIdBasedOnAdServer(adId, adUnitCode);
-    const parentDivEle = document.getElementById(id);
+    let id = getElementIdBasedOnAdServer(adId, adUnitCode);
+    let parentDivEle = document.getElementById(id);
     return parentDivEle && parentDivEle.querySelector(elmType);
   }
 
   function getElementIdBasedOnAdServer(adId, adUnitCode) {
     if (isGptPubadsDefined()) {
-      const dfpId = getDfpElementId(adId);
-      if (dfpId) {
-        return dfpId;
-      }
+      return getDfpElementId(adId);
+    } else if (isApnGetTagDefined()) {
+      return getAstElementId(adUnitCode);
+    } else {
+      return adUnitCode;
     }
-    if (isApnGetTagDefined()) {
-      const apnId = getAstElementId(adUnitCode);
-      if (apnId) {
-        return apnId;
-      }
-    }
-    return adUnitCode;
   }
 
   function getDfpElementId(adId) {
-    const slot = window.googletag.pubads().getSlots().find(slot => {
-      return slot.getTargetingKeys().find(key => {
-        return slot.getTargeting(key).includes(adId);
+    const slot = find(window.googletag.pubads().getSlots(), slot => {
+      return find(slot.getTargetingKeys(), key => {
+        return includes(slot.getTargeting(key), adId);
       });
     });
     return slot ? slot.getSlotElementId() : null;
   }
 
   function getAstElementId(adUnitCode) {
-    const astTag = window.apntag.getTag(adUnitCode);
+    let astTag = window.apntag.getTag(adUnitCode);
     return astTag && astTag.targetId;
   }
 }

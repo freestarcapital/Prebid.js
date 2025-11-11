@@ -1,6 +1,4 @@
 {
     "yahoosspBidAdapter": "yahooAdsBidAdapter",
-    "consentManagement": "consentManagementTcf",
-    "dfpAdServerVideo": "gamAdServerVideo",
-    "kueezBidAdapter": "kueezRtbBidAdapter"
+    "consentManagement": "consentManagementTcf"
 }

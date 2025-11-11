@@ -14,13 +14,14 @@ import {
 } from '../src/utils.js';
 
 export const BIDDER_CODE = 'deltaprojects';
-const GVLID = 209;
 export const BIDDER_ENDPOINT_URL = 'https://d5p.de17a.com/dogfight/prebid';
 export const USERSYNC_URL = 'https://userservice.de17a.com/getuid/prebid';
 
 /** -- isBidRequestValid -- */
 function isBidRequestValid(bid) {
   if (!bid) return false;
+
+  if (bid.bidder !== BIDDER_CODE) return false;
 
   // publisher id is required
   const publisherId = deepAccess(bid, 'params.publisherId')
@@ -58,18 +59,18 @@ function buildRequests(validBidRequests, bidderRequest) {
   }
 
   // -- build user, reg
-  const user = { ext: {} };
+  let user = { ext: {} };
   const regs = { ext: {} };
   const gdprConsent = bidderRequest && bidderRequest.gdprConsent;
   if (gdprConsent) {
     user.ext = { consent: gdprConsent.consentString };
-    if (typeof gdprConsent.gdprApplies === 'boolean') {
+    if (typeof gdprConsent.gdprApplies == 'boolean') {
       regs.ext.gdpr = gdprConsent.gdprApplies ? 1 : 0
     }
   }
 
   // -- build tmax
-  const tmax = (bidderRequest && bidderRequest.timeout > 0) ? bidderRequest.timeout : undefined;
+  let tmax = (bidderRequest && bidderRequest.timeout > 0) ? bidderRequest.timeout : undefined;
 
   // build bid specific
   return validBidRequests.map(validBidRequest => {
@@ -237,7 +238,6 @@ export function getBidFloor(bid, mediaType, size, currency) {
 /** -- Register -- */
 export const spec = {
   code: BIDDER_CODE,
-  gvlid: GVLID,
   supportedMediaTypes: [BANNER],
   isBidRequestValid,
   buildRequests,

@@ -15,24 +15,25 @@ import {decorateAdUnitsWithNativeParams} from '../../../../src/native.js';
 import * as activityRules from 'src/activities/rules.js';
 import {MODULE_TYPE_BIDDER} from '../../../../src/activities/modules.js';
 import {ACTIVITY_TRANSMIT_TID, ACTIVITY_TRANSMIT_UFPD} from '../../../../src/activities/activities.js';
-import {getGlobal} from '../../../../src/prebidGlobal.js';
 
 const CODE = 'sampleBidder';
 const MOCK_BIDS_REQUEST = {
   bids: [
     {
       bidId: 1,
+      auctionId: 'first-bid-id',
       adUnitCode: 'mock/placement',
       params: {
         param: 5
-      },
+      }
     },
     {
       bidId: 2,
+      auctionId: 'second-bid-id',
       adUnitCode: 'mock/placement2',
       params: {
         badParam: 6
-      },
+      }
     }
   ]
 }
@@ -41,7 +42,7 @@ before(() => {
   hook.ready();
 });
 
-const wrappedCallback = config.callbackWithBidder(CODE);
+let wrappedCallback = config.callbackWithBidder(CODE);
 
 describe('bidderFactory', () => {
   let onTimelyResponseStub;
@@ -77,12 +78,12 @@ describe('bidderFactory', () => {
       let aliasRegistryStub, aliasRegistry;
 
       beforeEach(function () {
-        sandbox = sinon.createSandbox();
+        sandbox = sinon.sandbox.create();
         sandbox.stub(activityRules, 'isActivityAllowed').callsFake(() => true);
         ajaxStub = sandbox.stub(ajax, 'ajax');
-        addBidResponseStub.resetHistory();
+        addBidResponseStub.reset();
         getConfigSpy = sandbox.spy(config, 'getConfig');
-        doneStub.resetHistory();
+        doneStub.reset();
         aliasRegistry = {};
         aliasRegistryStub = sandbox.stub(adapterManager, 'aliasRegistry');
         aliasRegistryStub.get(() => aliasRegistry);
@@ -220,7 +221,7 @@ describe('bidderFactory', () => {
 
       describe('transaction IDs', () => {
         beforeEach(() => {
-          activityRules.isActivityAllowed.resetHistory();
+          activityRules.isActivityAllowed.reset();
           ajaxStub.callsFake((_, callback) => callback.success(null, {getResponseHeader: sinon.stub()}));
           spec.interpretResponse.callsFake(() => [
             {
@@ -235,27 +236,20 @@ describe('bidderFactory', () => {
         });
 
         Object.entries({
-          'be hidden': {
-            allowed: false,
-            checkBidderRequest(br) {
-              expect(br.auctionId).to.not.exist;
-            },
-            checkBidRequest(br) {
-              expect(br.auctionId).to.not.exist;
-              expect(br.transactionId).to.not.exist;
-            },
-          },
-          'be an alias to the bidder specific tid': {
-            allowed: true,
-            checkBidderRequest(br) {
-              expect(br.auctionId).to.eql('bidder-tid');
-            },
-            checkBidRequest(br) {
-              expect(br.auctionId).to.eql('bidder-tid');
-              expect(br.transactionId).to.eql('bidder-ext-tid');
-            },
-          },
-        }).forEach(([t, {allowed, checkBidderRequest, checkBidRequest}]) => {
+          'be hidden': false,
+          'not be hidden': true,
+        }).forEach(([t, allowed]) => {
+          const expectation = allowed ? (val) => expect(val).to.exist : (val) => expect(val).to.not.exist;
+
+          function checkBidRequest(br) {
+            ['auctionId', 'transactionId'].forEach((prop) => expectation(br[prop]));
+          }
+
+          function checkBidderRequest(br) {
+            expectation(br.auctionId);
+            br.bids.forEach(checkBidRequest);
+          }
+
           it(`should ${t} from the spec logic when the transmitTid activity is${allowed ? '' : ' not'} allowed`, () => {
             spec.isBidRequestValid.callsFake(br => {
               checkBidRequest(br);
@@ -273,27 +267,12 @@ describe('bidderFactory', () => {
             bidder.callBids({
               bidderCode: 'mockBidder',
               auctionId: 'aid',
-              ortb2: {
-                source: {
-                  tid: 'bidder-tid'
-                }
-              },
               bids: [
                 {
                   adUnitCode: 'mockAU',
                   bidId: 'bid',
                   transactionId: 'tid',
-                  auctionId: 'aid',
-                  ortb2: {
-                    source: {
-                      tid: 'bidder-tid'
-                    },
-                  },
-                  ortb2Imp: {
-                    ext: {
-                      tid: 'bidder-ext-tid'
-                    }
-                  }
+                  auctionId: 'aid'
                 }
               ]
             }, addBidResponseStub, doneStub, ajaxStub, onTimelyResponseStub, wrappedCallback);
@@ -524,15 +503,15 @@ describe('bidderFactory', () => {
       describe('browsingTopics ajax option', () => {
         let transmitUfpdAllowed, bidder, origBS;
         before(() => {
-          origBS = getGlobal().bidderSettings;
+          origBS = window.$$PREBID_GLOBAL$$.bidderSettings;
         })
 
         after(() => {
-          getGlobal().bidderSettings = origBS;
+          window.$$PREBID_GLOBAL$$.bidderSettings = origBS;
         });
 
         beforeEach(() => {
-          activityRules.isActivityAllowed.resetHistory();
+          activityRules.isActivityAllowed.reset();
           activityRules.isActivityAllowed.callsFake((activity) => activity === ACTIVITY_TRANSMIT_UFPD ? transmitUfpdAllowed : true);
           bidder = newBidder(spec);
           spec.isBidRequestValid.returns(true);
@@ -551,8 +530,7 @@ describe('bidderFactory', () => {
           ]);
           bidder.callBids(MOCK_BIDS_REQUEST, addBidResponseStub, doneStub, ajaxStub, onTimelyResponseStub, wrappedCallback);
           sinon.assert.calledWith(ajaxStub, 'url', sinon.match.any, sinon.match.any, sinon.match({
-            browsingTopics: false,
-            suppressTopicsEnrollmentWarning: true
+            browsingTopics: false
           }));
         });
 
@@ -563,7 +541,7 @@ describe('bidderFactory', () => {
         }).forEach(([t, [topicsHeader, enabled]]) => {
           describe(`when bidderSettings.topicsHeader is ${t}`, () => {
             beforeEach(() => {
-              getGlobal().bidderSettings = {
+              window.$$PREBID_GLOBAL$$.bidderSettings = {
                 [CODE]: {
                   topicsHeader: topicsHeader
                 }
@@ -571,7 +549,7 @@ describe('bidderFactory', () => {
             });
 
             afterEach(() => {
-              delete getGlobal().bidderSettings[CODE];
+              delete window.$$PREBID_GLOBAL$$.bidderSettings[CODE];
             });
 
             Object.entries({
@@ -615,7 +593,7 @@ describe('bidderFactory', () => {
                     url,
                     sinon.match.any,
                     sinon.match.any,
-                    sinon.match({browsingTopics: shouldBeSet, suppressTopicsEnrollmentWarning: true})
+                    sinon.match({browsingTopics: shouldBeSet})
                   );
                 });
               });
@@ -671,7 +649,7 @@ describe('bidderFactory', () => {
           fakeResponse.returns('headerContent');
           callbacks.success('response body', { getResponseHeader: fakeResponse });
         });
-        addBidResponseStub.resetHistory();
+        addBidResponseStub.reset();
         doneStub.resetBehavior();
         userSyncStub = sinon.stub(userSync, 'registerSync')
         logErrorSpy = sinon.spy(utils, 'logError');
@@ -976,8 +954,8 @@ describe('bidderFactory', () => {
         });
         callBidderErrorStub = sinon.stub(adapterManager, 'callBidderError');
         eventEmitterStub = sinon.stub(events, 'emit');
-        addBidResponseStub.resetHistory();
-        doneStub.resetHistory();
+        addBidResponseStub.reset();
+        doneStub.reset();
       });
 
       afterEach(function () {
@@ -1214,7 +1192,7 @@ describe('bidderFactory', () => {
     let ajaxStub;
     let logErrorSpy;
 
-    const bids = [{
+    let bids = [{
       'ad': 'creative',
       'cpm': '1.99',
       'width': 300,
@@ -1259,7 +1237,7 @@ describe('bidderFactory', () => {
     afterEach(function () {
       ajaxStub.restore();
       logErrorSpy.restore();
-      indexStub.restore();
+      indexStub.restore;
     });
 
     if (FEATURES.NATIVE) {
@@ -1271,7 +1249,7 @@ describe('bidderFactory', () => {
           }
         }]
         decorateAdUnitsWithNativeParams(adUnits);
-        const bidRequest = {
+        let bidRequest = {
           bids: [{
             bidId: '1',
             auctionId: 'first-bid-id',
@@ -1284,7 +1262,7 @@ describe('bidderFactory', () => {
           }]
         };
 
-        const bids1 = Object.assign({},
+        let bids1 = Object.assign({},
           bids[0],
           {
             'mediaType': 'native',
@@ -1313,7 +1291,7 @@ describe('bidderFactory', () => {
           },
         }];
         decorateAdUnitsWithNativeParams(adUnits);
-        const bidRequest = {
+        let bidRequest = {
           bids: [{
             bidId: '1',
             auctionId: 'first-bid-id',
@@ -1325,7 +1303,7 @@ describe('bidderFactory', () => {
             mediaType: 'native',
           }]
         };
-        const bids1 = Object.assign({},
+        let bids1 = Object.assign({},
           bids[0],
           {
             bidderCode: CODE,
@@ -1354,7 +1332,7 @@ describe('bidderFactory', () => {
           video: {context: 'outstream'}
         }
       }]
-      const bidRequest = {
+      let bidRequest = {
         bids: [{
           bidId: '1',
           auctionId: 'first-bid-id',
@@ -1366,7 +1344,7 @@ describe('bidderFactory', () => {
         }]
       };
 
-      const bids1 = Object.assign({},
+      let bids1 = Object.assign({},
         bids[0],
         {
           bidderCode: CODE,
@@ -1386,7 +1364,7 @@ describe('bidderFactory', () => {
     });
 
     it('should add banner bids that have no width or height but single adunit size', function () {
-      const bidRequest = {
+      let bidRequest = {
         bids: [{
           bidder: CODE,
           bidId: '1',
@@ -1399,7 +1377,7 @@ describe('bidderFactory', () => {
         }]
       };
       bidderRequests = [bidRequest];
-      const bids1 = Object.assign({},
+      let bids1 = Object.assign({},
         bids[0],
         {
           width: undefined,
@@ -1418,7 +1396,7 @@ describe('bidderFactory', () => {
     });
 
     it('should disregard auctionId/transactionId set by the adapter', () => {
-      const bidderRequest = {
+      let bidderRequest = {
         bids: [{
           bidder: CODE,
           bidId: '1',
@@ -1747,7 +1725,6 @@ describe('bidderFactory', () => {
   });
 
   describe('gzip compression', () => {
-    let sandbox;
     let gzipStub;
     let isGzipSupportedStub;
     let spec;
@@ -1757,19 +1734,14 @@ describe('bidderFactory', () => {
     let origBS;
     let getParameterByNameStub;
     let debugTurnedOnStub;
-    let bidder;
-    let url;
-    let data;
-    let endpointCompression;
 
     before(() => {
-      origBS = getGlobal().bidderSettings;
+      origBS = window.$$PREBID_GLOBAL$$.bidderSettings;
     });
 
     beforeEach(() => {
-      sandbox = sinon.createSandbox();
-      isGzipSupportedStub = sandbox.stub(utils, 'isGzipCompressionSupported');
-      gzipStub = sandbox.stub(utils, 'compressDataWithGZip');
+      isGzipSupportedStub = sinon.stub(utils, 'isGzipCompressionSupported');
+      gzipStub = sinon.stub(utils, 'compressDataWithGZip');
       spec = {
         code: CODE,
         isBidRequestValid: sinon.stub(),
@@ -1778,93 +1750,138 @@ describe('bidderFactory', () => {
         getUserSyncs: sinon.stub()
       };
 
-      ajaxStub = sandbox.stub(ajax, 'ajax').callsFake(function(url, callbacks) {
+      ajaxStub = sinon.stub(ajax, 'ajax').callsFake(function(url, callbacks) {
         const fakeResponse = sinon.stub();
         fakeResponse.returns('headerContent');
         callbacks.success('response body', { getResponseHeader: fakeResponse });
       });
 
-      addBidResponseStub = sandbox.stub();
-      addBidResponseStub.reject = sandbox.stub();
-      doneStub = sandbox.stub();
-      getParameterByNameStub = sandbox.stub(utils, 'getParameterByName');
-      debugTurnedOnStub = sandbox.stub(utils, 'debugTurnedOn');
-      bidder = newBidder(spec);
-      url = 'https://test.url.com';
-      data = { arg: 'value' };
-      endpointCompression = true;
+      addBidResponseStub = sinon.stub();
+      addBidResponseStub.reject = sinon.stub();
+      doneStub = sinon.stub();
+      getParameterByNameStub = sinon.stub(utils, 'getParameterByName');
+      debugTurnedOnStub = sinon.stub(utils, 'debugTurnedOn');
     });
 
     afterEach(() => {
-      sandbox.restore();
-      getGlobal().bidderSettings = origBS;
+      isGzipSupportedStub.restore();
+      gzipStub.restore();
+      ajaxStub.restore();
+      if (addBidResponseStub.restore) addBidResponseStub.restore();
+      if (doneStub.restore) doneStub.restore();
+      getParameterByNameStub.restore();
+      debugTurnedOnStub.restore();
+      window.$$PREBID_GLOBAL$$.bidderSettings = origBS;
     });
 
-    function runRequest() {
-      return new Promise((resolve, reject) => {
-        spec.isBidRequestValid.returns(true);
-        spec.buildRequests.returns({
-          method: 'POST',
-          url: url,
-          data: data,
-          options: {
-            endpointCompression
-          }
-        });
-        bidder.callBids(MOCK_BIDS_REQUEST, addBidResponseStub, () => {
-          resolve();
-        }, ajaxStub, onTimelyResponseStub, wrappedCallback);
-      })
-    }
-
-    it('should send a gzip compressed payload when gzip is supported and enabled', async function () {
+    it('should send a gzip compressed payload when gzip is supported and enabled', function (done) {
+      const bidder = newBidder(spec);
+      const url = 'https://test.url.com';
+      const data = { arg: 'value' };
       const compressedPayload = 'compressedData'; // Simulated compressed payload
       isGzipSupportedStub.returns(true);
       gzipStub.resolves(compressedPayload);
       getParameterByNameStub.withArgs(DEBUG_MODE).returns('false');
       debugTurnedOnStub.returns(false);
 
-      await runRequest();
-      expect(gzipStub.calledOnce).to.be.true;
-      expect(gzipStub.calledWith(data)).to.be.true;
-      expect(ajaxStub.calledOnce).to.be.true;
-      expect(ajaxStub.firstCall.args[0]).to.include('gzip=1'); // Ensure the URL has gzip=1
-      expect(ajaxStub.firstCall.args[2]).to.equal(compressedPayload); // Ensure compressed data is sent
+      spec.isBidRequestValid.returns(true);
+      spec.buildRequests.returns({
+        method: 'POST',
+        url: url,
+        data: data,
+        options: {
+          endpointCompression: true
+        }
+      });
+
+      bidder.callBids(MOCK_BIDS_REQUEST, addBidResponseStub, doneStub, ajaxStub, onTimelyResponseStub, wrappedCallback);
+
+      setTimeout(() => {
+        expect(gzipStub.calledOnce).to.be.true;
+        expect(gzipStub.calledWith(data)).to.be.true;
+        expect(ajaxStub.calledOnce).to.be.true;
+        expect(ajaxStub.firstCall.args[0]).to.include('gzip=1'); // Ensure the URL has gzip=1
+        expect(ajaxStub.firstCall.args[2]).to.equal(compressedPayload); // Ensure compressed data is sent
+        done();
+      });
     });
 
-    it('should send the request normally if gzip is not supported', async () => {
+    it('should send the request normally if gzip is not supported', function (done) {
+      const bidder = newBidder(spec);
+      const url = 'https://test.url.com';
+      const data = { arg: 'value' };
       isGzipSupportedStub.returns(false);
       getParameterByNameStub.withArgs(DEBUG_MODE).returns('false');
       debugTurnedOnStub.returns(false);
-      await runRequest();
-      expect(gzipStub.called).to.be.false; // Should not call compression
-      expect(ajaxStub.calledOnce).to.be.true;
-      expect(ajaxStub.firstCall.args[0]).to.not.include('gzip=1'); // Ensure URL does not have gzip=1
-      expect(ajaxStub.firstCall.args[2]).to.equal(JSON.stringify(data)); // Ensure original data is sent
+
+      spec.isBidRequestValid.returns(true);
+      spec.buildRequests.returns({
+        method: 'POST',
+        url: url,
+        data: data,
+        options: {
+          endpointCompression: false
+        }
+      });
+
+      bidder.callBids(MOCK_BIDS_REQUEST, addBidResponseStub, doneStub, ajaxStub, onTimelyResponseStub, wrappedCallback);
+
+      setTimeout(() => {
+        expect(gzipStub.called).to.be.false; // Should not call compression
+        expect(ajaxStub.calledOnce).to.be.true;
+        expect(ajaxStub.firstCall.args[0]).to.not.include('gzip=1'); // Ensure URL does not have gzip=1
+        expect(ajaxStub.firstCall.args[2]).to.equal(JSON.stringify(data)); // Ensure original data is sent
+        done();
+      });
     });
 
-    it('should send uncompressed data if gzip is supported but disabled in request options', async function () {
+    it('should send uncompressed data if gzip is supported but disabled in request options', function (done) {
+      const bidder = newBidder(spec);
+      const url = 'https://test.url.com';
+      const data = { arg: 'value' };
       isGzipSupportedStub.returns(true);
       getParameterByNameStub.withArgs(DEBUG_MODE).returns('false');
       debugTurnedOnStub.returns(false);
-      endpointCompression = false;
-      await runRequest();
-      expect(gzipStub.called).to.be.false;
-      expect(ajaxStub.calledOnce).to.be.true;
-      expect(ajaxStub.firstCall.args[0]).to.not.include('gzip=1'); // Ensure URL does not have gzip=1
-      expect(ajaxStub.firstCall.args[2]).to.equal(JSON.stringify(data));
+
+      spec.isBidRequestValid.returns(true);
+      spec.buildRequests.returns({
+        method: 'POST',
+        url: url,
+        data: data
+      });
+
+      bidder.callBids(MOCK_BIDS_REQUEST, addBidResponseStub, doneStub, ajaxStub, onTimelyResponseStub, wrappedCallback);
+
+      setTimeout(() => {
+        expect(gzipStub.called).to.be.false;
+        expect(ajaxStub.calledOnce).to.be.true;
+        expect(ajaxStub.firstCall.args[0]).to.not.include('gzip=1'); // Ensure URL does not have gzip=1
+        expect(ajaxStub.firstCall.args[2]).to.equal(JSON.stringify(data));
+        done();
+      });
     });
 
-    it('should NOT gzip when debugMode is enabled', async () => {
+    it('should NOT gzip when debugMode is enabled', function (done) {
       getParameterByNameStub.withArgs(DEBUG_MODE).returns('true');
       debugTurnedOnStub.returns(true);
       isGzipSupportedStub.returns(true);
-      await runRequest();
 
-      expect(gzipStub.called).to.be.false;
-      expect(ajaxStub.calledOnce).to.be.true;
-      expect(ajaxStub.firstCall.args[0]).to.not.include('gzip=1');
-      expect(ajaxStub.firstCall.args[2]).to.equal(JSON.stringify(data));
+      const bidder = newBidder(spec);
+      const url = 'https://test.url.com';
+      const data = { arg: 'value' };
+
+      spec.isBidRequestValid.returns(true);
+      spec.buildRequests.returns({ method: 'POST', url, data });
+
+      bidder.callBids(MOCK_BIDS_REQUEST, addBidResponseStub, doneStub, ajaxStub, onTimelyResponseStub, wrappedCallback);
+
+      setTimeout(() => {
+        expect(gzipStub.called).to.be.false;
+        expect(ajaxStub.calledOnce).to.be.true;
+        expect(ajaxStub.firstCall.args[0]).to.not.include('gzip=1');
+        expect(ajaxStub.firstCall.args[2]).to.equal(JSON.stringify(data));
+        done();
+      });
     });
   });
 })

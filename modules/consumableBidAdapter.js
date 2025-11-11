@@ -39,7 +39,7 @@ export const spec = {
    */
 
   buildRequests: function(validBidRequests, bidderRequest) {
-    const ret = {
+    let ret = {
       method: 'POST',
       url: '',
       data: '',
@@ -82,16 +82,15 @@ export const spec = {
       data.ccpa = bidderRequest.uspConsent;
     }
 
-    const schain = bidderRequest?.ortb2?.source?.ext?.schain;
-    if (schain) {
-      data.schain = schain;
+    if (bidderRequest && bidderRequest.schain) {
+      data.schain = bidderRequest.schain;
     }
 
     if (config.getConfig('coppa')) {
       data.coppa = true;
     }
 
-    validBidRequests.forEach(bid => {
+    validBidRequests.map(bid => {
       const sizes = (bid.mediaTypes && bid.mediaTypes.banner && bid.mediaTypes.banner.sizes) || bid.sizes || [];
       const placement = Object.assign({
         divName: bid.bidId,
@@ -130,7 +129,7 @@ export const spec = {
     let bids;
     let bidId;
     let bidObj;
-    const bidResponses = [];
+    let bidResponses = [];
 
     bids = bidRequest.bidRequest;
 
@@ -316,7 +315,7 @@ function getBidFloor(bid, sizes) {
 
   let floor;
 
-  const floorInfo = bid.getFloor({
+  let floorInfo = bid.getFloor({
     currency: 'USD',
     mediaType: bid.mediaTypes.video ? 'video' : 'banner',
     size: sizes.length === 1 ? sizes[0] : '*'

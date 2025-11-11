@@ -137,9 +137,7 @@ pbjs.setConfig({
                   name: '__adm__admixer',
                   expires: 30
               }
-        }, {
-            name: "gemiusId"
-        }, {
+        },{
              name: "kpuid",
              params:{
                     accountid: 124 // example of account id
@@ -222,7 +220,9 @@ pbjs.setConfig({
             }
         }, {
             name: 'sharedId',
-            params: {},
+            params: {
+                  syncTime: 60 // in seconds, default is 24 hours
+               },
              storage: {
                 type: 'html5',
                 name: 'sharedid',

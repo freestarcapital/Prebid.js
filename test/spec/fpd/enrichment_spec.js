@@ -3,7 +3,6 @@ import {hook} from '../../../src/hook.js';
 import {expect} from 'chai/index.mjs';
 import {config} from 'src/config.js';
 import * as utils from 'src/utils.js';
-import * as winDimensions from 'src/utils/winDimensions.js';
 import * as activities from 'src/activities/rules.js'
 import {CLIENT_SECTIONS} from '../../../src/fpd/oneClient.js';
 import {ACTIVITY_ACCESS_DEVICE} from '../../../src/activities/activities.js';
@@ -15,7 +14,7 @@ describe('FPD enrichment', () => {
     hook.ready();
   });
   beforeEach(() => {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
   });
   afterEach(() => {
     sandbox.restore();
@@ -161,7 +160,6 @@ describe('FPD enrichment', () => {
       });
       return fpd().then(ortb2 => {
         expect(ortb2.site.ext.data.documentLang).to.equal('fr-FR');
-        expect(ortb2.site.content.language).to.equal('fr');
       });
     });
   });
@@ -173,8 +171,8 @@ describe('FPD enrichment', () => {
     });
     testWindows(() => win, () => {
       it('sets w/h', () => {
-        const getWinDimensionsStub = sandbox.stub(winDimensions, 'getWinDimensions');
-
+        const getWinDimensionsStub = sandbox.stub(utils, 'getWinDimensions');
+        
         getWinDimensionsStub.returns({screen: {width: 321, height: 123}});
         return fpd().then(ortb2 => {
           sinon.assert.match(ortb2.device, {
@@ -186,7 +184,7 @@ describe('FPD enrichment', () => {
       });
 
       it('sets ext.vpw/vph', () => {
-        const getWinDimensionsStub = sandbox.stub(winDimensions, 'getWinDimensions');
+        const getWinDimensionsStub = sandbox.stub(utils, 'getWinDimensions');
         getWinDimensionsStub.returns({innerWidth: 12, innerHeight: 21, screen: {}});
         return fpd().then(ortb2 => {
           sinon.assert.match(ortb2.device.ext, {
@@ -194,6 +192,21 @@ describe('FPD enrichment', () => {
             vph: 21,
           });
           getWinDimensionsStub.restore();
+        });
+      });
+
+      describe('ext.webdriver', () => {
+        it('when navigator.webdriver is available', () => {
+          win.navigator.webdriver = true;
+          return fpd().then(ortb2 => {
+            expect(ortb2.device.ext?.webdriver).to.eql(true);
+          });
+        });
+
+        it('when navigator.webdriver is not present', () => {
+          return fpd().then(ortb2 => {
+            expect(ortb2.device.ext?.webdriver).to.not.exist;
+          });
         });
       });
 
@@ -290,7 +303,7 @@ describe('FPD enrichment', () => {
   });
 
   describe('privacy sandbox cookieDeprecationLabel', () => {
-    let isAllowed; let cdep; let shouldCleanupNav = false;
+    let isAllowed, cdep, shouldCleanupNav = false;
 
     before(() => {
       if (!navigator.cookieDeprecationLabel) {

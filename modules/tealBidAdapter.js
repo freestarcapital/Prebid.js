@@ -31,7 +31,7 @@ const converter = ortbConverter({
   overrides: {
     bidResponse: {
       bidderCode(orig, bidResponse, bid, { bidRequest }) {
-        const useSourceBidderCode = deepAccess(bidRequest, 'params.useSourceBidderCode', false);
+        let useSourceBidderCode = deepAccess(bidRequest, 'params.useSourceBidderCode', false);
         if (useSourceBidderCode) {
           orig.apply(this, [...arguments].slice(1));
         }
@@ -133,8 +133,8 @@ export const spec = {
 
   onBidderError: function({ error, bidderRequest }) {
     if (error.responseText && error.status) {
-      const id = error.responseText.match(/found for id: (.*)/);
-      if (Array.isArray(id) && id.length > 1 && error.status === 400) {
+      let id = error.responseText.match(/found for id: (.*)/);
+      if (Array.isArray(id) && id.length > 1 && error.status == 400) {
         logError(`Placement: ${id[1]} not found on ${BIDDER_CODE} server. Please contact your account manager or email prebid@teal.works`, error);
         return;
       }

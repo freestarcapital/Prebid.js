@@ -54,7 +54,7 @@ export const spec = {
   },
   getUserSyncs: function (syncOptions, serverResponses) {
     if (serverResponses.length > 0 && serverResponses[0].body.userSync &&
-      syncOptions.pixelEnabled && serverResponses[0].body.userSync.type === 'image') {
+      syncOptions.pixelEnabled && serverResponses[0].body.userSync.type == 'image') {
       return [{
         type: 'image',
         url: serverResponses[0].body.userSync.url
@@ -104,9 +104,8 @@ function newBidRequest(bidRequest, bidderRequest) {
     data.userData = userData;
   }
 
-  const schain = bidRequest?.ortb2?.source?.ext?.schain;
-  if (schain) {
-    data.schain = schain;
+  if (bidRequest.schain) {
+    data.schain = bidRequest.schain;
   }
 
   return data;

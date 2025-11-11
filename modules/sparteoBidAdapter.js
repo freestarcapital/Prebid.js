@@ -1,8 +1,7 @@
-import { deepAccess, deepSetValue, logWarn, logError, parseSizesInput, triggerPixel } from '../src/utils.js';
+import { deepAccess, deepSetValue, logError, parseSizesInput, triggerPixel } from '../src/utils.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { BANNER, VIDEO } from '../src/mediaTypes.js';
-import { ortbConverter } from '../libraries/ortbConverter/converter.js';
-import { Renderer } from '../src/Renderer.js';
+import {ortbConverter} from '../libraries/ortbConverter/converter.js'
 
 /**
  * @typedef {import('../src/adapters/bidderFactory.js').BidRequest} BidRequest
@@ -50,60 +49,14 @@ const converter = ortbConverter({
 
     const response = buildBidResponse(bid, context);
 
-    if (context.mediaType === 'video') {
+    if (context.mediaType == 'video') {
       response.nurl = bid.nurl;
       response.vastUrl = deepAccess(bid, 'ext.prebid.cache.vastXml.url') ?? null;
-    }
-
-    // extract renderer config, if present, and create Prebid renderer
-    const rendererConfig = deepAccess(bid, 'ext.prebid.renderer') ?? null;
-    if (rendererConfig && rendererConfig.url) {
-      response.renderer = createRenderer(rendererConfig);
     }
 
     return response;
   }
 });
-
-function createRenderer(rendererConfig) {
-  const renderer = Renderer.install({
-    url: rendererConfig.url,
-    loaded: false,
-    config: rendererConfig
-  });
-  try {
-    renderer.setRender(outstreamRender);
-  } catch (err) {
-    logWarn('Sparteo Bid Adapter: Prebid Error calling setRender on renderer', err);
-  }
-  return renderer;
-}
-
-function outstreamRender(bid) {
-  if (!document.getElementById(bid.adUnitCode)) {
-    logError(`Sparteo Bid Adapter: Video renderer did not started. bidResponse.adUnitCode is probably not a DOM element : ${bid.adUnitCode}`);
-    return;
-  }
-
-  const config = bid.renderer.getConfig() ?? {};
-
-  bid.renderer.push(() => {
-    window.ANOutstreamVideo.renderAd({
-      targetId: bid.adUnitCode, // target div id to render video
-      adResponse: {
-        ad: {
-          video: {
-            content: bid.vastXml,
-            player_width: bid.width,
-            player_height: bid.height
-          }
-        }
-      },
-      sizes: [bid.width, bid.height],
-      rendererOptions: config.options ?? {}
-    });
-  });
-}
 
 export const spec = {
   code: BIDDER_CODE,
@@ -117,8 +70,8 @@ export const spec = {
    * @return boolean True if this is a valid bid, and false otherwise.
    */
   isBidRequestValid: function (bid) {
-    const bannerParams = deepAccess(bid, 'mediaTypes.banner');
-    const videoParams = deepAccess(bid, 'mediaTypes.video');
+    let bannerParams = deepAccess(bid, 'mediaTypes.banner');
+    let videoParams = deepAccess(bid, 'mediaTypes.video');
 
     if (!bid.params) {
       logError('The bid params are missing');
@@ -141,9 +94,9 @@ export const spec = {
      */
 
     if (bannerParams) {
-      const sizes = bannerParams.sizes;
+      let sizes = bannerParams.sizes;
 
-      if (!sizes || parseSizesInput(sizes).length === 0) {
+      if (!sizes || parseSizesInput(sizes).length == 0) {
         logError('mediaTypes.banner.sizes must be set for banner placement at the right format.');
         return false;
       }
@@ -154,7 +107,7 @@ export const spec = {
      */
 
     if (videoParams) {
-      if (parseSizesInput(videoParams.playerSize).length === 0) {
+      if (parseSizesInput(videoParams.playerSize).length == 0) {
         logError('mediaTypes.video.playerSize must be set for video placement at the right format.');
         return false;
       }

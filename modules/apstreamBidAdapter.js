@@ -1,5 +1,4 @@
-import { getDNT } from '../libraries/navigatorData/dnt.js';
-import { generateUUID, deepAccess, createTrackPixelHtml } from '../src/utils.js';
+import { generateUUID, deepAccess, createTrackPixelHtml, getDNT } from '../src/utils.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { config } from '../src/config.js';
 import { getStorageManager } from '../src/storageManager.js';
@@ -293,12 +292,12 @@ function getConsentStringFromPrebid(gdprConsentConfig) {
     return null;
   }
 
-  const vendorConsents = (
+  let vendorConsents = (
     gdprConsentConfig.vendorData.vendorConsents ||
     (gdprConsentConfig.vendorData.vendor || {}).consents ||
     {}
   );
-  const isConsentGiven = !!vendorConsents[CONSTANTS.GVLID.toString(10)];
+  let isConsentGiven = !!vendorConsents[CONSTANTS.GVLID.toString(10)];
 
   return isConsentGiven ? consentString : null;
 }
@@ -377,7 +376,7 @@ function getBids(bids) {
 };
 
 function getEndpointsGroups(bidRequests) {
-  const endpoints = [];
+  let endpoints = [];
   const getEndpoint = bid => {
     const publisherId = bid.params.publisherId || config.getConfig('apstream.publisherId');
     const isTestConfig = bid.params.test || config.getConfig('apstream.test');
@@ -463,7 +462,7 @@ function buildRequests(bidRequests, bidderRequest) {
 }
 
 function interpretResponse(serverResponse) {
-  const bidResponses = serverResponse && serverResponse.body;
+  let bidResponses = serverResponse && serverResponse.body;
 
   if (!bidResponses || !bidResponses.length) {
     return [];

@@ -1,7 +1,7 @@
+
 'use strict';
 
-import { getDNT } from '../libraries/navigatorData/dnt.js';
-import { deepAccess, parseSizesInput, isArray } from '../src/utils.js';
+import { deepAccess, getDNT, parseSizesInput, isArray } from '../src/utils.js';
 import {registerBidder} from '../src/adapters/bidderFactory.js';
 import { BANNER, VIDEO } from '../src/mediaTypes.js';
 
@@ -10,13 +10,13 @@ function RhythmOneBidAdapter() {
   this.supportedMediaTypes = [VIDEO, BANNER];
   this.gvlid = 36;
 
-  const SUPPORTED_VIDEO_PROTOCOLS = [2, 3, 5, 6];
-  const SUPPORTED_VIDEO_MIMES = ['video/mp4'];
-  const SUPPORTED_VIDEO_PLAYBACK_METHODS = [1, 2, 3, 4];
-  const SUPPORTED_VIDEO_DELIVERY = [1];
-  const SUPPORTED_VIDEO_API = [1, 2, 5];
-  const slotsToBids = {};
-  const version = '2.1';
+  let SUPPORTED_VIDEO_PROTOCOLS = [2, 3, 5, 6];
+  let SUPPORTED_VIDEO_MIMES = ['video/mp4'];
+  let SUPPORTED_VIDEO_PLAYBACK_METHODS = [1, 2, 3, 4];
+  let SUPPORTED_VIDEO_DELIVERY = [1];
+  let SUPPORTED_VIDEO_API = [1, 2, 5];
+  let slotsToBids = {};
+  let version = '2.1';
 
   this.isBidRequestValid = function (bid) {
     return !!(bid.params && bid.params.placementId);
@@ -33,7 +33,7 @@ function RhythmOneBidAdapter() {
       // clever trick to get the protocol
       var el = document.createElement('a');
       el.href = bidderRequest.refererInfo.stack[0];
-      isSecure = (el.protocol === 'https:') ? 1 : 0;
+      isSecure = (el.protocol == 'https:') ? 1 : 0;
     }
     for (var i = 0; i < BRs.length; i++) {
       slotsToBids[BRs[i].adUnitCode] = BRs[i];
@@ -43,7 +43,7 @@ function RhythmOneBidAdapter() {
       impObj.secure = isSecure;
 
       if (deepAccess(BRs[i], 'mediaTypes.banner') || deepAccess(BRs[i], 'mediaType') === 'banner') {
-        const banner = frameBanner(BRs[i]);
+        let banner = frameBanner(BRs[i]);
         if (banner) {
           impObj.banner = banner;
         }
@@ -77,8 +77,8 @@ function RhythmOneBidAdapter() {
   }
 
   function getValidSizeSet(dimensionList) {
-    const w = parseInt(dimensionList[0]);
-    const h = parseInt(dimensionList[1]);
+    let w = parseInt(dimensionList[0]);
+    let h = parseInt(dimensionList[1]);
     // clever check for NaN
     if (! (w !== w || h !== h)) {  // eslint-disable-line
       return [w, h];
@@ -150,7 +150,7 @@ function RhythmOneBidAdapter() {
   }
 
   function frameBid(BRs, bidderRequest) {
-    const bid = {
+    let bid = {
       id: BRs[0].bidderRequestId,
       imp: frameImp(BRs, bidderRequest),
       site: frameSite(bidderRequest),
@@ -168,11 +168,10 @@ function RhythmOneBidAdapter() {
         }
       }
     };
-    const schain = BRs[0]?.ortb2?.source?.ext?.schain;
-    if (schain) {
+    if (BRs[0].schain) {
       bid.source = {
         'ext': {
-          'schain': schain
+          'schain': BRs[0].schain
         }
       }
     }
@@ -188,7 +187,7 @@ function RhythmOneBidAdapter() {
   }
 
   this.buildRequests = function (BRs, bidderRequest) {
-    const fallbackPlacementId = getFirstParam('placementId', BRs);
+    let fallbackPlacementId = getFirstParam('placementId', BRs);
     if (fallbackPlacementId === undefined || BRs.length < 1) {
       return [];
     }
@@ -219,11 +218,11 @@ function RhythmOneBidAdapter() {
 
   this.interpretResponse = function (serverResponse) {
     let responses = serverResponse.body || [];
-    const bids = [];
+    let bids = [];
     let i = 0;
 
     if (responses.seatbid) {
-      const temp = [];
+      let temp = [];
       for (i = 0; i < responses.seatbid.length; i++) {
         for (let j = 0; j < responses.seatbid[i].bid.length; j++) {
           temp.push(responses.seatbid[i].bid[j]);
@@ -233,9 +232,9 @@ function RhythmOneBidAdapter() {
     }
 
     for (i = 0; i < responses.length; i++) {
-      const bid = responses[i];
-      const bidRequest = slotsToBids[bid.impid];
-      const bidResponse = {
+      let bid = responses[i];
+      let bidRequest = slotsToBids[bid.impid];
+      let bidResponse = {
         requestId: bidRequest.bidId,
         cpm: parseFloat(bid.price),
         width: bid.w,

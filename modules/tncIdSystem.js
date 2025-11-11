@@ -31,9 +31,9 @@ export const storage = getStorageManager({moduleType: MODULE_TYPE_UID, moduleNam
 function fixURL(config, ns) {
   config.params = (config && config.params) ? config.params : {};
   config.params.url = config.params.url || TNC_API_URL;
-  const url = parseUrl(config.params.url);
+  let url = parseUrl(config.params.url);
   url.search = url.search || {};
-  const providerId = config.params.publisherId || config.params.providerId || url.search.publisherId || url.search.providerId || TNC_PREBIDJS_PROVIDER_ID;
+  let providerId = config.params.publisherId || config.params.providerId || url.search.publisherId || url.search.providerId || TNC_PREBIDJS_PROVIDER_ID;
   delete url.search.publisherId;
   url.search.providerId = providerId;
   url.search.ns = ns;
@@ -42,7 +42,7 @@ function fixURL(config, ns) {
 
 const loadRemoteScript = function(url) {
   return new Promise((resolve, reject) => {
-    const endpoint = buildUrl(url);
+    let endpoint = buildUrl(url);
     logMessage('TNC Endpoint', endpoint);
     loadExternalScript(endpoint, MODULE_TYPE_UID, MODULE_NAME, resolve);
   });
@@ -50,8 +50,8 @@ const loadRemoteScript = function(url) {
 
 function TNCObject(ns) {
   let tnc = window[ns];
-  tnc = typeof tnc !== 'undefined' && tnc !== null && typeof tnc.ready === 'function' ? tnc : {
-    ready: function(f) { this.ready.q = this.ready.q || []; return typeof f === 'function' ? (this.ready.q.push(f), this) : new Promise(resolve => this.ready.q.push(resolve)); },
+  tnc = typeof tnc !== 'undefined' && tnc !== null && typeof tnc.ready == 'function' ? tnc : {
+    ready: function(f) { this.ready.q = this.ready.q || []; return typeof f == 'function' ? (this.ready.q.push(f), this) : new Promise(resolve => this.ready.q.push(resolve)); },
   };
   window[ns] = tnc;
   return tnc;
@@ -91,7 +91,7 @@ const tncCallback = async function(cb) {
 
     if (!window[tncNS] || typeof window[tncNS].ready !== 'function') {
       tncNS = TNC_PREBID_NS; // Register a new namespace for TNC global object
-      const url = fixURL(moduleConfig, tncNS);
+      let url = fixURL(moduleConfig, tncNS);
       if (!url) return cb();
       TNCObject(tncNS); // create minimal TNC object
       await loadRemoteScript(url); // load remote script

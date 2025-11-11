@@ -13,6 +13,7 @@ const PUB_ENDPOINT_ORIGIN = 'https://nodals.io';
 const LOCAL_STORAGE_KEY = 'signals.nodals.ai';
 const STORAGE_TTL = 3600; // 1 hour in seconds
 
+
 const fillTemplate = (strings, ...keys) => {
   return function (values) {
     return strings.reduce((result, str, i) => {
@@ -55,7 +56,7 @@ class NodalsAiRtdProvider {
     const params = config?.params || {};
     if (
       this.#isValidConfig(params) &&
-      this.#hasRequiredUserConsent(userConsent, config)
+      this.#hasRequiredUserConsent(userConsent)
     ) {
       this.#propertyId = params.propertyId;
       this.#userConsent = userConsent;
@@ -82,7 +83,7 @@ class NodalsAiRtdProvider {
    */
   getTargetingData(adUnitArray, config, userConsent) {
     let targetingData = {};
-    if (!this.#hasRequiredUserConsent(userConsent, config)) {
+    if (!this.#hasRequiredUserConsent(userConsent)) {
       return targetingData;
     }
     this.#userConsent = userConsent;
@@ -104,7 +105,7 @@ class NodalsAiRtdProvider {
   }
 
   getBidRequestData(reqBidsConfigObj, callback, config, userConsent) {
-    if (!this.#hasRequiredUserConsent(userConsent, config)) {
+    if (!this.#hasRequiredUserConsent(userConsent)) {
       callback();
       return;
     }
@@ -124,7 +125,7 @@ class NodalsAiRtdProvider {
           callback,
           userConsent,
           storedData
-        );
+       );
       } catch (error) {
         logError(`Error getting bid request data: ${error}`);
         callback();
@@ -133,7 +134,7 @@ class NodalsAiRtdProvider {
   }
 
   onBidResponseEvent(bidResponse, config, userConsent) {
-    if (!this.#hasRequiredUserConsent(userConsent, config)) {
+    if (!this.#hasRequiredUserConsent(userConsent)) {
       return;
     }
     this.#userConsent = userConsent;
@@ -154,7 +155,7 @@ class NodalsAiRtdProvider {
   }
 
   onAuctionEndEvent(auctionDetails, config, userConsent) {
-    if (!this.#hasRequiredUserConsent(userConsent, config)) {
+    if (!this.#hasRequiredUserConsent(userConsent)) {
       return;
     }
     this.#userConsent = userConsent;
@@ -173,6 +174,7 @@ class NodalsAiRtdProvider {
       logError(`Error processing auction end event: ${error}`);
     }
   }
+
 
   // Private methods
   #getData() {
@@ -240,12 +242,11 @@ class NodalsAiRtdProvider {
   /**
    * Checks if the user has provided the required consent.
    * @param {Object} userConsent - User consent object.
-   * @param {Object} config - Configuration object for the module.
    * @returns {boolean} - True if the user consent is valid, false otherwise.
    */
 
-  #hasRequiredUserConsent(userConsent, config) {
-    if (config?.params?.publisherProvidedConsent === true || !userConsent.gdpr || userConsent.gdpr?.gdprApplies === false) {
+  #hasRequiredUserConsent(userConsent) {
+    if (userConsent.gdpr === undefined || userConsent.gdpr?.gdprApplies === false) {
       return true;
     }
     if (
@@ -324,6 +325,7 @@ class NodalsAiRtdProvider {
     return currentTime - dataTime >= (staleThreshold * 1000);
   }
 
+
   #getEndpointUrl(userConsent) {
     const endpointOrigin =
       this.#overrides.endpointOrigin || PUB_ENDPOINT_ORIGIN;
@@ -393,17 +395,17 @@ class NodalsAiRtdProvider {
     try {
       data = JSON.parse(response);
     } catch (error) {
-      const msg = `Error parsing response: ${error}`;
-      logError(msg);
-      return;
+      throw `Error parsing response: ${error}`;
     }
     this.#writeToStorage(this.#overrides?.storageKey || this.STORAGE_KEY, data);
     this.#loadAdLibraries(data.deps || []);
   }
 
+
   #handleServerError(error, req) {
     logError(`Publisher endpoint response error: ${error}`);
   }
+
 
   #loadAdLibraries(deps) {
     // eslint-disable-next-line no-unused-vars

@@ -66,14 +66,14 @@ export const spec = {
     const gdpr = bidderRequest.gdprConsent;
     const firstSlot = slots[0];
     const kwdsFromRequest = firstSlot.kwds;
-    const keywords = getAllOrtbKeywords(bidderRequest.ortb2, kwdsFromRequest);
+    let keywords = getAllOrtbKeywords(bidderRequest.ortb2, kwdsFromRequest);
 
     let beopid = '';
     if (storage.cookiesAreEnabled) {
       beopid = storage.getCookie(COOKIE_NAME, undefined);
       if (!beopid) {
         beopid = generateUUID();
-        const expirationDate = new Date();
+        let expirationDate = new Date();
         expirationDate.setTime(expirationDate.getTime() + 86400 * 183 * 1000);
         storage.setCookie(COOKIE_NAME, beopid, expirationDate.toUTCString());
       }
@@ -114,27 +114,25 @@ export const spec = {
     return [];
   },
   onTimeout: function(timeoutData) {
-    if (!Array.isArray(timeoutData) || timeoutData.length === 0) {
+    if (timeoutData === null || typeof timeoutData === 'undefined' || Object.keys(timeoutData).length === 0) {
       return;
     }
 
-    timeoutData.forEach((timeout) => {
-      const trackingParams = buildTrackingParams(timeout, 'timeout', timeout.timeout);
+    let trackingParams = buildTrackingParams(timeoutData, 'timeout', timeoutData.timeout);
 
-      logWarn(BIDDER_CODE + ': timed out request for adUnitCode ' + timeout.adUnitCode);
-      triggerPixel(buildUrl({
-        protocol: 'https',
-        hostname: 't.collectiveaudience.co',
-        pathname: '/bid',
-        search: trackingParams
-      }));
-    });
+    logWarn(BIDDER_CODE + ': timed out request');
+    triggerPixel(buildUrl({
+      protocol: 'https',
+      hostname: 't.collectiveaudience.co',
+      pathname: '/bid',
+      search: trackingParams
+    }));
   },
   onBidWon: function(bid) {
     if (bid === null || typeof bid === 'undefined' || Object.keys(bid).length === 0) {
       return;
     }
-    const trackingParams = buildTrackingParams(bid, 'won', bid.cpm);
+    let trackingParams = buildTrackingParams(bid, 'won', bid.cpm);
 
     logInfo(BIDDER_CODE + ': won request');
     triggerPixel(buildUrl({
@@ -176,10 +174,10 @@ export const spec = {
 }
 
 function buildTrackingParams(data, info, value) {
-  const params = Array.isArray(data.params) ? data.params[0] : data.params || {};
+  let params = Array.isArray(data.params) ? data.params[0] : data.params;
   const pageUrl = getPageUrl(null, window);
   return {
-    pid: params.accountId ?? (data.ad?.match(/account: “([a-f\d]{24})“/)?.[1] ?? ''),
+    pid: params.accountId ?? (data.ad?.match(/account: \“([a-f\d]{24})\“/)?.[1] ?? ''),
     nid: params.networkId,
     nptnid: params.networkPartnerId,
     bid: data.bidId || data.requestId,

@@ -1,13 +1,10 @@
 const path = require('path');
-const helpers = require('./gulpHelpers.js');
 
 module.exports = {
   mode: 'production',
-  context: helpers.getPrecompiledPath(),
-  devtool: false,
   resolve: {
     modules: [
-      helpers.getPrecompiledPath(),
+      path.resolve('.'),
       'node_modules'
     ],
   },
@@ -25,9 +22,4 @@ module.exports = {
   output: {
     path: path.resolve('./build/creative'),
   },
-  module: {
-    rules: [{
-      use: 'source-map-loader'
-    }]
-  }
 }

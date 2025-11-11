@@ -22,7 +22,7 @@ const AJAX_OPTIONS = {method: 'GET', withCredentials: true, contentType: 'applic
 
 function constructUrl(pairs) {
   const queries = [];
-  for (const key in pairs) {
+  for (let key in pairs) {
     queries.push(`${key}=${encodeURIComponent(pairs[key])}`);
   }
   return `${SYNC_URL}?${queries.join('&')}`;
@@ -72,7 +72,7 @@ export const operaIdSubmodule = {
    * @returns {{'operaId': string}}
    */
   decode: (id) =>
-    typeof id === 'string' && id.length > 0
+    id != null && id.length > 0
       ? { [ID_KEY]: id }
       : undefined,
 
@@ -85,7 +85,7 @@ export const operaIdSubmodule = {
   getId(config, consentData) {
     logMessage(`${MODULE_NAME}: start synchronizing opera uid`);
     const params = (config && config.params) || {};
-    if (typeof params.pid !== 'string' || params.pid.length === 0) {
+    if (typeof params.pid !== 'string' || params.pid.length == 0) {
       logError(`${MODULE_NAME}: submodule requires a publisher ID to be defined`);
       return;
     }

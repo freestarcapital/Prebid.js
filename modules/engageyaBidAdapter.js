@@ -12,7 +12,7 @@ const SUPPORTED_SIZES = [
 ];
 
 function getPageUrl(bidRequest, bidderRequest) {
-  if (bidRequest.params.pageUrl && bidRequest.params.pageUrl !== '[PAGE_URL]') {
+  if (bidRequest.params.pageUrl && bidRequest.params.pageUrl != '[PAGE_URL]') {
     return bidRequest.params.pageUrl;
   }
   if (bidderRequest && bidderRequest.refererInfo && bidderRequest.refererInfo.page) {
@@ -72,7 +72,7 @@ function parseBannerResponse(rec, response) {
   }
   let style;
   try {
-    const additionalData = JSON.parse(response.widget.additionalData);
+    let additionalData = JSON.parse(response.widget.additionalData);
     const css = additionalData.css || '';
     style = css ? `<style>${css}</style>` : '';
   } catch (e) {
@@ -152,7 +152,6 @@ export const spec = {
           data: ''
         };
       }
-      return undefined;
     }).filter(Boolean);
   },
 
@@ -161,9 +160,9 @@ export const spec = {
       return [];
     }
     var response = serverResponse.body;
-    var isNative = Number(response.pbtypeId) === 1;
+    var isNative = response.pbtypeId == 1;
     return response.recs.map(rec => {
-      const bid = {
+      let bid = {
         requestId: response.ireqId,
         width: response.imageWidth,
         height: response.imageHeight,

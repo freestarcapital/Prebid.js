@@ -7,19 +7,17 @@ import { getRefererInfo } from '../src/refererDetection.js';
 import { config as prebidConfig } from '../src/config.js';
 import { auctionManager } from '../src/auctionManager.js';
 
-import {getGlobalVarName} from '../src/buildOptions.js';
-
 const ANALYTICS_TYPE = 'endpoint';
 const URL = 'https://wba.liadm.com/analytic-events';
 const GVL_ID = 148;
 const ADAPTER_CODE = 'liveintent';
 const { AUCTION_INIT, BID_WON } = EVENTS;
-const INTEGRATION_ID = getGlobalVarName();
+const INTEGRATION_ID = '$$PREBID_GLOBAL$$';
 
 let partnerIdFromUserIdConfig;
 let sendAuctionInitEvents;
 
-const liAnalytics = Object.assign(adapter({URL, ANALYTICS_TYPE}), {
+let liAnalytics = Object.assign(adapter({URL, ANALYTICS_TYPE}), {
   track({ eventType, args }) {
     switch (eventType) {
       case AUCTION_INIT:
@@ -115,7 +113,7 @@ function ignoreUndefined(data) {
 liAnalytics.originEnableAnalytics = liAnalytics.enableAnalytics;
 // override enableAnalytics so we can get access to the config passed in from the page
 liAnalytics.enableAnalytics = function (config) {
-  const userIdModuleConfig = prebidConfig.getConfig('userSync.userIds').filter(m => m.name === 'liveIntentId')?.at(0)?.params
+  const userIdModuleConfig = prebidConfig.getConfig('userSync.userIds').filter(m => m.name == 'liveIntentId')?.at(0)?.params
   partnerIdFromUserIdConfig = userIdModuleConfig?.liCollectConfig?.appId || userIdModuleConfig?.distributorId;
   sendAuctionInitEvents = config?.options.sendAuctionInitEvents;
   liAnalytics.originEnableAnalytics(config); // call the base class function

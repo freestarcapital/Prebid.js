@@ -1,54 +1,46 @@
-# Optimera Real-Time Data Module
-
+# Overview
 ```
-Module Name: Optimera Real-Time Data Module  
-Module Type: RTD Module  
-Maintainer: kcandiotti@optimera.nyc  
-```
-
-## Description
-
-The Optimera Real-Time Data (RTD) Module provides targeting data for ad requests using data collected from the Optimera Measurement script deployed on your site. It is a port of the Optimera Bidder Adapter.
-
-Please contact [Optimera](http://optimera.nyc/) for integration assistance.
-
-## Build Instructions
-
-To compile the Optimera RTD provider into your Prebid build:
-
-```bash
-gulp build --modules=optimeraRtdProvider,rtdModule
+Module Name: Optimera Real Time Data Module
+Module Type: RTD Module
+Maintainer: mcallari@optimera.nyc
 ```
 
-## Configuration Example
+# Description
 
+Optimera Real Time Data Module. Provides targeting for ad requests from data collected by the Optimera Measurement script on your site. Please contact [Optimera](http://optimera.nyc/) for information. This is a port of the Optimera Bidder Adapter.
+
+# Configurations
+
+Compile the Optimera RTD Provider into your Prebid build:
+
+`gulp build --modules=optimeraRtdProvider`
+
+Configuration example for using RTD module with `optimera` provider
 ```javascript
-pbjs.setConfig({
-  realTimeData: {
-    dataProviders: [
-      {
-        name: 'optimeraRTD',
-        waitForIt: true,
-        auctionDelay: 500,
-        params: {
-          clientID: '9999',
-          optimeraKeyName: 'optimera',
-          device: 'de',
-          apiVersion: 'v0',
-          transmitWithBidRequests: 'allow'
+  pbjs.setConfig({
+    realTimeData: {
+      dataProviders: [
+        {
+          name: 'optimeraRTD',
+          waitForIt: true,
+          params: {
+            clientID: '9999',
+            optimeraKeyName: 'optimera',
+            device: 'de',
+            apiVersion: 'v0',
+          }
         }
-      }
-    ]
-  }
-});
-```
+      ]
+    }
+```  
 
-## Parameters
+#Params
 
-| Parameter Name             | Type    | Scope     | Description |
-|----------------------------|---------|-----------|-------------|
-| `clientID`                 | string  | required  | Optimera Client ID. Contact Optimera to obtain yours. |
-| `optimeraKeyName`          | string  | optional  | GAM key name for Optimera targeting. Defaults to `hb_deal_optimera` for legacy compatibility. |
-| `device`                   | string  | optional  | Device type code. Use `mo` (mobile), `tb` (tablet), or `de` (desktop) or output the common library splitter value here. |
-| `apiVersion`               | string  | optional  | Optimera API version. Allowed values: `v0` or `v1`. **Note:** `v1` must be enabled by Optimera. |
-| `transmitWithBidRequests` | string  | optional  | Set to `'allow'` (default if not set) to inject Optimera data into the ORTB2 object for bid requests or `'deny'` to prevent injection. |
+Contact Optimera to get assistance with the params.
+
+|  param name | type  |Scope | Description |
+| :------------ | :------------ | :------- | :------- |
+| clientID  | string  | required | Optimera Client ID |
+| optimeraKeyName  | string  | optional |  GAM key name for Optimera. If migrating from the Optimera bidder adapter this will default to hb_deal_optimera and can be ommitted from the configuration. |
+| device  | string  | optional | Device type code for mobile, tablet, or desktop. Either mo, tb, de |
+| apiVersion  | string  | optional | Optimera API Versions. Either v0, or v1. ** Note: v1 wll need to be enabled specifically for your account, otherwise use v0.

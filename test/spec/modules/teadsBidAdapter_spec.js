@@ -1,8 +1,7 @@
-import { expect } from 'chai';
-import * as autoplay from 'libraries/autoplayDetection/autoplay.js';
-import { spec, storage } from 'modules/teadsBidAdapter.js';
-import { newBidder } from 'src/adapters/bidderFactory.js';
-import { getScreenOrientation } from 'src/utils.js';
+import {expect} from 'chai';
+import {spec, storage} from 'modules/teadsBidAdapter.js';
+import {newBidder} from 'src/adapters/bidderFactory.js';
+import * as autoplay from 'libraries/autoplayDetection/autoplay.js'
 
 const ENDPOINT = 'https://a.teads.tv/hb/bid-request';
 const AD_SCRIPT = '<script type="text/javascript" class="teads" async="true" src="https://a.teads.tv/hb/getAdSettings"></script>"';
@@ -12,7 +11,7 @@ describe('teadsBidAdapter', () => {
   let sandbox;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
   });
 
   afterEach(function () {
@@ -26,7 +25,7 @@ describe('teadsBidAdapter', () => {
   });
 
   describe('isBidRequestValid', function() {
-    const bid = {
+    let bid = {
       'bidder': 'teads',
       'params': {
         'placementId': 10433394,
@@ -45,7 +44,7 @@ describe('teadsBidAdapter', () => {
     });
 
     it('should return false when pageId is not valid (letters)', function() {
-      const invalidBid = Object.assign({}, bid);
+      let invalidBid = Object.assign({}, bid);
       delete invalidBid.params;
       invalidBid.params = {
         'placementId': 1234,
@@ -56,7 +55,7 @@ describe('teadsBidAdapter', () => {
     });
 
     it('should return false when placementId is not valid (letters)', function() {
-      const invalidBid = Object.assign({}, bid);
+      let invalidBid = Object.assign({}, bid);
       delete invalidBid.params;
       invalidBid.params = {
         'placementId': 'FCP',
@@ -67,7 +66,7 @@ describe('teadsBidAdapter', () => {
     });
 
     it('should return false when placementId < 0 or pageId < 0', function() {
-      const invalidBid = Object.assign({}, bid);
+      let invalidBid = Object.assign({}, bid);
       delete invalidBid.params;
       invalidBid.params = {
         'placementId': -1,
@@ -78,7 +77,7 @@ describe('teadsBidAdapter', () => {
     });
 
     it('should return false when required params are not passed', function() {
-      const invalidBid = Object.assign({}, bid);
+      let invalidBid = Object.assign({}, bid);
       delete invalidBid.params;
 
       invalidBid.params = {
@@ -90,7 +89,7 @@ describe('teadsBidAdapter', () => {
   });
 
   describe('buildRequests', function() {
-    const bidRequests = [
+    let bidRequests = [
       {
         'bidder': 'teads',
         'params': {
@@ -107,7 +106,7 @@ describe('teadsBidAdapter', () => {
       }
     ];
 
-    const bidderRequestDefault = {
+    let bidderRequestDefault = {
       'auctionId': '1d1a030790a475',
       'bidderRequestId': '22edbae2733bf6',
       'timeout': 3000
@@ -128,8 +127,8 @@ describe('teadsBidAdapter', () => {
     });
 
     it('should send US Privacy to endpoint', function() {
-      const usPrivacy = 'OHHHFCP1'
-      const bidderRequest = {
+      let usPrivacy = 'OHHHFCP1'
+      let bidderRequest = {
         'auctionId': '1d1a030790a475',
         'bidderRequestId': '22edbae2733bf6',
         'timeout': 3000,
@@ -144,9 +143,9 @@ describe('teadsBidAdapter', () => {
     });
 
     it('should send GPP values to endpoint when available and valid', function () {
-      const consentString = 'DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN';
-      const applicableSectionIds = [7, 8];
-      const bidderRequest = {
+      let consentString = 'DBACNYA~CPXxRfAPXxRfAAfKABENB-CgAAAAAAAAAAYgAAAAAAAA~1YNN';
+      let applicableSectionIds = [7, 8];
+      let bidderRequest = {
         'auctionId': '1d1a030790a475',
         'bidderRequestId': '22edbae2733bf6',
         'timeout': 3000,
@@ -165,7 +164,7 @@ describe('teadsBidAdapter', () => {
     });
 
     it('should send default GPP values to endpoint when available but invalid', function () {
-      const bidderRequest = {
+      let bidderRequest = {
         'auctionId': '1d1a030790a475',
         'bidderRequestId': '22edbae2733bf6',
         'timeout': 3000,
@@ -184,7 +183,7 @@ describe('teadsBidAdapter', () => {
     });
 
     it('should not set the GPP object in the request sent to the endpoint when not present', function () {
-      const bidderRequest = {
+      let bidderRequest = {
         'auctionId': '1d1a030790a475',
         'bidderRequestId': '22edbae2733bf6',
         'timeout': 3000
@@ -197,8 +196,8 @@ describe('teadsBidAdapter', () => {
     });
 
     it('should send GDPR to endpoint', function() {
-      const consentString = 'JRJ8RKfDeBNsERRDCSAAZ+A==';
-      const bidderRequest = {
+      let consentString = 'JRJ8RKfDeBNsERRDCSAAZ+A==';
+      let bidderRequest = {
         'auctionId': '1d1a030790a475',
         'bidderRequestId': '22edbae2733bf6',
         'timeout': 3000,
@@ -222,7 +221,7 @@ describe('teadsBidAdapter', () => {
     });
 
     it('should add videoPlcmt to payload', function () {
-      const bidRequestWithVideoPlcmt = Object.assign({}, bidRequests[0], {
+      let bidRequestWithVideoPlcmt = Object.assign({}, bidRequests[0], {
         mediaTypes: {
           video: {
             plcmt: 1
@@ -238,7 +237,7 @@ describe('teadsBidAdapter', () => {
     });
 
     it('should not add videoPlcmt to payload if empty', function () {
-      const bidRequestWithNullVideoPlcmt = Object.assign({}, bidRequests[0], {
+      let bidRequestWithNullVideoPlcmt = Object.assign({}, bidRequests[0], {
         mediaTypes: {
           video: {
             plcmt: null
@@ -246,7 +245,7 @@ describe('teadsBidAdapter', () => {
         }
       });
 
-      const bidRequestWithEmptyVideoPlcmt = Object.assign({}, bidRequests[0], {
+      let bidRequestWithEmptyVideoPlcmt = Object.assign({}, bidRequests[0], {
         mediaTypes: {
           video: {
             plcmt: ''
@@ -369,14 +368,12 @@ describe('teadsBidAdapter', () => {
     it('should add screenOrientation info to payload', function () {
       const request = spec.buildRequests(bidRequests, bidderRequestDefault);
       const payload = JSON.parse(request.data);
-      const orientation = getScreenOrientation(window.top);
+      const screenOrientation = window.top.screen.orientation?.type
 
-      if (orientation) {
+      if (screenOrientation) {
         expect(payload.screenOrientation).to.exist;
-        expect(payload.screenOrientation).to.deep.equal(orientation);
-      } else {
-        expect(payload.screenOrientation).to.not.exist;
-      }
+        expect(payload.screenOrientation).to.deep.equal(screenOrientation);
+      } else expect(payload.screenOrientation).to.not.exist;
     });
 
     it('should add historyLength info to payload', function () {
@@ -590,8 +587,8 @@ describe('teadsBidAdapter', () => {
     });
 
     it('should send GDPR to endpoint with 11 status', function() {
-      const consentString = 'JRJ8RKfDeBNsERRDCSAAZ+A==';
-      const bidderRequest = {
+      let consentString = 'JRJ8RKfDeBNsERRDCSAAZ+A==';
+      let bidderRequest = {
         'auctionId': '1d1a030790a475',
         'bidderRequestId': '22edbae2733bf6',
         'timeout': 3000,
@@ -615,8 +612,8 @@ describe('teadsBidAdapter', () => {
     });
 
     it('should send GDPR TCF2 to endpoint with 12 status', function() {
-      const consentString = 'JRJ8RKfDeBNsERRDCSAAZ+A==';
-      const bidderRequest = {
+      let consentString = 'JRJ8RKfDeBNsERRDCSAAZ+A==';
+      let bidderRequest = {
         'auctionId': '1d1a030790a475',
         'bidderRequestId': '22edbae2733bf6',
         'timeout': 3000,
@@ -640,7 +637,7 @@ describe('teadsBidAdapter', () => {
     });
 
     it('should send GDPR to endpoint with 22 status', function() {
-      const bidderRequest = {
+      let bidderRequest = {
         'auctionId': '1d1a030790a475',
         'bidderRequestId': '22edbae2733bf6',
         'timeout': 3000,
@@ -662,8 +659,8 @@ describe('teadsBidAdapter', () => {
     });
 
     it('should send GDPR to endpoint with 0 status', function() {
-      const consentString = 'JRJ8RKfDeBNsERRDCSAAZ+A==';
-      const bidderRequest = {
+      let consentString = 'JRJ8RKfDeBNsERRDCSAAZ+A==';
+      let bidderRequest = {
         'auctionId': '1d1a030790a475',
         'bidderRequestId': '22edbae2733bf6',
         'timeout': 3000,
@@ -687,7 +684,7 @@ describe('teadsBidAdapter', () => {
     });
 
     it('should send GDPR to endpoint with 0 status when gdprApplies = false (vendorData = undefined)', function() {
-      const bidderRequest = {
+      let bidderRequest = {
         'auctionId': '1d1a030790a475',
         'bidderRequestId': '22edbae2733bf6',
         'timeout': 3000,
@@ -709,8 +706,8 @@ describe('teadsBidAdapter', () => {
     });
 
     it('should send GDPR to endpoint with 12 status when apiVersion = 0', function() {
-      const consentString = 'JRJ8RKfDeBNsERRDCSAAZ+A==';
-      const bidderRequest = {
+      let consentString = 'JRJ8RKfDeBNsERRDCSAAZ+A==';
+      let bidderRequest = {
         'auctionId': '1d1a030790a475',
         'bidderRequestId': '22edbae2733bf6',
         'timeout': 3000,
@@ -746,20 +743,14 @@ describe('teadsBidAdapter', () => {
 
     it('should add schain info to payload if available', function () {
       const bidRequest = Object.assign({}, bidRequests[0], {
-        ortb2: {
-          source: {
-            ext: {
-              schain: {
-                ver: '1.0',
-                complete: 1,
-                nodes: [{
-                  asi: 'example.com',
-                  sid: '00001',
-                  hp: 1
-                }]
-              }
-            }
-          }
+        schain: {
+          ver: '1.0',
+          complete: 1,
+          nodes: [{
+            asi: 'example.com',
+            sid: '00001',
+            hp: 1
+          }]
         }
       });
 
@@ -882,11 +873,6 @@ describe('teadsBidAdapter', () => {
       checkMediaTypesSizes(hybridMediaTypes, ['46x48', '50x34', '45x45']);
     });
 
-    const toEid = (sourceId, value) => ({
-      source: sourceId,
-      uids: [{id: value}]
-    })
-
     describe('User IDs', function () {
       const baseBidRequest = {
         'bidder': 'teads',
@@ -904,24 +890,24 @@ describe('teadsBidAdapter', () => {
       };
 
       const userIdModules = {
-        unifiedId2: toEid('uidapi.com', 'unifiedId2-id'),
-        liveRampId: toEid('liveramp.com', 'liveRampId-id'),
-        lotamePanoramaId: toEid('crwdcntrl.net', 'lotamePanoramaId-id'),
-        id5Id: toEid('id5-sync.com', 'id5Id-id'),
-        criteoId: toEid('criteo.com', 'criteoId-id'),
-        yahooConnectId: toEid('yahoo.com', 'yahooConnectId-id'),
-        quantcastId: toEid('quantcast.com', 'quantcastId-id'),
-        epsilonPublisherLinkId: toEid('epsilon.com', 'epsilonPublisherLinkId-id'),
-        publisherFirstPartyViewerId: toEid('pubcid.org', 'publisherFirstPartyViewerId-id'),
-        merkleId: toEid('merkleinc.com', 'merkleId-id'),
-        kinessoId: toEid('kpuid.com', 'kinessoId-id')
+        unifiedId2: {uid2: {id: 'unifiedId2-id'}},
+        liveRampId: {idl_env: 'liveRampId-id'},
+        lotamePanoramaId: {lotamePanoramaId: 'lotamePanoramaId-id'},
+        id5Id: {id5id: {uid: 'id5Id-id'}},
+        criteoId: {criteoId: 'criteoId-id'},
+        yahooConnectId: {connectId: 'yahooConnectId-id'},
+        quantcastId: {quantcastId: 'quantcastId-id'},
+        epsilonPublisherLinkId: {publinkId: 'epsilonPublisherLinkId-id'},
+        publisherFirstPartyViewerId: {pubcid: 'publisherFirstPartyViewerId-id'},
+        merkleId: {merkleId: {id: 'merkleId-id'}},
+        kinessoId: {kpuid: 'kinessoId-id'}
       };
 
       describe('User Id Modules', function () {
         it(`should not add param to payload if user id system is not enabled`, function () {
           const bidRequest = {
             ...baseBidRequest,
-            userIdAsEids: [] // no property -> assumption that the system is disabled
+            userId: {} // no property -> assumption that the system is disabled
           };
 
           const request = spec.buildRequests([bidRequest], bidderRequestDefault);
@@ -930,7 +916,6 @@ describe('teadsBidAdapter', () => {
           for (const userId in userIdModules) {
             expect(payload, userId).not.to.have.property(userId);
           }
-          expect(payload['eids']).to.deep.equal([])
         });
 
         it(`should not add param to payload if user id field is absent`, function () {
@@ -940,17 +925,15 @@ describe('teadsBidAdapter', () => {
           for (const userId in userIdModules) {
             expect(payload, userId).not.to.have.property(userId);
           }
-          expect(payload['eids']).to.deep.equal([])
         });
 
         it(`should not add param to payload if user id is enabled but there is no value`, function () {
-          const userIdAsEids = [
-            toEid('idl_env', ''),
-            toEid('pubcid.org', 'publisherFirstPartyViewerId-id')
-          ]
           const bidRequest = {
             ...baseBidRequest,
-            userIdAsEids
+            userId: {
+              idl_env: '',
+              pubcid: 'publisherFirstPartyViewerId-id'
+            }
           };
 
           const request = spec.buildRequests([bidRequest], bidderRequestDefault);
@@ -958,15 +941,19 @@ describe('teadsBidAdapter', () => {
 
           expect(payload).not.to.have.property('liveRampId');
           expect(payload['publisherFirstPartyViewerId']).to.equal('publisherFirstPartyViewerId-id');
-          expect(payload['eids']).to.deep.equal(userIdAsEids)
         });
 
         it(`should add userId param to payload for each enabled user id system`, function () {
-          const userIdAsEidsObject = Object.values(userIdModules);
-
+          let userIdObject = {};
+          for (const userId in userIdModules) {
+            userIdObject = {
+              ...userIdObject,
+              ...userIdModules[userId]
+            }
+          }
           const bidRequest = {
             ...baseBidRequest,
-            userIdAsEids: userIdAsEidsObject
+            userId: userIdObject
           };
 
           const request = spec.buildRequests([bidRequest], bidderRequestDefault);
@@ -983,7 +970,6 @@ describe('teadsBidAdapter', () => {
           expect(payload['publisherFirstPartyViewerId']).to.equal('publisherFirstPartyViewerId-id');
           expect(payload['merkleId']).to.equal('merkleId-id');
           expect(payload['kinessoId']).to.equal('kinessoId-id');
-          expect(payload['eids']).to.deep.equal(Object.values(userIdModules))
         });
       })
 
@@ -994,9 +980,9 @@ describe('teadsBidAdapter', () => {
 
           const bidRequest = {
             ...baseBidRequest,
-            userIdAsEids: [
-              toEid('pubcid.org', 'publisherFirstPartyViewerId-id')
-            ]
+            userId: {
+              pubcid: 'publisherFirstPartyViewerId-id'
+            }
           };
 
           const request = spec.buildRequests([bidRequest], bidderRequestDefault);
@@ -1012,9 +998,9 @@ describe('teadsBidAdapter', () => {
 
           const bidRequest = {
             ...baseBidRequest,
-            userIdAsEids: [
-              toEid('pubcid.org', 'publisherFirstPartyViewerId-id')
-            ]
+            userId: {
+              pubcid: 'publisherFirstPartyViewerId-id'
+            }
           };
 
           const request = spec.buildRequests([bidRequest], bidderRequestDefault);
@@ -1030,9 +1016,9 @@ describe('teadsBidAdapter', () => {
 
           const bidRequest = {
             ...baseBidRequest,
-            userIdAsEids: [
-              toEid('pubcid.org', 'publisherFirstPartyViewerId-id')
-            ]
+            userId: {
+              pubcid: 'publisherFirstPartyViewerId-id'
+            }
           };
 
           const request = spec.buildRequests([bidRequest], bidderRequestDefault);
@@ -1049,10 +1035,10 @@ describe('teadsBidAdapter', () => {
 
           const bidRequest = {
             ...baseBidRequest,
-            userIdAsEids: [
-              toEid('pubcid.org', 'publisherFirstPartyViewerId-id'),
-              toEid('teads.com', 'teadsId-fake-id')
-            ]
+            userId: {
+              pubcid: 'publisherFirstPartyViewerId-id',
+              teadsId: 'teadsId-fake-id'
+            }
           };
 
           const request = spec.buildRequests([bidRequest], bidderRequestDefault);
@@ -1089,7 +1075,7 @@ describe('teadsBidAdapter', () => {
     });
 
     describe('Global Placement Id', function () {
-      const bidRequests = [
+      let bidRequests = [
         {
           'bidder': 'teads',
           'params': {
@@ -1227,30 +1213,11 @@ describe('teadsBidAdapter', () => {
       const defaultRequest = spec.buildRequests(bidRequests, bidderRequestDefault);
       expect(JSON.parse(defaultRequest.data).dsa).to.not.exist;
     });
-
-    it('should include timeout in the payload when provided', function() {
-      const bidderRequest = {
-        timeout: 3000
-      };
-      const request = spec.buildRequests(bidRequests, bidderRequest);
-      const payload = JSON.parse(request.data);
-
-      expect(payload.timeout).to.exist;
-      expect(payload.timeout).to.equal(3000);
-    });
-
-    it('should set timeout to undefined in the payload when not provided', function() {
-      const bidderRequest = {};
-      const request = spec.buildRequests(bidRequests, bidderRequest);
-      const payload = JSON.parse(request.data);
-
-      expect(payload.timeout).to.be.undefined;
-    });
   });
 
   describe('interpretResponse', function() {
     it('should get correct bid responses', function() {
-      const bids = {
+      let bids = {
         'body': {
           'responses': [{
             'ad': AD_SCRIPT,
@@ -1289,7 +1256,7 @@ describe('teadsBidAdapter', () => {
           }]
         }
       };
-      const expectedResponse = [
+      let expectedResponse = [
         {
           'cpm': 0.5,
           'width': 300,
@@ -1332,12 +1299,12 @@ describe('teadsBidAdapter', () => {
       ]
       ;
 
-      const result = spec.interpretResponse(bids);
+      let result = spec.interpretResponse(bids);
       expect(result).to.eql(expectedResponse);
     });
 
     it('should filter bid responses with needAutoplay:true when autoplay is disabled', function() {
-      const bids = {
+      let bids = {
         'body': {
           'responses': [{
             'ad': AD_SCRIPT,
@@ -1375,7 +1342,7 @@ describe('teadsBidAdapter', () => {
           }]
         }
       };
-      const expectedResponse = [{
+      let expectedResponse = [{
         'cpm': 0.5,
         'width': 350,
         'height': 200,
@@ -1395,19 +1362,19 @@ describe('teadsBidAdapter', () => {
 
       const isAutoplayEnabledStub = sinon.stub(autoplay, 'isAutoplayEnabled');
       isAutoplayEnabledStub.returns(false);
-      const result = spec.interpretResponse(bids);
+      let result = spec.interpretResponse(bids);
       isAutoplayEnabledStub.restore();
       expect(result).to.eql(expectedResponse);
     });
 
     it('handles nobid responses', function() {
-      const bids = {
+      let bids = {
         'body': {
           'responses': []
         }
       };
 
-      const result = spec.interpretResponse(bids);
+      let result = spec.interpretResponse(bids);
       expect(result.length).to.equal(0);
     });
   });
