@@ -1,6 +1,7 @@
 [
     "33acrossIdSystem",
     "33acrossBidAdapter",
+    "adkernelBidAdapter",
     "admaticBidAdapter",
     "adyoulikeBidAdapter",
     "airgridRtdProvider",
