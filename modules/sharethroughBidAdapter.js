@@ -236,8 +236,8 @@ export const sharethroughAdapterSpec = {
           brandName: bid.ext?.brandName || null,
           demandSource: bid.ext?.demandSource || null,
           dchain: bid.ext?.dchain || null,
-          primaryCatId: bid.ext?.primaryCatId || null,
-          secondaryCatIds: bid.ext?.secondaryCatIds || null,
+          primaryCatId: bid.ext?.primaryCatId || '',
+          secondaryCatIds: bid.ext?.secondaryCatIds || [],
           mediaType: bid.ext?.mediaType || null,
         },
       };
