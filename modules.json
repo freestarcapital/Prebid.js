@@ -1,6 +1,7 @@
 [
     "33acrossIdSystem",
     "33acrossBidAdapter",
+    "adkernelBidAdapter",
     "admaticBidAdapter",
     "adyoulikeBidAdapter",
     "airgridRtdProvider",
@@ -36,6 +37,7 @@
     "liveIntentIdSystem",
     "mediafuseBidAdapter",
     "medianetBidAdapter",
+    "minutemediaBidAdapter",
     "mobkoiBidAdapter",
     "newspassidBidAdapter",
     "onetagBidAdapter",
