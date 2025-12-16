@@ -22,6 +22,21 @@ function createEidObject(userIdData, subModuleKey, eidConf) {
         }
       }
       eid.uids = [uid];
+      if (eidConf['inserter'] || isFn(eidConf['getInserter'])) {
+        const inserter = isFn(eidConf['getInserter']) ? eidConf['getInserter'](userIdData) : eidConf['inserter'];
+        if (inserter != null) {
+          eid.inserter = inserter;
+        }
+      }
+      if (eidConf['matcher'] || isFn(eidConf['getMatcher'])) {
+        const matcher = isFn(eidConf['getMatcher']) ? eidConf['getMatcher'](userIdData) : eidConf['matcher'];
+        if (matcher != null) {
+          eid.matcher = matcher;
+        }
+      }
+      if (eidConf['mm'] != null) {
+        eid.mm = eidConf['mm'];
+      }
       // getEidExt
       if (isFn(eidConf['getEidExt'])) {
         const eidExt = eidConf['getEidExt'](userIdData);
@@ -57,7 +72,7 @@ export function createEidsArray(bidRequestUserId, eidConfigs = EID_CONFIG) {
       eids = deepClone(values);
     } else if (typeof eidConf === 'function') {
       try {
-        eids = eidConf(values);
+        eids = deepClone(eidConf(values));
         if (!Array.isArray(eids)) {
           eids = [eids];
         }
