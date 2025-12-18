@@ -84,7 +84,6 @@ import {Renderer} from './Renderer.js';
 import {config} from './config.js';
 import {userSync} from './userSync.js';
 import {hook, ignoreCallbackArg} from './hook.js';
-import {find, includes} from './polyfill.js';
 import {OUTSTREAM} from './video.js';
 import {VIDEO} from './mediaTypes.js';
 import {auctionManager} from './auctionManager.js';
@@ -124,6 +123,8 @@ export function resetAuctionState() {
   queuedCalls.length = 0;
   [outstandingRequests, sourceInfo].forEach((ob) => Object.keys(ob).forEach((k) => { delete ob[k] }));
 }
+
+export const beforeInitAuction = hook('sync', (auction) => {})
 
 /**
  * Creates new auction instance
@@ -294,6 +295,7 @@ export function newAuction({adUnits, adUnitCodes, callback, cbTimeout, labels, a
     let call = {
       bidRequests,
       run: () => {
+        beforeInitAuction(this);
         startAuctionTimer();
 
         _auctionStatus = AUCTION_IN_PROGRESS;
@@ -509,8 +511,8 @@ export function auctionCallbacks(auctionDone, auctionInstance, {index = auctionM
 
     if (auctionOptionsConfig && !isEmpty(auctionOptionsConfig)) {
       const secondaryBidders = auctionOptionsConfig.secondaryBidders;
-      if (secondaryBidders && !bidderRequests.every(bidder => includes(secondaryBidders, bidder.bidderCode))) {
-        bidderRequests = bidderRequests.filter(request => !includes(secondaryBidders, request.bidderCode));
+      if (secondaryBidders && !bidderRequests.every(bidder => secondaryBidders.includes(bidder.bidderCode))) {
+        bidderRequests = bidderRequests.filter(request => !secondaryBidders.includes(request.bidderCode));
       }
     }
 
@@ -784,8 +786,12 @@ export const getDSP = () => {
  */
 export const getPrimaryCatId = () => {
   return (bid) => {
-    return (bid.meta && bid.meta.primaryCatId) ? bid.meta.primaryCatId : '';
-  }
+    const catId = bid?.meta?.primaryCatId;
+    if (Array.isArray(catId)) {
+      return catId[0] || '';
+    }
+    return catId || '';
+  };
 }
 
 // factory for key value objs
@@ -835,7 +841,7 @@ export function getStandardBidderSettings(mediaType, bidderCode) {
 
     // Adding hb_uuid + hb_cache_id
     [TARGETING_KEYS.UUID, TARGETING_KEYS.CACHE_ID].forEach(targetingKeyVal => {
-      if (typeof find(adserverTargeting, kvPair => kvPair.key === targetingKeyVal) === 'undefined') {
+      if (typeof adserverTargeting.find(kvPair => kvPair.key === targetingKeyVal) === 'undefined') {
         adserverTargeting.push(createKeyVal(targetingKeyVal, 'videoCacheKey'));
       }
     });
@@ -844,7 +850,7 @@ export function getStandardBidderSettings(mediaType, bidderCode) {
     if (config.getConfig('cache.url') && (!bidderCode || bidderSettings.get(bidderCode, 'sendStandardTargeting') !== false)) {
       const urlInfo = parseUrl(config.getConfig('cache.url'));
 
-      if (typeof find(adserverTargeting, targetingKeyVal => targetingKeyVal.key === TARGETING_KEYS.CACHE_HOST) === 'undefined') {
+      if (typeof adserverTargeting.find(targetingKeyVal => targetingKeyVal.key === TARGETING_KEYS.CACHE_HOST) === 'undefined') {
         adserverTargeting.push(createKeyVal(TARGETING_KEYS.CACHE_HOST, function(bidResponse) {
           return bidResponse?.adserverTargeting?.[TARGETING_KEYS.CACHE_HOST] || urlInfo.hostname;
         }));
