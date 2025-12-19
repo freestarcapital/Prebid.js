@@ -328,7 +328,7 @@ describe('Adkernel adapter', function () {
 
   var sandbox;
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
   });
 
   afterEach(function () {

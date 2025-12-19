@@ -153,7 +153,7 @@ describe('H12 Media Adapter', function () {
   let sandbox;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
     sandbox.stub(frameElement, 'getBoundingClientRect').returns({
       left: 10,
       top: 10,
@@ -169,8 +169,7 @@ describe('H12 Media Adapter', function () {
   });
 
   after(function() {
-    sandbox.resetHistory();
-    sandbox.resetBehavior();
+    sandbox.reset();
   })
 
   describe('inherited functions', function () {

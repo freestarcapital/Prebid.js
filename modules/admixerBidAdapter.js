@@ -3,6 +3,7 @@ import {registerBidder} from '../src/adapters/bidderFactory.js';
 import {config} from '../src/config.js';
 import {BANNER, VIDEO, NATIVE} from '../src/mediaTypes.js';
 import {convertOrtbRequestToProprietaryNative} from '../src/native.js';
+import {find} from '../src/polyfill.js';
 
 const BIDDER_CODE = 'admixer';
 const ENDPOINT_URL = 'https://inv-nets.admixer.net/prebid.1.2.aspx';
@@ -46,7 +47,8 @@ export const spec = {
     const payload = {
       imps: [],
       ortb2: bidderRequest.ortb2,
-      docReferrer: docRef};
+      docReferrer: docRef,
+    };
     let endpointUrl;
     if (bidderRequest) {
       // checks if there is specified any endpointUrl in bidder config
@@ -117,7 +119,7 @@ export const spec = {
 };
 
 function getEndpointUrl(code) {
-  return ((ALIASES) || []).find((val) => val.code === code)?.endpoint || ENDPOINT_URL;
+  return find(ALIASES, (val) => val.code === code)?.endpoint || ENDPOINT_URL;
 }
 
 function getBidFloor(bid) {

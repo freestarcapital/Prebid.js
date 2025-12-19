@@ -98,7 +98,7 @@ describe('Adloox Ad Server Video', function () {
   });
 
   before(function () {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
     sandbox.stub(events, 'getEvents').returns([]);
 
     adapterManager.enableAnalytics({

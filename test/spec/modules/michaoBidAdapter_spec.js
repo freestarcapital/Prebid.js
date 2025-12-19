@@ -18,7 +18,7 @@ describe('Michao Bid Adapter', () => {
     nativeBidRequest = cloneDeep(_nativeBidRequest);
     videoServerResponse = cloneDeep(_videoServerResponse);
     bannerServerResponse = cloneDeep(_bannerServerResponse);
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
     domainLoggerMock = sandbox.stub(domainLogger);
     triggerPixelSpy = sandbox.spy(utils, 'triggerPixel');
   });

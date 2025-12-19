@@ -1,5 +1,6 @@
 import {expect} from 'chai';
 import {resolveStatus, setSizeConfig, sizeSupported} from 'modules/sizeMapping.js';
+import {includes} from 'src/polyfill.js';
 
 let utils = require('src/utils.js');
 let deepClone = utils.deepClone;
@@ -49,7 +50,7 @@ describe('sizeMapping', function () {
   beforeEach(function () {
     setSizeConfig(sizeConfig);
 
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
 
     matchMediaOverride = {matches: false};
 
@@ -137,10 +138,10 @@ describe('sizeMapping', function () {
         });
 
         it('when multiple mediaQuery block matches, it should filter a union of the matched sizesSupported', function () {
-          matchMediaOverride = (str) => [
+          matchMediaOverride = (str) => includes([
             '(min-width: 1200px)',
             '(min-width: 768px) and (max-width: 1199px)'
-          ].includes(str) ? {matches: true} : {matches: false};
+          ], str) ? {matches: true} : {matches: false};
 
           let status = resolveStatus(undefined, mediaTypes, sizeConfig);
           expect(status.active).to.equal(true);

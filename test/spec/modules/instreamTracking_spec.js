@@ -11,7 +11,6 @@ const VIDEO_CACHE_KEY = '4cf395af-8fee-4960-af0e-88d44e399f14';
 
 let sandbox;
 
-let clock;
 function enableInstreamTracking(regex) {
   let configStub = sandbox.stub(config, 'getConfig');
   configStub.withArgs('instreamTracking').returns(Object.assign(
@@ -147,13 +146,11 @@ function getMockInput(mediaType) {
 
 describe('Instream Tracking', function () {
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
-    clock = sandbox.useFakeTimers();
+    sandbox = sinon.sandbox.create();
   });
 
   afterEach(function () {
     sandbox.restore();
-    clock.restore();
   });
 
   describe('gaurd checks', function () {
@@ -171,13 +168,13 @@ describe('Instream Tracking', function () {
       assert.isNotOk(trackInstreamDeliveredImpressions({adUnits: [], bidsReceived: [], bidderRequests: []}));
     });
 
-    it('checks for instream bids', function () {
+    it('checks for instream bids', function (done) {
       enableInstreamTracking();
       assert.isNotOk(trackInstreamDeliveredImpressions(getMockInput('banner')), 'should not start tracking when banner bids are present')
       assert.isNotOk(trackInstreamDeliveredImpressions(getMockInput(OUTSTREAM)), 'should not start tracking when outstream bids are present')
       mockPerformanceApi({});
       assert.isOk(trackInstreamDeliveredImpressions(getMockInput(INSTREAM)), 'should start tracking when instream bids are present')
-      clock.tick(10);
+      setTimeout(done, 10);
     });
   });
 
@@ -188,31 +185,37 @@ describe('Instream Tracking', function () {
       spyEventsOn = sandbox.spy(events, 'emit');
     });
 
-    it('BID WON event is not emitted when no video cache key entries are present', function () {
+    it('BID WON event is not emitted when no video cache key entries are present', function (done) {
       enableInstreamTracking();
       trackInstreamDeliveredImpressions(getMockInput(INSTREAM));
       mockPerformanceApi({});
-      clock.tick(10);
-      assert.isNotOk(spyEventsOn.calledWith('bidWon'));
+      setTimeout(function () {
+        assert.isNotOk(spyEventsOn.calledWith('bidWon'))
+        done()
+      }, 10);
     });
 
-    it('BID WON event is not emitted when ad server call is sent', function () {
+    it('BID WON event is not emitted when ad server call is sent', function (done) {
       enableInstreamTracking();
       mockPerformanceApi({adServerCallSent: true});
-      clock.tick(10);
-      assert.isNotOk(spyEventsOn.calledWith('bidWon'));
+      setTimeout(function () {
+        assert.isNotOk(spyEventsOn.calledWith('bidWon'))
+        done()
+      }, 10);
     });
 
-    it('BID WON event is emitted when video cache key is present', function () {
+    it('BID WON event is emitted when video cache key is present', function (done) {
       enableInstreamTracking(/cache/);
       const bidWonSpy = sandbox.spy();
       events.on('bidWon', bidWonSpy);
       mockPerformanceApi({adServerCallSent: true, videoPresent: true});
 
       trackInstreamDeliveredImpressions(getMockInput(INSTREAM));
-      clock.tick(10);
-      assert.isOk(spyEventsOn.calledWith('bidWon'));
-      assert(bidWonSpy.args[0][0].videoCacheKey, VIDEO_CACHE_KEY, 'Video cache key in bid won should be equal to video cache call');
+      setTimeout(function () {
+        assert.isOk(spyEventsOn.calledWith('bidWon'))
+        assert(bidWonSpy.args[0][0].videoCacheKey, VIDEO_CACHE_KEY, 'Video cache key in bid won should be equal to video cache call');
+        done()
+      }, 10);
     });
   });
 });

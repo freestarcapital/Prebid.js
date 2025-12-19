@@ -26,7 +26,7 @@ describe('The DFP video support module', function () {
   let sandbox, bid, adUnit;
 
   beforeEach(() => {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
     bid = {
       videoCacheKey: 'abc',
       adserverTargeting: {

@@ -74,11 +74,10 @@ export const extractConfig = (moduleConfig, reqBidsConfigObj) => {
 }
 
 /**
- * Extracts consent from the Prebid consent object and translates it
- * into a 1plusX profile api query parameter dict
- * @param {object} prebid
- * @param {object} prebid.gdpr gdpr object
- * @returns {Object|null} dictionary of papi gdpr query parameters
+ * Extracts consent from the prebid consent object and translates it
+ * into a 1plusX profile api query parameter parameter dict
+ * @param {object} prebid gdpr object
+ * @returns dictionary of papi gdpr query parameters
  */
 export const extractConsent = ({ gdpr }) => {
   if (!gdpr) {
@@ -119,9 +118,9 @@ export const extractFpid = (fpidStorageType) => {
 }
 /**
  * Gets the URL of Profile Api from which targeting data will be fetched
- * @param {string} customerId
+ * @param {string} config.customerId
  * @param {object} consent query params as dict
- * @param {string} [fpid] first party id
+ * @param {string} oneplusx first party id (nullable)
  * @returns {string} URL to access 1plusX Profile API
  */
 export const getPapiUrl = (customerId, consent, fpid) => {
@@ -167,8 +166,8 @@ const getTargetingDataFromPapi = (papiUrl) => {
 /**
  * Prepares the update for the ORTB2 object
  * @param {Object} targetingData Targeting data fetched from Profile API
- * @param {string[]} targetingData.segments Represents the audience segments of the user
- * @param {string[]} targetingData.topics Represents the topics of the page
+ * @param {string[]} segments Represents the audience segments of the user
+ * @param {string[]} topics Represents the topics of the page
  * @returns {Object} Object describing the updates to make on bidder configs
  */
 export const buildOrtb2Updates = ({ segments = [], topics = [] }) => {

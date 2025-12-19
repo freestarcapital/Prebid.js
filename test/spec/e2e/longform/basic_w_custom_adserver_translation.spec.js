@@ -1,3 +1,4 @@
+import {includes} from 'src/polyfill.js';
 const expect = require('chai').expect;
 const { host, protocol, waitForElement } = require('../../../helpers/testing-utils');
 
@@ -34,9 +35,9 @@ describe('longform ads using custom adserver translation file', function() {
       let cpm = listOfCpms[i].getText();
       let cat = listOfCats[i].getText();
       let dura = listOfDuras[i].getText();
-      expect(validCpms.includes(cpm), `Could not find CPM ${cpm} in accepted list`).to.equal(true);
-      expect(validCats.includes(cat), `Could not find Category ${cat} in accepted list`).to.equal(true);
-      expect(validDurations.includes(dura), `Could not find Duration ${dura} in accepted list`).to.equal(true);
+      expect(includes(validCpms, cpm), `Could not find CPM ${cpm} in accepted list`).to.equal(true);
+      expect(includes(validCats, cat), `Could not find Category ${cat} in accepted list`).to.equal(true);
+      expect(includes(validDurations, dura), `Could not find Duration ${dura} in accepted list`).to.equal(true);
     }
   });
 

@@ -27,7 +27,7 @@ describe('bridgeuppBidAdapter_spec', function () {
   });
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
     utilsMock = sinon.mock(utils);
     ajaxStub = sandbox.stub(ajax, 'ajax');
     fetchStub = sinon.stub(global, 'fetch').resolves(new Response('OK'));

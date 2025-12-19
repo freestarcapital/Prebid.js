@@ -1,15 +1,16 @@
 import { expect } from 'chai';
-import { spec, getWidthAndHeightFromVideoObject, defaultSize } from 'modules/ozoneBidAdapter.js';
+import { spec, getWidthAndHeightFromVideoObject, playerSizeIsNestedArray, defaultSize } from 'modules/ozoneBidAdapter.js';
 import { config } from 'src/config.js';
 import {Renderer} from '../../../src/Renderer.js';
+import {getGranularityKeyName, getGranularityObject} from '../../../modules/ozoneBidAdapter.js';
 import * as utils from '../../../src/utils.js';
 import {deepSetValue} from '../../../src/utils.js';
 const OZONEURI = 'https://elb.the-ozone-project.com/openrtb2/auction';
 const BIDDER_CODE = 'ozone';
 spec.getGetParametersAsObject = function() {
   return {
-    page: 'https://www.ozoneproject.com/sometestPage/?qsParam1=123',
-    location: 'https://www.ozoneproject.com/sometestPage/?qsParam1=123'
+    page: 'https://www.ardm.io/sometestPage/?qsParam1=123',
+    location: 'https://www.ardm.io/sometestPage/?qsParam1=123'
   };
 }
 var validBidRequests = [
@@ -152,11 +153,11 @@ var validBidRequestsWithAuctionIdTransactionId = [{
       }
     },
     'site': {
-      'domain': 'ozoneproject.com',
+      'domain': 'ardm.io',
       'publisher': {
-        'domain': 'ozoneproject.com'
+        'domain': 'ardm.io'
       },
-      'page': 'https://www.ozoneproject.com/ozone/2.9.4/20240715-test-singlereq-optin.html?pbjs_debug=true'
+      'page': 'https://www.ardm.io/ozone/2.9.4/20240715-test-singlereq-optin.html?pbjs_debug=true'
     },
     'device': {
       'w': 1609,
@@ -251,11 +252,11 @@ var valid6BidRequestsWithAuctionIdTransactionId = [{
       }
     },
     'site': {
-      'domain': 'ozoneproject.com',
+      'domain': 'ardm.io',
       'publisher': {
-        'domain': 'ozoneproject.com'
+        'domain': 'ardm.io'
       },
-      'page': 'https://www.ozoneproject.com/ozone/2.9.4/20240715-test-singlereq-optin.html?pbjs_debug=true'
+      'page': 'https://www.ardm.io/ozone/2.9.4/20240715-test-singlereq-optin.html?pbjs_debug=true'
     },
     'device': {
       'w': 1609,
@@ -266,501 +267,501 @@ var valid6BidRequestsWithAuctionIdTransactionId = [{
     }
   }
 },
-  {
-    'bidder': 'ozone',
-    'params': {
-      'publisherId': 'OZONENUK0001',
-      'siteId': '4204204201',
-      'placementId': '8000000330',
-      'customData': [
-        {
-          'settings': {},
-          'targeting': {
-            'sens': 'f',
-            'pt1': '/uk',
-            'pt5': [
-              'uk'
-            ],
-            'pt7': 'desktop',
-            'pt9': '|k0xw2vqzp33kklb3j5w4|||'
-          }
-        }
-      ]
-    },
-    'ortb2Imp': {
-      'ext': {
-        'gpid': 'mpu_pbadslot_from_adunit',
-        'data': {
-          'pbadslot': 'mpu_pbadslot_from_adunit',
-          'adserver': {
-            'name': 'gam',
-            'adslot': '/22037345/projectozone'
-          }
-        },
-        'tid': 'f0dac8b5-09df-4da7-9d83-c99786d4517a'
-      }
-    },
-    'mediaTypes': {
-      'banner': {
-        'sizes': [
-          [
-            300,
-            250
+{
+  'bidder': 'ozone',
+  'params': {
+    'publisherId': 'OZONENUK0001',
+    'siteId': '4204204201',
+    'placementId': '8000000330',
+    'customData': [
+      {
+        'settings': {},
+        'targeting': {
+          'sens': 'f',
+          'pt1': '/uk',
+          'pt5': [
+            'uk'
           ],
-          [
-            300,
-            600
-          ]
-        ]
+          'pt7': 'desktop',
+          'pt9': '|k0xw2vqzp33kklb3j5w4|||'
+        }
       }
-    },
-    'adUnitCode': 'mpu2',
-    'transactionId': 'f0dac8b5-09df-4da7-9d83-c99786d4517a',
-    'adUnitId': '715b4bdc-515f-488b-8633-333654e72f3f',
-    'sizes': [
-      [
-        300,
-        250
-      ],
-      [
-        300,
-        600
-      ]
-    ],
-    'bidId': '3da18cc31f1ddb',
-    'bidderRequestId': '263c3b0d970326',
-    'auctionId': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0',
-    'src': 'client',
-    'bidRequestsCount': 1,
-    'bidderRequestsCount': 1,
-    'bidderWinsCount': 0,
-    'ortb2': {
-      'source': {
-        'tid': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0'
-      },
-      'regs': {
-        'ext': {
-          'gdpr': 1,
-          'us_privacy': '1Y--'
+    ]
+  },
+  'ortb2Imp': {
+    'ext': {
+      'gpid': 'mpu_pbadslot_from_adunit',
+      'data': {
+        'pbadslot': 'mpu_pbadslot_from_adunit',
+        'adserver': {
+          'name': 'gam',
+          'adslot': '/22037345/projectozone'
         }
       },
-      'user': {
-        'ext': {
-          'consent': 'CQAaAwAQAaAwAAKA1AENA5EsAP_gAEPgACiQKRNV_G__bWlr8X73aftkeY1P9_h77sQxBhfJE-4FzLuW_JwXx2ExNA36tqIKmRIEu3bBIQNlHJDUTVCgaogVryDMakWcoTNKJ6BkiFMRO2dYCF5vmwtj-QKY5vr993dx2B-t_dv83dzyz4VHn3a5_2e0WJCdA58tDfv9bROb-9IPd_58v4v8_F_rE2_eT1l_tevp7D9-cts7_XW-9_fff79Ll_-mBwUcALMNCogDLIkJCDQMIIEAKgrCAigQAAAAkDRAQAmDAp2BgEusJEAIAUAAwQAgABRkACAAASABCIAIACgQAAQCBQAAgAACAQAMDAAGACwEAgABAdAhTAggUCwASMyIhTAgCgSCAlsqEEgCBBXCEIs8CCAREwUAAAJABWAAICwWAxJICViQQJcQbQAAEACAQQAVCKTswBBAGbLVXiibRlaQFo-ACjgAAAAA.YAAAAAAAAAAA'
-        }
-      },
-      'site': {
-        'domain': 'ozoneproject.com',
-        'publisher': {
-          'domain': 'ozoneproject.com'
-        },
-        'page': 'https://www.ozoneproject.com/ozone/2.9.4/20240715-test-singlereq-optin.html?pbjs_debug=true'
-      },
-      'device': {
-        'w': 1609,
-        'h': 279,
-        'dnt': 0,
-        'ua': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-        'language': 'en'
-      }
+      'tid': 'f0dac8b5-09df-4da7-9d83-c99786d4517a'
     }
   },
-  {
-    'bidder': 'ozone',
-    'params': {
-      'publisherId': 'OZONENUK0001',
-      'siteId': '4204204201',
-      'placementId': '8000000330',
-      'customData': [
-        {
-          'settings': {},
-          'targeting': {
-            'sens': 'f',
-            'pt1': '/uk',
-            'pt5': [
-              'uk'
-            ],
-            'pt7': 'desktop',
-            'pt9': '|k0xw2vqzp33kklb3j5w4|||'
-          }
-        }
-      ]
-    },
-    'ortb2Imp': {
-      'ext': {
-        'gpid': 'mpu_pbadslot_from_adunit',
-        'data': {
-          'pbadslot': 'mpu_pbadslot_from_adunit',
-          'adserver': {
-            'name': 'gam',
-            'adslot': '/22037345/projectozone'
-          }
-        },
-        'tid': 'f0dac8b5-09df-4da7-9d83-c99786d4517a'
-      }
-    },
-    'mediaTypes': {
-      'banner': {
-        'sizes': [
-          [
-            300,
-            250
-          ],
-          [
-            300,
-            600
-          ]
+  'mediaTypes': {
+    'banner': {
+      'sizes': [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          600
         ]
-      }
-    },
-    'adUnitCode': 'mpu3',
-    'transactionId': 'f0dac8b5-09df-4da7-9d83-c99786d4517a',
-    'adUnitId': '715b4bdc-515f-488b-8633-333654e72f3f',
-    'sizes': [
-      [
-        300,
-        250
-      ],
-      [
-        300,
-        600
       ]
-    ],
-    'bidId': '3da18cc31f1ddc',
-    'bidderRequestId': '263c3b0d970326',
-    'auctionId': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0',
-    'src': 'client',
-    'bidRequestsCount': 1,
-    'bidderRequestsCount': 1,
-    'bidderWinsCount': 0,
-    'ortb2': {
-      'source': {
-        'tid': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0'
-      },
-      'regs': {
-        'ext': {
-          'gdpr': 1,
-          'us_privacy': '1Y--'
-        }
-      },
-      'user': {
-        'ext': {
-          'consent': 'CQAaAwAQAaAwAAKA1AENA5EsAP_gAEPgACiQKRNV_G__bWlr8X73aftkeY1P9_h77sQxBhfJE-4FzLuW_JwXx2ExNA36tqIKmRIEu3bBIQNlHJDUTVCgaogVryDMakWcoTNKJ6BkiFMRO2dYCF5vmwtj-QKY5vr993dx2B-t_dv83dzyz4VHn3a5_2e0WJCdA58tDfv9bROb-9IPd_58v4v8_F_rE2_eT1l_tevp7D9-cts7_XW-9_fff79Ll_-mBwUcALMNCogDLIkJCDQMIIEAKgrCAigQAAAAkDRAQAmDAp2BgEusJEAIAUAAwQAgABRkACAAASABCIAIACgQAAQCBQAAgAACAQAMDAAGACwEAgABAdAhTAggUCwASMyIhTAgCgSCAlsqEEgCBBXCEIs8CCAREwUAAAJABWAAICwWAxJICViQQJcQbQAAEACAQQAVCKTswBBAGbLVXiibRlaQFo-ACjgAAAAA.YAAAAAAAAAAA'
-        }
-      },
-      'site': {
-        'domain': 'ozoneproject.com',
-        'publisher': {
-          'domain': 'ozoneproject.com'
-        },
-        'page': 'https://www.ozoneproject.com/ozone/2.9.4/20240715-test-singlereq-optin.html?pbjs_debug=true'
-      },
-      'device': {
-        'w': 1609,
-        'h': 279,
-        'dnt': 0,
-        'ua': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-        'language': 'en'
-      }
     }
   },
-  {
-    'bidder': 'ozone',
-    'params': {
-      'publisherId': 'OZONENUK0001',
-      'siteId': '4204204201',
-      'placementId': '8000000330',
-      'customData': [
-        {
-          'settings': {},
-          'targeting': {
-            'sens': 'f',
-            'pt1': '/uk',
-            'pt5': [
-              'uk'
-            ],
-            'pt7': 'desktop',
-            'pt9': '|k0xw2vqzp33kklb3j5w4|||'
-          }
-        }
-      ]
-    },
-    'ortb2Imp': {
-      'ext': {
-        'gpid': 'mpu_pbadslot_from_adunit',
-        'data': {
-          'pbadslot': 'mpu_pbadslot_from_adunit',
-          'adserver': {
-            'name': 'gam',
-            'adslot': '/22037345/projectozone'
-          }
-        },
-        'tid': 'f0dac8b5-09df-4da7-9d83-c99786d4517a'
-      }
-    },
-    'mediaTypes': {
-      'banner': {
-        'sizes': [
-          [
-            300,
-            250
-          ],
-          [
-            300,
-            600
-          ]
-        ]
-      }
-    },
-    'adUnitCode': 'mpu4',
-    'transactionId': 'f0dac8b5-09df-4da7-9d83-c99786d4517a',
-    'adUnitId': '715b4bdc-515f-488b-8633-333654e72f3f',
-    'sizes': [
-      [
-        300,
-        250
-      ],
-      [
-        300,
-        600
-      ]
+  'adUnitCode': 'mpu2',
+  'transactionId': 'f0dac8b5-09df-4da7-9d83-c99786d4517a',
+  'adUnitId': '715b4bdc-515f-488b-8633-333654e72f3f',
+  'sizes': [
+    [
+      300,
+      250
     ],
-    'bidId': '3da18cc31f1ddd',
-    'bidderRequestId': '263c3b0d970326',
-    'auctionId': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0',
-    'src': 'client',
-    'bidRequestsCount': 1,
-    'bidderRequestsCount': 1,
-    'bidderWinsCount': 0,
-    'ortb2': {
-      'source': {
-        'tid': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0'
-      },
-      'regs': {
-        'ext': {
-          'gdpr': 1,
-          'us_privacy': '1Y--'
-        }
-      },
-      'user': {
-        'ext': {
-          'consent': 'CQAaAwAQAaAwAAKA1AENA5EsAP_gAEPgACiQKRNV_G__bWlr8X73aftkeY1P9_h77sQxBhfJE-4FzLuW_JwXx2ExNA36tqIKmRIEu3bBIQNlHJDUTVCgaogVryDMakWcoTNKJ6BkiFMRO2dYCF5vmwtj-QKY5vr993dx2B-t_dv83dzyz4VHn3a5_2e0WJCdA58tDfv9bROb-9IPd_58v4v8_F_rE2_eT1l_tevp7D9-cts7_XW-9_fff79Ll_-mBwUcALMNCogDLIkJCDQMIIEAKgrCAigQAAAAkDRAQAmDAp2BgEusJEAIAUAAwQAgABRkACAAASABCIAIACgQAAQCBQAAgAACAQAMDAAGACwEAgABAdAhTAggUCwASMyIhTAgCgSCAlsqEEgCBBXCEIs8CCAREwUAAAJABWAAICwWAxJICViQQJcQbQAAEACAQQAVCKTswBBAGbLVXiibRlaQFo-ACjgAAAAA.YAAAAAAAAAAA'
-        }
-      },
-      'site': {
-        'domain': 'ozoneproject.com',
-        'publisher': {
-          'domain': 'ozoneproject.com'
-        },
-        'page': 'https://www.ozoneproject.com/ozone/2.9.4/20240715-test-singlereq-optin.html?pbjs_debug=true'
-      },
-      'device': {
-        'w': 1609,
-        'h': 279,
-        'dnt': 0,
-        'ua': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-        'language': 'en'
+    [
+      300,
+      600
+    ]
+  ],
+  'bidId': '3da18cc31f1ddb',
+  'bidderRequestId': '263c3b0d970326',
+  'auctionId': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0',
+  'src': 'client',
+  'bidRequestsCount': 1,
+  'bidderRequestsCount': 1,
+  'bidderWinsCount': 0,
+  'ortb2': {
+    'source': {
+      'tid': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0'
+    },
+    'regs': {
+      'ext': {
+        'gdpr': 1,
+        'us_privacy': '1Y--'
       }
+    },
+    'user': {
+      'ext': {
+        'consent': 'CQAaAwAQAaAwAAKA1AENA5EsAP_gAEPgACiQKRNV_G__bWlr8X73aftkeY1P9_h77sQxBhfJE-4FzLuW_JwXx2ExNA36tqIKmRIEu3bBIQNlHJDUTVCgaogVryDMakWcoTNKJ6BkiFMRO2dYCF5vmwtj-QKY5vr993dx2B-t_dv83dzyz4VHn3a5_2e0WJCdA58tDfv9bROb-9IPd_58v4v8_F_rE2_eT1l_tevp7D9-cts7_XW-9_fff79Ll_-mBwUcALMNCogDLIkJCDQMIIEAKgrCAigQAAAAkDRAQAmDAp2BgEusJEAIAUAAwQAgABRkACAAASABCIAIACgQAAQCBQAAgAACAQAMDAAGACwEAgABAdAhTAggUCwASMyIhTAgCgSCAlsqEEgCBBXCEIs8CCAREwUAAAJABWAAICwWAxJICViQQJcQbQAAEACAQQAVCKTswBBAGbLVXiibRlaQFo-ACjgAAAAA.YAAAAAAAAAAA'
+      }
+    },
+    'site': {
+      'domain': 'ardm.io',
+      'publisher': {
+        'domain': 'ardm.io'
+      },
+      'page': 'https://www.ardm.io/ozone/2.9.4/20240715-test-singlereq-optin.html?pbjs_debug=true'
+    },
+    'device': {
+      'w': 1609,
+      'h': 279,
+      'dnt': 0,
+      'ua': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+      'language': 'en'
+    }
+  }
+},
+{
+  'bidder': 'ozone',
+  'params': {
+    'publisherId': 'OZONENUK0001',
+    'siteId': '4204204201',
+    'placementId': '8000000330',
+    'customData': [
+      {
+        'settings': {},
+        'targeting': {
+          'sens': 'f',
+          'pt1': '/uk',
+          'pt5': [
+            'uk'
+          ],
+          'pt7': 'desktop',
+          'pt9': '|k0xw2vqzp33kklb3j5w4|||'
+        }
+      }
+    ]
+  },
+  'ortb2Imp': {
+    'ext': {
+      'gpid': 'mpu_pbadslot_from_adunit',
+      'data': {
+        'pbadslot': 'mpu_pbadslot_from_adunit',
+        'adserver': {
+          'name': 'gam',
+          'adslot': '/22037345/projectozone'
+        }
+      },
+      'tid': 'f0dac8b5-09df-4da7-9d83-c99786d4517a'
     }
   },
-  {
-    'bidder': 'ozone',
-    'params': {
-      'publisherId': 'OZONENUK0001',
-      'siteId': '4204204201',
-      'placementId': '8000000330',
-      'customData': [
-        {
-          'settings': {},
-          'targeting': {
-            'sens': 'f',
-            'pt1': '/uk',
-            'pt5': [
-              'uk'
-            ],
-            'pt7': 'desktop',
-            'pt9': '|k0xw2vqzp33kklb3j5w4|||'
-          }
-        }
-      ]
-    },
-    'ortb2Imp': {
-      'ext': {
-        'gpid': 'mpu_pbadslot_from_adunit',
-        'data': {
-          'pbadslot': 'mpu_pbadslot_from_adunit',
-          'adserver': {
-            'name': 'gam',
-            'adslot': '/22037345/projectozone'
-          }
-        },
-        'tid': 'f0dac8b5-09df-4da7-9d83-c99786d4517a'
-      }
-    },
-    'mediaTypes': {
-      'banner': {
-        'sizes': [
-          [
-            300,
-            250
-          ],
-          [
-            300,
-            600
-          ]
+  'mediaTypes': {
+    'banner': {
+      'sizes': [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          600
         ]
-      }
-    },
-    'adUnitCode': 'mpu5',
-    'transactionId': 'f0dac8b5-09df-4da7-9d83-c99786d4517a',
-    'adUnitId': '715b4bdc-515f-488b-8633-333654e72f3f',
-    'sizes': [
-      [
-        300,
-        250
-      ],
-      [
-        300,
-        600
       ]
-    ],
-    'bidId': '3da18cc31f1dde',
-    'bidderRequestId': '263c3b0d970326',
-    'auctionId': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0',
-    'src': 'client',
-    'bidRequestsCount': 1,
-    'bidderRequestsCount': 1,
-    'bidderWinsCount': 0,
-    'ortb2': {
-      'source': {
-        'tid': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0'
-      },
-      'regs': {
-        'ext': {
-          'gdpr': 1,
-          'us_privacy': '1Y--'
-        }
-      },
-      'user': {
-        'ext': {
-          'consent': 'CQAaAwAQAaAwAAKA1AENA5EsAP_gAEPgACiQKRNV_G__bWlr8X73aftkeY1P9_h77sQxBhfJE-4FzLuW_JwXx2ExNA36tqIKmRIEu3bBIQNlHJDUTVCgaogVryDMakWcoTNKJ6BkiFMRO2dYCF5vmwtj-QKY5vr993dx2B-t_dv83dzyz4VHn3a5_2e0WJCdA58tDfv9bROb-9IPd_58v4v8_F_rE2_eT1l_tevp7D9-cts7_XW-9_fff79Ll_-mBwUcALMNCogDLIkJCDQMIIEAKgrCAigQAAAAkDRAQAmDAp2BgEusJEAIAUAAwQAgABRkACAAASABCIAIACgQAAQCBQAAgAACAQAMDAAGACwEAgABAdAhTAggUCwASMyIhTAgCgSCAlsqEEgCBBXCEIs8CCAREwUAAAJABWAAICwWAxJICViQQJcQbQAAEACAQQAVCKTswBBAGbLVXiibRlaQFo-ACjgAAAAA.YAAAAAAAAAAA'
-        }
-      },
-      'site': {
-        'domain': 'ozoneproject.com',
-        'publisher': {
-          'domain': 'ozoneproject.com'
-        },
-        'page': 'https://www.ozoneproject.com/ozone/2.9.4/20240715-test-singlereq-optin.html?pbjs_debug=true'
-      },
-      'device': {
-        'w': 1609,
-        'h': 279,
-        'dnt': 0,
-        'ua': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-        'language': 'en'
-      }
     }
   },
-  {
-    'bidder': 'ozone',
-    'params': {
-      'publisherId': 'OZONENUK0001',
-      'siteId': '4204204201',
-      'placementId': '8000000330',
-      'customData': [
-        {
-          'settings': {},
-          'targeting': {
-            'sens': 'f',
-            'pt1': '/uk',
-            'pt5': [
-              'uk'
-            ],
-            'pt7': 'desktop',
-            'pt9': '|k0xw2vqzp33kklb3j5w4|||'
-          }
-        }
-      ]
-    },
-    'ortb2Imp': {
-      'ext': {
-        'gpid': 'mpu_pbadslot_from_adunit',
-        'data': {
-          'pbadslot': 'mpu_pbadslot_from_adunit',
-          'adserver': {
-            'name': 'gam',
-            'adslot': '/22037345/projectozone'
-          }
-        },
-        'tid': 'f0dac8b5-09df-4da7-9d83-c99786d4517a'
-      }
-    },
-    'mediaTypes': {
-      'banner': {
-        'sizes': [
-          [
-            300,
-            250
-          ],
-          [
-            300,
-            600
-          ]
-        ]
-      }
-    },
-    'adUnitCode': 'mpu6',
-    'transactionId': 'f0dac8b5-09df-4da7-9d83-c99786d4517a',
-    'adUnitId': '715b4bdc-515f-488b-8633-333654e72f3f',
-    'sizes': [
-      [
-        300,
-        250
-      ],
-      [
-        300,
-        600
-      ]
+  'adUnitCode': 'mpu3',
+  'transactionId': 'f0dac8b5-09df-4da7-9d83-c99786d4517a',
+  'adUnitId': '715b4bdc-515f-488b-8633-333654e72f3f',
+  'sizes': [
+    [
+      300,
+      250
     ],
-    'bidId': '3da18cc31f1ddf',
-    'bidderRequestId': '263c3b0d970326',
-    'auctionId': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0',
-    'src': 'client',
-    'bidRequestsCount': 1,
-    'bidderRequestsCount': 1,
-    'bidderWinsCount': 0,
-    'ortb2': {
-      'source': {
-        'tid': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0'
-      },
-      'regs': {
-        'ext': {
-          'gdpr': 1,
-          'us_privacy': '1Y--'
-        }
-      },
-      'user': {
-        'ext': {
-          'consent': 'CQAaAwAQAaAwAAKA1AENA5EsAP_gAEPgACiQKRNV_G__bWlr8X73aftkeY1P9_h77sQxBhfJE-4FzLuW_JwXx2ExNA36tqIKmRIEu3bBIQNlHJDUTVCgaogVryDMakWcoTNKJ6BkiFMRO2dYCF5vmwtj-QKY5vr993dx2B-t_dv83dzyz4VHn3a5_2e0WJCdA58tDfv9bROb-9IPd_58v4v8_F_rE2_eT1l_tevp7D9-cts7_XW-9_fff79Ll_-mBwUcALMNCogDLIkJCDQMIIEAKgrCAigQAAAAkDRAQAmDAp2BgEusJEAIAUAAwQAgABRkACAAASABCIAIACgQAAQCBQAAgAACAQAMDAAGACwEAgABAdAhTAggUCwASMyIhTAgCgSCAlsqEEgCBBXCEIs8CCAREwUAAAJABWAAICwWAxJICViQQJcQbQAAEACAQQAVCKTswBBAGbLVXiibRlaQFo-ACjgAAAAA.YAAAAAAAAAAA'
-        }
-      },
-      'site': {
-        'domain': 'ozoneproject.com',
-        'publisher': {
-          'domain': 'ozoneproject.com'
-        },
-        'page': 'https://www.www.ozoneproject.com/ozone/2.9.4/20240715-test-singlereq-optin.html?pbjs_debug=true'
-      },
-      'device': {
-        'w': 1609,
-        'h': 279,
-        'dnt': 0,
-        'ua': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
-        'language': 'en'
+    [
+      300,
+      600
+    ]
+  ],
+  'bidId': '3da18cc31f1ddc',
+  'bidderRequestId': '263c3b0d970326',
+  'auctionId': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0',
+  'src': 'client',
+  'bidRequestsCount': 1,
+  'bidderRequestsCount': 1,
+  'bidderWinsCount': 0,
+  'ortb2': {
+    'source': {
+      'tid': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0'
+    },
+    'regs': {
+      'ext': {
+        'gdpr': 1,
+        'us_privacy': '1Y--'
       }
+    },
+    'user': {
+      'ext': {
+        'consent': 'CQAaAwAQAaAwAAKA1AENA5EsAP_gAEPgACiQKRNV_G__bWlr8X73aftkeY1P9_h77sQxBhfJE-4FzLuW_JwXx2ExNA36tqIKmRIEu3bBIQNlHJDUTVCgaogVryDMakWcoTNKJ6BkiFMRO2dYCF5vmwtj-QKY5vr993dx2B-t_dv83dzyz4VHn3a5_2e0WJCdA58tDfv9bROb-9IPd_58v4v8_F_rE2_eT1l_tevp7D9-cts7_XW-9_fff79Ll_-mBwUcALMNCogDLIkJCDQMIIEAKgrCAigQAAAAkDRAQAmDAp2BgEusJEAIAUAAwQAgABRkACAAASABCIAIACgQAAQCBQAAgAACAQAMDAAGACwEAgABAdAhTAggUCwASMyIhTAgCgSCAlsqEEgCBBXCEIs8CCAREwUAAAJABWAAICwWAxJICViQQJcQbQAAEACAQQAVCKTswBBAGbLVXiibRlaQFo-ACjgAAAAA.YAAAAAAAAAAA'
+      }
+    },
+    'site': {
+      'domain': 'ardm.io',
+      'publisher': {
+        'domain': 'ardm.io'
+      },
+      'page': 'https://www.ardm.io/ozone/2.9.4/20240715-test-singlereq-optin.html?pbjs_debug=true'
+    },
+    'device': {
+      'w': 1609,
+      'h': 279,
+      'dnt': 0,
+      'ua': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+      'language': 'en'
     }
-  }];
+  }
+},
+{
+  'bidder': 'ozone',
+  'params': {
+    'publisherId': 'OZONENUK0001',
+    'siteId': '4204204201',
+    'placementId': '8000000330',
+    'customData': [
+      {
+        'settings': {},
+        'targeting': {
+          'sens': 'f',
+          'pt1': '/uk',
+          'pt5': [
+            'uk'
+          ],
+          'pt7': 'desktop',
+          'pt9': '|k0xw2vqzp33kklb3j5w4|||'
+        }
+      }
+    ]
+  },
+  'ortb2Imp': {
+    'ext': {
+      'gpid': 'mpu_pbadslot_from_adunit',
+      'data': {
+        'pbadslot': 'mpu_pbadslot_from_adunit',
+        'adserver': {
+          'name': 'gam',
+          'adslot': '/22037345/projectozone'
+        }
+      },
+      'tid': 'f0dac8b5-09df-4da7-9d83-c99786d4517a'
+    }
+  },
+  'mediaTypes': {
+    'banner': {
+      'sizes': [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          600
+        ]
+      ]
+    }
+  },
+  'adUnitCode': 'mpu4',
+  'transactionId': 'f0dac8b5-09df-4da7-9d83-c99786d4517a',
+  'adUnitId': '715b4bdc-515f-488b-8633-333654e72f3f',
+  'sizes': [
+    [
+      300,
+      250
+    ],
+    [
+      300,
+      600
+    ]
+  ],
+  'bidId': '3da18cc31f1ddd',
+  'bidderRequestId': '263c3b0d970326',
+  'auctionId': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0',
+  'src': 'client',
+  'bidRequestsCount': 1,
+  'bidderRequestsCount': 1,
+  'bidderWinsCount': 0,
+  'ortb2': {
+    'source': {
+      'tid': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0'
+    },
+    'regs': {
+      'ext': {
+        'gdpr': 1,
+        'us_privacy': '1Y--'
+      }
+    },
+    'user': {
+      'ext': {
+        'consent': 'CQAaAwAQAaAwAAKA1AENA5EsAP_gAEPgACiQKRNV_G__bWlr8X73aftkeY1P9_h77sQxBhfJE-4FzLuW_JwXx2ExNA36tqIKmRIEu3bBIQNlHJDUTVCgaogVryDMakWcoTNKJ6BkiFMRO2dYCF5vmwtj-QKY5vr993dx2B-t_dv83dzyz4VHn3a5_2e0WJCdA58tDfv9bROb-9IPd_58v4v8_F_rE2_eT1l_tevp7D9-cts7_XW-9_fff79Ll_-mBwUcALMNCogDLIkJCDQMIIEAKgrCAigQAAAAkDRAQAmDAp2BgEusJEAIAUAAwQAgABRkACAAASABCIAIACgQAAQCBQAAgAACAQAMDAAGACwEAgABAdAhTAggUCwASMyIhTAgCgSCAlsqEEgCBBXCEIs8CCAREwUAAAJABWAAICwWAxJICViQQJcQbQAAEACAQQAVCKTswBBAGbLVXiibRlaQFo-ACjgAAAAA.YAAAAAAAAAAA'
+      }
+    },
+    'site': {
+      'domain': 'ardm.io',
+      'publisher': {
+        'domain': 'ardm.io'
+      },
+      'page': 'https://www.ardm.io/ozone/2.9.4/20240715-test-singlereq-optin.html?pbjs_debug=true'
+    },
+    'device': {
+      'w': 1609,
+      'h': 279,
+      'dnt': 0,
+      'ua': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+      'language': 'en'
+    }
+  }
+},
+{
+  'bidder': 'ozone',
+  'params': {
+    'publisherId': 'OZONENUK0001',
+    'siteId': '4204204201',
+    'placementId': '8000000330',
+    'customData': [
+      {
+        'settings': {},
+        'targeting': {
+          'sens': 'f',
+          'pt1': '/uk',
+          'pt5': [
+            'uk'
+          ],
+          'pt7': 'desktop',
+          'pt9': '|k0xw2vqzp33kklb3j5w4|||'
+        }
+      }
+    ]
+  },
+  'ortb2Imp': {
+    'ext': {
+      'gpid': 'mpu_pbadslot_from_adunit',
+      'data': {
+        'pbadslot': 'mpu_pbadslot_from_adunit',
+        'adserver': {
+          'name': 'gam',
+          'adslot': '/22037345/projectozone'
+        }
+      },
+      'tid': 'f0dac8b5-09df-4da7-9d83-c99786d4517a'
+    }
+  },
+  'mediaTypes': {
+    'banner': {
+      'sizes': [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          600
+        ]
+      ]
+    }
+  },
+  'adUnitCode': 'mpu5',
+  'transactionId': 'f0dac8b5-09df-4da7-9d83-c99786d4517a',
+  'adUnitId': '715b4bdc-515f-488b-8633-333654e72f3f',
+  'sizes': [
+    [
+      300,
+      250
+    ],
+    [
+      300,
+      600
+    ]
+  ],
+  'bidId': '3da18cc31f1dde',
+  'bidderRequestId': '263c3b0d970326',
+  'auctionId': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0',
+  'src': 'client',
+  'bidRequestsCount': 1,
+  'bidderRequestsCount': 1,
+  'bidderWinsCount': 0,
+  'ortb2': {
+    'source': {
+      'tid': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0'
+    },
+    'regs': {
+      'ext': {
+        'gdpr': 1,
+        'us_privacy': '1Y--'
+      }
+    },
+    'user': {
+      'ext': {
+        'consent': 'CQAaAwAQAaAwAAKA1AENA5EsAP_gAEPgACiQKRNV_G__bWlr8X73aftkeY1P9_h77sQxBhfJE-4FzLuW_JwXx2ExNA36tqIKmRIEu3bBIQNlHJDUTVCgaogVryDMakWcoTNKJ6BkiFMRO2dYCF5vmwtj-QKY5vr993dx2B-t_dv83dzyz4VHn3a5_2e0WJCdA58tDfv9bROb-9IPd_58v4v8_F_rE2_eT1l_tevp7D9-cts7_XW-9_fff79Ll_-mBwUcALMNCogDLIkJCDQMIIEAKgrCAigQAAAAkDRAQAmDAp2BgEusJEAIAUAAwQAgABRkACAAASABCIAIACgQAAQCBQAAgAACAQAMDAAGACwEAgABAdAhTAggUCwASMyIhTAgCgSCAlsqEEgCBBXCEIs8CCAREwUAAAJABWAAICwWAxJICViQQJcQbQAAEACAQQAVCKTswBBAGbLVXiibRlaQFo-ACjgAAAAA.YAAAAAAAAAAA'
+      }
+    },
+    'site': {
+      'domain': 'ardm.io',
+      'publisher': {
+        'domain': 'ardm.io'
+      },
+      'page': 'https://www.ardm.io/ozone/2.9.4/20240715-test-singlereq-optin.html?pbjs_debug=true'
+    },
+    'device': {
+      'w': 1609,
+      'h': 279,
+      'dnt': 0,
+      'ua': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+      'language': 'en'
+    }
+  }
+},
+{
+  'bidder': 'ozone',
+  'params': {
+    'publisherId': 'OZONENUK0001',
+    'siteId': '4204204201',
+    'placementId': '8000000330',
+    'customData': [
+      {
+        'settings': {},
+        'targeting': {
+          'sens': 'f',
+          'pt1': '/uk',
+          'pt5': [
+            'uk'
+          ],
+          'pt7': 'desktop',
+          'pt9': '|k0xw2vqzp33kklb3j5w4|||'
+        }
+      }
+    ]
+  },
+  'ortb2Imp': {
+    'ext': {
+      'gpid': 'mpu_pbadslot_from_adunit',
+      'data': {
+        'pbadslot': 'mpu_pbadslot_from_adunit',
+        'adserver': {
+          'name': 'gam',
+          'adslot': '/22037345/projectozone'
+        }
+      },
+      'tid': 'f0dac8b5-09df-4da7-9d83-c99786d4517a'
+    }
+  },
+  'mediaTypes': {
+    'banner': {
+      'sizes': [
+        [
+          300,
+          250
+        ],
+        [
+          300,
+          600
+        ]
+      ]
+    }
+  },
+  'adUnitCode': 'mpu6',
+  'transactionId': 'f0dac8b5-09df-4da7-9d83-c99786d4517a',
+  'adUnitId': '715b4bdc-515f-488b-8633-333654e72f3f',
+  'sizes': [
+    [
+      300,
+      250
+    ],
+    [
+      300,
+      600
+    ]
+  ],
+  'bidId': '3da18cc31f1ddf',
+  'bidderRequestId': '263c3b0d970326',
+  'auctionId': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0',
+  'src': 'client',
+  'bidRequestsCount': 1,
+  'bidderRequestsCount': 1,
+  'bidderWinsCount': 0,
+  'ortb2': {
+    'source': {
+      'tid': 'a9c479d0-d9cc-4505-a0a6-5982ce8fb8f0'
+    },
+    'regs': {
+      'ext': {
+        'gdpr': 1,
+        'us_privacy': '1Y--'
+      }
+    },
+    'user': {
+      'ext': {
+        'consent': 'CQAaAwAQAaAwAAKA1AENA5EsAP_gAEPgACiQKRNV_G__bWlr8X73aftkeY1P9_h77sQxBhfJE-4FzLuW_JwXx2ExNA36tqIKmRIEu3bBIQNlHJDUTVCgaogVryDMakWcoTNKJ6BkiFMRO2dYCF5vmwtj-QKY5vr993dx2B-t_dv83dzyz4VHn3a5_2e0WJCdA58tDfv9bROb-9IPd_58v4v8_F_rE2_eT1l_tevp7D9-cts7_XW-9_fff79Ll_-mBwUcALMNCogDLIkJCDQMIIEAKgrCAigQAAAAkDRAQAmDAp2BgEusJEAIAUAAwQAgABRkACAAASABCIAIACgQAAQCBQAAgAACAQAMDAAGACwEAgABAdAhTAggUCwASMyIhTAgCgSCAlsqEEgCBBXCEIs8CCAREwUAAAJABWAAICwWAxJICViQQJcQbQAAEACAQQAVCKTswBBAGbLVXiibRlaQFo-ACjgAAAAA.YAAAAAAAAAAA'
+      }
+    },
+    'site': {
+      'domain': 'ardm.io',
+      'publisher': {
+        'domain': 'ardm.io'
+      },
+      'page': 'https://www.ardm.io/ozone/2.9.4/20240715-test-singlereq-optin.html?pbjs_debug=true'
+    },
+    'device': {
+      'w': 1609,
+      'h': 279,
+      'dnt': 0,
+      'ua': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36',
+      'language': 'en'
+    }
+  }
+}];
 var validBidRequestsWithUserIdData = [
   {
     adUnitCode: 'div-gpt-ad-1460505748561-0',
@@ -1205,7 +1206,7 @@ var bidderRequestWithFullGdpr = {
       'vendorConsents': {
         '468': true,
         '522': true,
-        '524': true,
+        '524': true, /* 524 is ozone */
         '565': true,
         '591': true
       }
@@ -1238,7 +1239,7 @@ var gdpr1 = {
     'vendorConsents': {
       '468': true,
       '522': true,
-      '524': true,
+      '524': true, /* 524 is ozone */
       '565': true,
       '591': true
     }
@@ -1330,7 +1331,7 @@ var validResponse = {
         'seat': 'appnexus'
       }
     ],
-    'cur': 'GBP',
+    'cur': 'GBP', /* NOTE - this is where cur is, not in the seatbids. */
     'ext': {
       'responsetimemillis': {
         'appnexus': 47,
@@ -1416,7 +1417,7 @@ var validResponse2Bids = {
         'seat': 'appnexus'
       }
     ],
-    'cur': 'GBP',
+    'cur': 'GBP', /* NOTE - this is where cur is, not in the seatbids. */
     'ext': {
       'responsetimemillis': {
         'appnexus': 47,
@@ -1502,7 +1503,7 @@ var validResponse2BidsSameAdunit = {
         'seat': 'ozappnexus'
       }
     ],
-    'cur': 'GBP',
+    'cur': 'GBP', /* NOTE - this is where cur is, not in the seatbids. */
     'ext': {
       'responsetimemillis': {
         'appnexus': 47,
@@ -1963,11 +1964,11 @@ var multiBidderRequest1 = {
   'auctionStart': 1592918645574,
   'timeout': 3000,
   'refererInfo': {
-    'referer': 'http://ozone.ozoneproject.com/adapter/2.4.0/620x350-switch.html?guardian=true&pbjs_debug=true',
+    'referer': 'http://ozone.ardm.io/adapter/2.4.0/620x350-switch.html?guardian=true&pbjs_debug=true',
     'reachedTop': true,
     'numIframes': 0,
     'stack': [
-      'http://ozone.ozoneproject.com/adapter/2.4.0/620x350-switch.html?guardian=true&pbjs_debug=true'
+      'http://ozone.ardm.io/adapter/2.4.0/620x350-switch.html?guardian=true&pbjs_debug=true'
     ]
   },
   'gdprConsent': {
@@ -2268,7 +2269,7 @@ describe('ozone Adapter', function () {
     var xBadPlacementTooShort = {
       bidder: BIDDER_CODE,
       params: {
-        placementId: 123456789,
+        placementId: 123456789, /* should be exactly 10 chars */
         publisherId: '9876abcd12-3',
         siteId: '1234567890'
       }
@@ -2279,7 +2280,7 @@ describe('ozone Adapter', function () {
     var xBadPlacementTooLong = {
       bidder: BIDDER_CODE,
       params: {
-        placementId: 12345678901,
+        placementId: 12345678901, /* should be exactly 10 chars */
         publisherId: '9876abcd12-3',
         siteId: '1234567890'
       }
@@ -2614,7 +2615,7 @@ describe('ozone Adapter', function () {
         vendorData: {
           metadata: consentString,
           gdprApplies: true,
-          vendorConsents: {},
+          vendorConsents: {}, /* 524 is not present */
           purposeConsents: {1: true, 2: true, 3: true, 4: true, 5: true}
         }
       };
@@ -2629,8 +2630,8 @@ describe('ozone Adapter', function () {
       bidderRequest.ortb2 = {regs: {gpp: gppString, gpp_sid: gppSections}};
       const request = spec.buildRequests(validBidRequestsNoSizes, bidderRequest);
       const payload = JSON.parse(request.data);
-      expect(payload.regs.ext.gpp).to.equal(gppString);
-      expect(payload.regs.ext.gpp_sid).to.have.same.members(gppSections);
+      expect(payload.regs.gpp).to.equal(gppString);
+      expect(payload.regs.gpp_sid).to.have.same.members(gppSections);
     });
     it('should not set gpp and gpp_sid keys when not available', function() {
       const request = spec.buildRequests(validBidRequestsNoSizes, validBidderRequest);
@@ -2694,6 +2695,7 @@ describe('ozone Adapter', function () {
       expect(payload.user.ext.eids[6]['uids'][0]['id']['eid']).to.equal('01.5678.parrableid');
     });
     it('replaces the auction url for a config override', function () {
+      spec.propertyBag.whitelabel = null;
       let fakeOrigin = 'http://sometestendpoint';
       config.setConfig({'ozone': {'endpointOverride': {'origin': fakeOrigin}}});
       const request = spec.buildRequests(validBidRequests, validBidderRequest);
@@ -2702,8 +2704,10 @@ describe('ozone Adapter', function () {
       const data = JSON.parse(request.data);
       expect(data.ext.ozone.origin).to.equal(fakeOrigin);
       config.setConfig({'ozone': {'kvpPrefix': null, 'endpointOverride': null}});
+      spec.propertyBag.whitelabel = null;
     });
     it('replaces the FULL auction url for a config override', function () {
+      spec.propertyBag.whitelabel = null;
       let fakeurl = 'http://sometestendpoint/myfullurl';
       config.setConfig({'ozone': {'endpointOverride': {'auctionUrl': fakeurl}}});
       const request = spec.buildRequests(validBidRequests, validBidderRequest);
@@ -2712,21 +2716,57 @@ describe('ozone Adapter', function () {
       const data = JSON.parse(request.data);
       expect(data.ext.ozone.origin).to.equal(fakeurl);
       config.setConfig({'ozone': {'kvpPrefix': null, 'endpointOverride': null}});
+      spec.propertyBag.whitelabel = null;
     });
     it('replaces the renderer url for a config override', function () {
+      spec.propertyBag.whitelabel = null;
       let fakeUrl = 'http://renderer.com';
       config.setConfig({'ozone': {'endpointOverride': {'rendererUrl': fakeUrl}}});
+      const request = spec.buildRequests(validBidRequests1OutstreamVideo2020, validBidderRequest1OutstreamVideo2020.bidderRequest);
       const result = spec.interpretResponse(getCleanValidVideoResponse(), validBidderRequest1OutstreamVideo2020);
       const bid = result[0];
       expect(bid.renderer).to.be.an.instanceOf(Renderer);
       expect(bid.renderer.url).to.equal(fakeUrl);
       config.setConfig({'ozone': {'kvpPrefix': null, 'endpointOverride': null}});
+      spec.propertyBag.whitelabel = null;
+    });
+    it('should generate all the adservertargeting keys correctly named', function () {
+      config.setConfig({'ozone': {'kvpPrefix': 'xx'}});
+      const request = spec.buildRequests(validBidRequests, validBidderRequest);
+      const result = spec.interpretResponse(validResponse, request);
+      expect(result[0].adserverTargeting).to.have.own.property('xx_appnexus_crid');
+      expect(utils.deepAccess(result[0].adserverTargeting, 'xx_appnexus_crid')).to.equal('98493581');
+      expect(utils.deepAccess(result[0].adserverTargeting, 'xx_pb')).to.equal(0.5);
+      expect(utils.deepAccess(result[0].adserverTargeting, 'xx_adId')).to.equal('2899ec066a91ff8-0-xx-0');
+      expect(utils.deepAccess(result[0].adserverTargeting, 'xx_size')).to.equal('300x600');
+      expect(utils.deepAccess(result[0].adserverTargeting, 'xx_pb_r')).to.equal('0.50');
+      expect(utils.deepAccess(result[0].adserverTargeting, 'xx_bid')).to.equal('true');
     });
     it('should create a meta object on each bid returned', function () {
       const request = spec.buildRequests(validBidRequests, validBidderRequest);
       const result = spec.interpretResponse(validResponse, request);
       expect(result[0]).to.have.own.property('meta');
       expect(result[0].meta.advertiserDomains[0]).to.equal('http://prebid.org');
+    });
+    it('replaces the kvp prefix ', function () {
+      spec.propertyBag.whitelabel = null;
+      config.setConfig({'ozone': {'kvpPrefix': 'test'}});
+      const request = spec.buildRequests(validBidRequests, validBidderRequest);
+      const data = JSON.parse(request.data);
+      expect(data.ext.ozone).to.haveOwnProperty('test_rw');
+      config.resetConfig();
+      spec.propertyBag.whitelabel = null;
+    });
+    it('handles an alias ', function () {
+      spec.propertyBag.whitelabel = null;
+      config.setConfig({'venatus': {'kvpPrefix': 've'}});
+      let br = JSON.parse(JSON.stringify(validBidRequests));
+      br[0]['bidder'] = 'venatus';
+      const request = spec.buildRequests(br, validBidderRequest);
+      const data = JSON.parse(request.data);
+      expect(data.ext.venatus).to.haveOwnProperty('ve_rw');
+      config.resetConfig();
+      spec.propertyBag.whitelabel = null;
     });
     it('should use oztestmode GET value if set', function() {
       var specMock = utils.deepClone(spec);
@@ -2829,36 +2869,56 @@ describe('ozone Adapter', function () {
         arrReq.push(b);
       }
       let request = specMock.buildRequests(arrReq, validBidderRequest);
-      expect(request.length).to.equal(5);
+      expect(request.length).to.equal(5); // 5 x 5 = 25
       specMock = utils.deepClone(spec);
       specMock.getGetParametersAsObject = function() {
-        return {'batchRequests': '10'};
+        return {'batchRequests': '10'}; // the built in function will return '10' (string)
       };
       request = specMock.buildRequests(arrReq, validBidderRequest);
-      expect(request.length).to.equal(3);
+      expect(request.length).to.equal(3); // 10, 10, 5
       specMock = utils.deepClone(spec);
       specMock.getGetParametersAsObject = function() {
         return {'batchRequests': true};
       };
       request = specMock.buildRequests(arrReq, validBidderRequest);
-      expect(request.method).to.equal('POST');
+      expect(request.method).to.equal('POST'); // no batching - GET param must be numeric
       specMock = utils.deepClone(spec);
       specMock.getGetParametersAsObject = function() {
         return {'batchRequests': 'true'};
       };
       request = specMock.buildRequests(arrReq, validBidderRequest);
-      expect(request.method).to.equal('POST');
+      expect(request.method).to.equal('POST'); // no batching - GET param must be numeric
       specMock = utils.deepClone(spec);
       specMock.getGetParametersAsObject = function() {
         return {'batchRequests': -5};
       };
       request = specMock.buildRequests(arrReq, validBidderRequest);
-      expect(request.method).to.equal('POST');
+      expect(request.method).to.equal('POST'); // no batching
+    });
+    it('should use GET values auction=dev & cookiesync=dev if set', function() {
+      var specMock = utils.deepClone(spec);
+      specMock.getGetParametersAsObject = function() {
+        return {};
+      };
+      let request = specMock.buildRequests(validBidRequestsMinimal, validBidderRequest);
+      let url = request.url;
+      expect(url).to.equal('https://elb.the-ozone-project.com/openrtb2/auction');
+      let cookieUrl = specMock.getCookieSyncUrl();
+      expect(cookieUrl).to.equal('https://elb.the-ozone-project.com/static/load-cookie.html');
+      specMock = utils.deepClone(spec);
+      specMock.getGetParametersAsObject = function() {
+        return {'auction': 'dev', 'cookiesync': 'dev'};
+      };
+      request = specMock.buildRequests(validBidRequestsMinimal, validBidderRequest);
+      url = request.url;
+      expect(url).to.equal('https://test.ozpr.net/openrtb2/auction');
+      cookieUrl = specMock.getCookieSyncUrl();
+      expect(cookieUrl).to.equal('https://test.ozpr.net/static/load-cookie.html');
     });
     it('should use a valid ozstoredrequest GET value if set to override the placementId values, and set oz_rw if we find it', function() {
       var specMock = utils.deepClone(spec);
       specMock.getGetParametersAsObject = function() {
-        return {'ozstoredrequest': '1122334455'};
+        return {'ozstoredrequest': '1122334455'}; // 10 digits are valid
       };
       const request = specMock.buildRequests(validBidRequestsMinimal, validBidderRequest);
       const data = JSON.parse(request.data);
@@ -2868,7 +2928,7 @@ describe('ozone Adapter', function () {
     it('should NOT use an invalid ozstoredrequest GET value if set to override the placementId values, and set oz_rw to 0', function() {
       var specMock = utils.deepClone(spec);
       specMock.getGetParametersAsObject = function() {
-        return {'ozstoredrequest': 'BADVAL'};
+        return {'ozstoredrequest': 'BADVAL'}; // 10 digits are valid
       };
       const request = specMock.buildRequests(validBidRequestsMinimal, validBidderRequest);
       const data = JSON.parse(request.data);
@@ -2906,21 +2966,21 @@ describe('ozone Adapter', function () {
     });
     it('should handle a valid ozFloor string value in the adunit correctly', function () {
       let cloneBidRequests = JSON.parse(JSON.stringify(validBidRequests));
-      cloneBidRequests[0].params.ozFloor = '0.1234';
+      cloneBidRequests[0].params.ozFloor = '0.1234'; // string or float - doesnt matter
       const request = spec.buildRequests(cloneBidRequests, validBidderRequest);
       const payload = JSON.parse(request.data);
       expect(utils.deepAccess(payload, 'imp.0.ext.ozone.ozFloor')).to.equal(0.1234);
     });
     it('should handle a valid ozFloor float value in the adunit correctly', function () {
       let cloneBidRequests = JSON.parse(JSON.stringify(validBidRequests));
-      cloneBidRequests[0].params.ozFloor = 0.1234;
+      cloneBidRequests[0].params.ozFloor = 0.1234; // string or float - doesnt matter
       const request = spec.buildRequests(cloneBidRequests, validBidderRequest);
       const payload = JSON.parse(request.data);
       expect(utils.deepAccess(payload, 'imp.0.ext.ozone.ozFloor')).to.equal(0.1234);
     });
     it('should ignore an invalid ozFloor string value in the adunit correctly', function () {
       let cloneBidRequests = JSON.parse(JSON.stringify(validBidRequests));
-      cloneBidRequests[0].params.ozFloor = 'this is no good!';
+      cloneBidRequests[0].params.ozFloor = 'this is no good!'; // string or float - doesnt matter
       const request = spec.buildRequests(cloneBidRequests, validBidderRequest);
       const payload = JSON.parse(request.data);
       expect(utils.deepAccess(payload, 'imp.0.ext.ozone.ozFloor', null)).to.be.null;
@@ -3070,7 +3130,7 @@ describe('ozone Adapter', function () {
           }
         },
         getFloor: function(obj) {
-          return obj.size;
+          return obj.size; // we just want to look at the size that was sent
         }
       };
       let floorObject = spec.getFloorObjectForAuction(testBidObject);
@@ -3095,7 +3155,7 @@ describe('ozone Adapter', function () {
       const request = spec.buildRequests(br, validBidderRequest);
       const data = JSON.parse(request.data);
       expect(data.source.ext).to.haveOwnProperty('schain');
-      expect(data.source.ext.schain).to.deep.equal(schainConfigObject);
+      expect(data.source.ext.schain).to.deep.equal(schainConfigObject); // .deep.equal() : Target object deeply (but not strictly) equals `{a: 1}`
     });
     it('should find ortb2 cookieDeprecation values', function () {
       let bidderRequest = JSON.parse(JSON.stringify(validBidderRequestWithCookieDeprecation));
@@ -3120,36 +3180,42 @@ describe('ozone Adapter', function () {
     });
     it('Single request: should use ortb auction ID & transaction ID values if set (this will be the case when publisher opts in with config)', function() {
       var specMock = utils.deepClone(spec);
+      specMock.propertyBag.whitelabel = null;
       config.setConfig({'ozone': {'singleRequest': true}});
-      const request = specMock.buildRequests(validBidRequestsWithAuctionIdTransactionId, validBidderRequest);
+      specMock.loadWhitelabelData(validBidRequestsWithAuctionIdTransactionId[0]);
+      const request = specMock.buildRequests(validBidRequestsWithAuctionIdTransactionId, validBidderRequest); // I don't look in the bidderRequest for this - there's no point
       expect(request).to.be.an('Object');
       const payload = JSON.parse(request.data);
       expect(payload.source.tid).to.equal(validBidRequestsWithAuctionIdTransactionId[0].ortb2.source.tid);
-      expect(payload.imp[0].ext.auctionId).to.equal(validBidRequestsWithAuctionIdTransactionId[0].ortb2.source.tid);
-      expect(payload.imp[0].ext.tid).to.equal(validBidRequestsWithAuctionIdTransactionId[0].ortb2Imp.ext.tid);
+      expect(payload.imp[0].ext.ozone.auctionId).to.equal(validBidRequestsWithAuctionIdTransactionId[0].ortb2.source.tid);
+      expect(payload.imp[0].ext.ozone.transactionId).to.equal(validBidRequestsWithAuctionIdTransactionId[0].ortb2Imp.ext.tid);
       config.resetConfig();
     });
     it('non-Single request: should use ortb auction ID & transaction ID values if set (this will be the case when publisher opts in with config)', function() {
       var specMock = utils.deepClone(spec);
+      specMock.propertyBag.whitelabel = null;
       config.setConfig({'ozone': {'singleRequest': false}});
-      const request = specMock.buildRequests(validBidRequestsWithAuctionIdTransactionId, validBidderRequest);
+      specMock.loadWhitelabelData(validBidRequestsWithAuctionIdTransactionId[0]);
+      const request = specMock.buildRequests(validBidRequestsWithAuctionIdTransactionId, validBidderRequest); // I don't look in the bidderRequest for this - there's no point
       expect(request).to.be.an('Array');
       const payload = JSON.parse(request[0].data);
       expect(payload.source.tid).to.equal(validBidRequestsWithAuctionIdTransactionId[0].ortb2.source.tid);
-      expect(payload.imp[0].ext.auctionId).to.equal(validBidRequestsWithAuctionIdTransactionId[0].ortb2.source.tid);
-      expect(payload.imp[0].ext.tid).to.equal(validBidRequestsWithAuctionIdTransactionId[0].ortb2Imp.ext.tid);
+      expect(payload.imp[0].ext.ozone.auctionId).to.equal(validBidRequestsWithAuctionIdTransactionId[0].ortb2.source.tid);
+      expect(payload.imp[0].ext.ozone.transactionId).to.equal(validBidRequestsWithAuctionIdTransactionId[0].ortb2Imp.ext.tid);
       config.resetConfig();
     });
     it('Batch request (flat array of single requests): should use ortb auction ID & transaction ID values if set (this will be the case when publisher opts in with config)', function() {
       var specMock = utils.deepClone(spec);
+      specMock.propertyBag.whitelabel = null;
       config.setConfig({'ozone': {'batchRequests': 3}});
-      const request = specMock.buildRequests(valid6BidRequestsWithAuctionIdTransactionId, validBidderRequest);
+      specMock.loadWhitelabelData(valid6BidRequestsWithAuctionIdTransactionId[0]);
+      const request = specMock.buildRequests(valid6BidRequestsWithAuctionIdTransactionId, validBidderRequest); // I don't look in the bidderRequest for this - there's no point
       expect(request).to.be.an('Array');
       expect(request).to.have.lengthOf(2);
       const payload = JSON.parse(request[0].data);
       expect(payload.source.tid).to.equal(valid6BidRequestsWithAuctionIdTransactionId[0].ortb2.source.tid);
-      expect(payload.imp[0].ext.auctionId).to.equal(valid6BidRequestsWithAuctionIdTransactionId[0].ortb2.source.tid);
-      expect(payload.imp[0].ext.tid).to.equal(valid6BidRequestsWithAuctionIdTransactionId[0].ortb2Imp.ext.tid);
+      expect(payload.imp[0].ext.ozone.auctionId).to.equal(valid6BidRequestsWithAuctionIdTransactionId[0].ortb2.source.tid);
+      expect(payload.imp[0].ext.ozone.transactionId).to.equal(valid6BidRequestsWithAuctionIdTransactionId[0].ortb2Imp.ext.tid);
       config.resetConfig();
     });
     it('should handle ortb2 device data', function () {
@@ -3194,7 +3260,7 @@ describe('ozone Adapter', function () {
     it('should build bid array with gdpr', function () {
       let validBR = JSON.parse(JSON.stringify(bidderRequestWithFullGdpr));
       validBR.gdprConsent = {'gdprApplies': 1, 'consentString': 'This is the gdpr consent string'};
-      const request = spec.buildRequests(validBidRequests, validBR);
+      const request = spec.buildRequests(validBidRequests, validBR); // works the old way, with GDPR not enforced by default
       const result = spec.interpretResponse(validResponse, request);
       expect(result.length).to.equal(1);
     });
@@ -3224,6 +3290,7 @@ describe('ozone Adapter', function () {
       expect(result).to.be.empty;
     });
     it('should have video renderer for outstream video', function () {
+      const request = spec.buildRequests(validBidRequests1OutstreamVideo2020, validBidderRequest1OutstreamVideo2020.bidderRequest);
       const result = spec.interpretResponse(getCleanValidVideoResponse(), validBidderRequest1OutstreamVideo2020);
       const bid = result[0];
       expect(bid.renderer).to.be.an.instanceOf(Renderer);
@@ -3233,6 +3300,7 @@ describe('ozone Adapter', function () {
       instreamRequestsObj[0].mediaTypes.video.context = 'instream';
       let instreamBidderReq = JSON.parse(JSON.stringify(validBidderRequest1OutstreamVideo2020));
       instreamBidderReq.bidderRequest.bids[0].mediaTypes.video.context = 'instream';
+      const request = spec.buildRequests(instreamRequestsObj, validBidderRequest1OutstreamVideo2020.bidderRequest);
       const result = spec.interpretResponse(getCleanValidVideoResponse(), instreamBidderReq);
       const bid = result[0];
       expect(bid.hasOwnProperty('renderer')).to.be.false;
@@ -3265,6 +3333,14 @@ describe('ozone Adapter', function () {
       expect(utils.deepAccess(result[0].adserverTargeting, 'oz_appnexus_omp')).to.be.undefined;
     });
     it('should handle ext.bidder.ozone.floor correctly, setting flr & rid as necessary', function () {
+      const request = spec.buildRequests(validBidRequests, validBidderRequest);
+      let vres = JSON.parse(JSON.stringify(validResponse));
+      vres.body.seatbid[0].bid[0].ext.bidder.ozone = {floor: 1, ruleId: 'ZjbsYE1q'};
+      const result = spec.interpretResponse(vres, request);
+      expect(utils.deepAccess(result[0].adserverTargeting, 'oz_appnexus_flr')).to.equal(1);
+      expect(utils.deepAccess(result[0].adserverTargeting, 'oz_appnexus_rid')).to.equal('ZjbsYE1q');
+    });
+    it('Alias venatus: should handle ext.bidder.venatus.floor correctly, setting flr & rid as necessary', function () {
       const request = spec.buildRequests(validBidRequests, validBidderRequest);
       let vres = JSON.parse(JSON.stringify(validResponse));
       vres.body.seatbid[0].bid[0].ext.bidder.ozone = {floor: 1, ruleId: 'ZjbsYE1q'};
@@ -3332,6 +3408,12 @@ describe('ozone Adapter', function () {
       expect(utils.deepAccess(result[0].adserverTargeting, 'oz_appnexus_rid')).to.equal(123);
       expect(utils.deepAccess(result[1].adserverTargeting, 'oz_appnexus_rid', '')).to.equal('');
     });
+    it('should add oz_ozappnexus_sid (cid value) for all appnexus bids', function () {
+      const request = spec.buildRequests(validBidRequestsMulti, validBidderRequest);
+      let validres = JSON.parse(JSON.stringify(validResponse2BidsSameAdunit));
+      const result = spec.interpretResponse(validres, request);
+      expect(utils.deepAccess(result[0].adserverTargeting, 'oz_ozappnexus_sid')).to.equal(result[0].cid);
+    });
     it('should add oz_auc_id (response id value)', function () {
       const request = spec.buildRequests(validBidRequestsMulti, validBidderRequest);
       let validres = JSON.parse(JSON.stringify(validBidResponse1adWith2Bidders));
@@ -3350,10 +3432,10 @@ describe('ozone Adapter', function () {
       let validres = JSON.parse(JSON.stringify(multiResponse1));
       let request = spec.buildRequests(multiRequest1, multiBidderRequest1);
       let result = spec.interpretResponse(validres, request);
-      expect(result.length).to.equal(4);
+      expect(result.length).to.equal(4); // one of the 5 bids will have been removed
+      expect(result[1]['price']).to.equal(0.521);
       expect(result[1]['impid']).to.equal('3025f169863b7f8');
       expect(result[1]['id']).to.equal('18552976939844999');
-      expect(result[1]['price']).to.equal(0.521);
       expect(result[1]['adserverTargeting']['oz_ozappnexus_adId']).to.equal('3025f169863b7f8-0-oz-2');
       validres = JSON.parse(JSON.stringify(multiResponse1));
       validres.body.seatbid[0].bid[1].price = 1.1;
@@ -3383,12 +3465,12 @@ describe('ozone Adapter', function () {
       const req = spec.buildRequests(validBidRequests, validBidderRequest);
       let objResp = JSON.parse(JSON.stringify(validResponse));
       objResp.body.ext = {igi: [{
-          'impid': '1',
-          'igb': [{
-            'origin': 'https://paapi.dsp.com',
-            'pbs': '{"key": "value"}'
-          }]
-        }]};
+        'impid': '1',
+        'igb': [{
+          'origin': 'https://paapi.dsp.com',
+          'pbs': '{"key": "value"}'
+        }]
+      }]};
       const result = spec.interpretResponse(objResp, req);
       expect(result).to.be.an('object');
       expect(result.fledgeAuctionConfigs[0]['impid']).to.equal('1');
@@ -3396,45 +3478,45 @@ describe('ozone Adapter', function () {
     it('should add labels in the adserver request if they are present in the auction response', function () {
       const request = spec.buildRequests(validBidRequestsMulti, validBidderRequest);
       let validres = JSON.parse(JSON.stringify(validResponse2Bids));
-      validres.body.seatbid.push(JSON.parse(JSON.stringify(validres.body.seatbid[0])));
+      validres.body.seatbid.push(JSON.parse(JSON.stringify(validres.body.seatbid[0]))); // add another bidder
       validres.body.seatbid[1].seat = 'marktest';
       validres.body.seatbid[1].bid[0].ext.prebid.labels = ['b1', 'b2', 'b3'];
-      validres.body.seatbid[1].bid[0].price = 10;
-      validres.body.seatbid[1].bid[1].price = 0;
+      validres.body.seatbid[1].bid[0].price = 10; // will win
+      validres.body.seatbid[1].bid[1].price = 0; // will lose
       validres.body.seatbid[0].bid[0].ext.prebid.labels = ['bid1label1', 'bid1label2', 'bid1label3'];
       validres.body.seatbid[0].bid[1].ext.prebid.labels = ['bid2label'];
       const result = spec.interpretResponse(validres, request);
-      expect(result.length).to.equal(4);
-      expect(utils.deepAccess(result[0].adserverTargeting, 'oz_winner')).to.equal('marktest');
-      expect(utils.deepAccess(result[0].adserverTargeting, 'oz_labels')).to.equal('b1,b2,b3');
+      expect(result.length).to.equal(4); // 4 bids will be returned; 2 from each bidder. All will have the winning keys attached.
+      expect(utils.deepAccess(result[0].adserverTargeting, 'oz_winner')).to.equal('marktest'); // the first bid
+      expect(utils.deepAccess(result[0].adserverTargeting, 'oz_labels')).to.equal('b1,b2,b3'); // the winner
       expect(utils.deepAccess(result[0].adserverTargeting, 'oz_appnexus_labels')).to.equal('bid1label1,bid1label2,bid1label3');
-      expect(utils.deepAccess(result[1].adserverTargeting, 'oz_winner')).to.equal('appnexus');
+      expect(utils.deepAccess(result[1].adserverTargeting, 'oz_winner')).to.equal('appnexus'); // the second bid
       expect(utils.deepAccess(result[1].adserverTargeting, 'oz_appnexus_labels')).to.equal('bid2label');
-      expect(utils.deepAccess(result[1].adserverTargeting, 'oz_labels')).to.equal('bid2label');
-      expect(utils.deepAccess(result[2].adserverTargeting, 'oz_labels')).to.equal('b1,b2,b3');
-      expect(utils.deepAccess(result[3].adserverTargeting, 'oz_labels')).to.equal('bid2label');
+      expect(utils.deepAccess(result[1].adserverTargeting, 'oz_labels')).to.equal('bid2label'); // the second adslot winning label
+      expect(utils.deepAccess(result[2].adserverTargeting, 'oz_labels')).to.equal('b1,b2,b3'); // we're back to the first of the 2 bids again
+      expect(utils.deepAccess(result[3].adserverTargeting, 'oz_labels')).to.equal('bid2label'); // the second adslot winning label
     });
     it('should not add labels in the adserver request if they are present in the auction response when config contains ozone.enhancedAdserverTargeting', function () {
       config.setConfig({'ozone': {'enhancedAdserverTargeting': false}});
       const request = spec.buildRequests(validBidRequestsMulti, validBidderRequest);
       let validres = JSON.parse(JSON.stringify(validResponse2Bids));
-      validres.body.seatbid.push(JSON.parse(JSON.stringify(validres.body.seatbid[0])));
+      validres.body.seatbid.push(JSON.parse(JSON.stringify(validres.body.seatbid[0]))); // add another bidder
       validres.body.seatbid[1].seat = 'marktest';
       validres.body.seatbid[1].bid[0].ext.prebid.labels = ['b1', 'b2', 'b3'];
-      validres.body.seatbid[1].bid[0].price = 10;
-      validres.body.seatbid[1].bid[1].price = 0;
+      validres.body.seatbid[1].bid[0].price = 10; // will win
+      validres.body.seatbid[1].bid[1].price = 0; // will lose
       validres.body.seatbid[0].bid[0].ext.prebid.labels = ['bid1label1', 'bid1label2', 'bid1label3'];
       validres.body.seatbid[0].bid[1].ext.prebid.labels = ['bid2label'];
       const result = spec.interpretResponse(validres, request);
-      expect(result.length).to.equal(4);
-      expect(utils.deepAccess(result[0].adserverTargeting, 'oz_winner')).to.equal('marktest');
+      expect(result.length).to.equal(4); // 4 bids will be returned; 2 from each bidder. All will have the winning keys attached.
+      expect(utils.deepAccess(result[0].adserverTargeting, 'oz_winner')).to.equal('marktest'); // the first bid
       expect(result[0].adserverTargeting).to.not.have.property('oz_labels');
       expect(result[0].adserverTargeting).to.not.have.property('oz_appnexus_labels');
-      expect(utils.deepAccess(result[1].adserverTargeting, 'oz_winner')).to.equal('appnexus');
+      expect(utils.deepAccess(result[1].adserverTargeting, 'oz_winner')).to.equal('appnexus'); // the second bid
       expect(result[1].adserverTargeting).to.not.have.property('oz_appnexus_labels');
-      expect(result[1].adserverTargeting).to.not.have.property('oz_labels');
-      expect(result[2].adserverTargeting).to.not.have.property('oz_labels');
-      expect(result[3].adserverTargeting).to.not.have.property('oz_labels');
+      expect(result[1].adserverTargeting).to.not.have.property('oz_labels'); // the second adslot winning label
+      expect(result[2].adserverTargeting).to.not.have.property('oz_labels'); // we're back to the first of the 2 bids again
+      expect(result[3].adserverTargeting).to.not.have.property('oz_labels'); // the second adslot winning label
       config.resetConfig();
     });
   });
@@ -3506,6 +3588,26 @@ describe('ozone Adapter', function () {
       const result = getWidthAndHeightFromVideoObject(obj);
       expect(result).to.be.null;
     });
+    it('should find that player size is nested', function () {
+      let obj = {'playerSize': [[640, 480]], 'mimes': ['video/mp4'], 'context': 'outstream'};
+      const result = playerSizeIsNestedArray(obj);
+      expect(result).to.be.true;
+    });
+    it('should find null from bad video object', function () {
+      let obj = {'playerSize': [], 'mimes': ['video/mp4'], 'context': 'outstream'};
+      const result = playerSizeIsNestedArray(obj);
+      expect(result).to.be.null;
+    });
+    it('should find null from bad video object2', function () {
+      let obj = {'mimes': ['video/mp4'], 'context': 'outstream'};
+      const result = playerSizeIsNestedArray(obj);
+      expect(result).to.be.null;
+    });
+    it('should find null from bad video object3', function () {
+      let obj = {'playerSize': 'should be an array', 'mimes': ['video/mp4'], 'context': 'outstream'};
+      const result = playerSizeIsNestedArray(obj);
+      expect(result).to.be.null;
+    });
     it('should add oz_appnexus_dealid into ads request if dealid exists in the auction response', function () {
       const request = spec.buildRequests(validBidRequestsMulti, validBidderRequest);
       let validres = JSON.parse(JSON.stringify(validResponse2Bids));
@@ -3521,6 +3623,30 @@ describe('ozone Adapter', function () {
       const result = defaultSize(obj);
       expect(result.defaultHeight).to.equal(250);
       expect(result.defaultWidth).to.equal(300);
+    });
+  });
+  describe('getGranularityKeyName', function() {
+    it('should return a string granularity as-is', function() {
+      const result = getGranularityKeyName('', 'this is it', '');
+      expect(result).to.equal('this is it');
+    });
+    it('should return "custom" for a mediaTypeGranularity object', function() {
+      const result = getGranularityKeyName('', {}, '');
+      expect(result).to.equal('custom');
+    });
+    it('should return "custom" for a mediaTypeGranularity object', function() {
+      const result = getGranularityKeyName('', false, 'string buckets');
+      expect(result).to.equal('string buckets');
+    });
+  });
+  describe('getGranularityObject', function() {
+    it('should return an object as-is', function() {
+      const result = getGranularityObject('', {'name': 'mark'}, '', '');
+      expect(result.name).to.equal('mark');
+    });
+    it('should return an object as-is', function() {
+      const result = getGranularityObject('', false, 'custom', {'name': 'rupert'});
+      expect(result.name).to.equal('rupert');
     });
   });
   describe('blockTheRequest', function() {
@@ -3571,7 +3697,7 @@ describe('ozone Adapter', function () {
       let bid_params_video = {
         skippable: true,
         playback_method: ['auto_play_sound_off'],
-        playbackmethod: 2,
+        playbackmethod: 2, /* start on load, no sound */
         minduration: 5,
         maxduration: 60,
         skipmin: 5,
@@ -3581,7 +3707,7 @@ describe('ozone Adapter', function () {
       let result = spec.unpackVideoConfigIntoIABformat(mediaTypes, bid_params_video);
       expect(result.mimes).to.be.an('array').that.includes('video/mp4');
       expect(result.ext.context).to.equal('outstream');
-      expect(result.ext.skippable).to.be.true;
+      expect(result.ext.skippable).to.be.true; // note - we add skip in a different step: addVideoDefaults
       expect(result.ext.testKey).to.equal('child value');
     });
   });
@@ -3595,7 +3721,7 @@ describe('ozone Adapter', function () {
       let bid_params_video = {
         skippable: true,
         playback_method: ['auto_play_sound_off'],
-        playbackmethod: 2,
+        playbackmethod: 2, /* start on load, no sound */
         minduration: 5,
         maxduration: 60,
         skipmin: 5,
@@ -3610,7 +3736,7 @@ describe('ozone Adapter', function () {
     });
     it('should correctly add video defaults if page config videoParams is defined, also check skip in the parent', function () {
       var specMock = utils.deepClone(spec);
-      config.setConfig({'ozone': {videoParams: {outstream: 3, instream: 1}}});
+      specMock.propertyBag.whitelabel.videoParams = {outstream: 3, instream: 1};
       let mediaTypes = {
         playerSize: [640, 480],
         mimes: ['video/mp4'],
@@ -3619,7 +3745,7 @@ describe('ozone Adapter', function () {
       };
       let bid_params_video = {
         playback_method: ['auto_play_sound_off'],
-        playbackmethod: 2,
+        playbackmethod: 2, /* start on load, no sound */
         minduration: 5,
         maxduration: 60,
         skipmin: 5,
@@ -3629,7 +3755,6 @@ describe('ozone Adapter', function () {
       let result = specMock.addVideoDefaults({}, mediaTypes, bid_params_video);
       expect(result.placement).to.equal(3);
       expect(result.skip).to.equal(1);
-      config.resetConfig();
     });
   });
   describe('removeSingleBidderMultipleBids', function() {
@@ -3642,6 +3767,28 @@ describe('ozone Adapter', function () {
       expect(response[0].bid.length).to.equal(2);
       expect(response[0].seat).to.equal('ozappnexus');
       expect(response[1].bid.length).to.equal(2);
+    });
+  });
+  describe('getWhitelabelConfigItem', function() {
+    beforeEach(function () {
+      config.resetConfig()
+    })
+    it('should fetch the whitelabelled equivalent config value correctly', function () {
+      var specMock = utils.deepClone(spec);
+      config.setConfig({'ozone': {'oz_omp_floor': 'ozone-floor-value'}});
+      config.setConfig({'markbidder': {'mb_omp_floor': 'markbidder-floor-value'}});
+      specMock.propertyBag.whitelabel = {bidder: 'ozone', keyPrefix: 'oz'};
+      let testKey = 'ozone.oz_omp_floor';
+      let ozone_value = specMock.getWhitelabelConfigItem(testKey);
+      expect(ozone_value).to.equal('ozone-floor-value');
+      specMock.propertyBag.whitelabel = {bidder: 'markbidder', keyPrefix: 'mb'};
+      let markbidder_config = specMock.getWhitelabelConfigItem(testKey);
+      expect(markbidder_config).to.equal('markbidder-floor-value');
+      config.setConfig({'markbidder': {'singleRequest': 'markbidder-singlerequest-value'}});
+      let testKey2 = 'ozone.singleRequest';
+      let markbidder_config2 = specMock.getWhitelabelConfigItem(testKey2);
+      expect(markbidder_config2).to.equal('markbidder-singlerequest-value');
+      config.resetConfig();
     });
   });
   describe('setBidMediaTypeIfNotExist', function() {

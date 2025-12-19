@@ -365,7 +365,7 @@ describe('r2b2 Analytics', function () {
   })
 
   beforeEach(() => {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
     clock = sandbox.useFakeTimers();
     sandbox.stub(pbEvents, 'getEvents').returns([]);
     getGlobalStub = sandbox.stub(prebidGlobal, 'getGlobal').returns({

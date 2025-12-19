@@ -38,15 +38,9 @@ const cstgApiUrl = 'https://prod.euid.eu/v2/token/client-generate';
 const headers = { 'Content-Type': 'application/json' };
 const makeSuccessResponseBody = (token) => btoa(JSON.stringify({ status: 'success', body: { ...apiHelpers.makeTokenResponse(initialToken), advertising_token: token } }));
 const makeOptoutResponseBody = (token) => btoa(JSON.stringify({ status: 'optout', body: { ...apiHelpers.makeTokenResponse(initialToken), advertising_token: token } }));
-function findEuid(bid) {
-  return (bid?.userIdAsEids ?? []).find(e => e.source === 'euid.eu');
-}
-const expectToken = (bid, token) => {
-  const eid = findEuid(bid);
-  expect(eid && eid.uids[0].id).to.equal(token);
-};
-const expectOptout = (bid) => expect(findEuid(bid)).to.be.undefined;
-const expectNoIdentity = (bid) => expect(findEuid(bid)).to.be.undefined;
+const expectToken = (bid, token) => expect(bid?.userId ?? {}).to.deep.include(makeEuidIdentityContainer(token));
+const expectOptout = (bid, token) => expect(bid?.userId ?? {}).to.deep.include(makeEuidOptoutContainer(token));
+const expectNoIdentity = (bid) => expect(bid).to.not.haveOwnProperty('userId');
 
 describe('EUID module', function() {
   let suiteSandbox, restoreSubtleToUndefined = false;
@@ -57,7 +51,7 @@ describe('EUID module', function() {
   before(function() {
     uninstallTcfControl();
     hook.ready();
-    suiteSandbox = sinon.createSandbox();
+    suiteSandbox = sinon.sandbox.create();
     if (typeof window.crypto.subtle === 'undefined') {
       restoreSubtleToUndefined = true;
       window.crypto.subtle = { importKey: () => {}, digest: () => {}, decrypt: () => {}, deriveKey: () => {}, encrypt: () => {}, generateKey: () => {}, exportKey: () => {} };

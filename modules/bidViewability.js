@@ -8,6 +8,7 @@ import {EVENTS} from '../src/constants.js';
 import {isFn, logWarn, triggerPixel} from '../src/utils.js';
 import {getGlobal} from '../src/prebidGlobal.js';
 import adapterManager, {gppDataHandler, uspDataHandler} from '../src/adapterManager.js';
+import {find} from '../src/polyfill.js';
 import {gdprParams} from '../libraries/dfpUtils/dfpUtils.js';
 
 const MODULE_NAME = 'bidViewability';
@@ -22,7 +23,7 @@ export let isBidAdUnitCodeMatchingSlot = (bid, slot) => {
 }
 
 export let getMatchingWinningBidForGPTSlot = (globalModuleConfig, slot) => {
-  return getGlobal().getAllWinningBids().find(
+  return find(getGlobal().getAllWinningBids(),
     // supports custom match function from config
     bid => isFn(globalModuleConfig[CONFIG_CUSTOM_MATCH])
       ? globalModuleConfig[CONFIG_CUSTOM_MATCH](bid, slot)
@@ -58,8 +59,7 @@ export let logWinningBidNotFound = (slot) => {
   logWarn(`bid details could not be found for ${slot.getSlotElementId()}, probable reasons: a non-prebid bid is served OR check the prebid.AdUnit.code to GPT.AdSlot relation.`);
 };
 
-export let impressionViewableHandler = (globalModuleConfig, event) => {
-  const slot = event.slot;
+export let impressionViewableHandler = (globalModuleConfig, slot, event) => {
   let respectiveBid = getMatchingWinningBidForGPTSlot(globalModuleConfig, slot);
 
   if (respectiveBid === null) {
@@ -79,28 +79,24 @@ export let impressionViewableHandler = (globalModuleConfig, event) => {
   }
 };
 
-const handleSetConfig = (config) => {
-  const globalModuleConfig = config || {};
-  window.googletag = window.googletag || {};
-  window.googletag.cmd = window.googletag.cmd || [];
-
-  // do nothing if module-config.enabled is not set to true
-  // this way we are adding a way for bidders to know (using pbjs.getConfig('bidViewability').enabled === true) whether this module is added in build and is enabled
-  const impressionViewableHandlerWrapper = (event) => {
-    window.googletag.pubads().removeEventListener(GPT_IMPRESSION_VIEWABLE_EVENT, impressionViewableHandlerWrapper);
-    impressionViewableHandler(globalModuleConfig, event);
-  };
-
-  if (globalModuleConfig[CONFIG_ENABLED] !== true) {
+export let init = () => {
+  events.on(EVENTS.AUCTION_INIT, () => {
+    // read the config for the module
+    const globalModuleConfig = config.getConfig(MODULE_NAME) || {};
+    // do nothing if module-config.enabled is not set to true
+    // this way we are adding a way for bidders to know (using pbjs.getConfig('bidViewability').enabled === true) whether this module is added in build and is enabled
+    if (globalModuleConfig[CONFIG_ENABLED] !== true) {
+      return;
+    }
+    // add the GPT event listener
+    window.googletag = window.googletag || {};
+    window.googletag.cmd = window.googletag.cmd || [];
     window.googletag.cmd.push(() => {
-      window.googletag.pubads().removeEventListener(GPT_IMPRESSION_VIEWABLE_EVENT, impressionViewableHandlerWrapper);
+      window.googletag.pubads().addEventListener(GPT_IMPRESSION_VIEWABLE_EVENT, function(event) {
+        impressionViewableHandler(globalModuleConfig, event.slot, event);
+      });
     });
-    return;
-  }
-  // add the GPT event listener
-  window.googletag.cmd.push(() => {
-    window.googletag.pubads().addEventListener(GPT_IMPRESSION_VIEWABLE_EVENT, impressionViewableHandlerWrapper);
   });
 }
 
-config.getConfig(MODULE_NAME, config => handleSetConfig(config[MODULE_NAME]));
+init()

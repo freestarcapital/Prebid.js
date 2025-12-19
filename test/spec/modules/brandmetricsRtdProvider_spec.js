@@ -204,7 +204,7 @@ describe('getBidRequestData', () => {
     let eventsEmitSpy;
 
     before(() => {
-      sandbox = sinon.createSandbox();
+      sandbox = sinon.sandbox.create();
       eventsEmitSpy = sandbox.spy(events, ['emit']);
     });
 

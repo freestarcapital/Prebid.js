@@ -45,9 +45,8 @@ export const spec = {
   /**
    * Make a server request from the list of BidRequests.
    *
-   * @param {BidRequest[]} validBidRequests - an array of bids
-   * @param {Object} bidderRequest
-   * @return {Object} Info describing the request to the server.
+   * @param {validBidRequests} - an array of bids
+   * @return ServerRequest Info describing the request to the server.
    */
   buildRequests: function (validBidRequests, bidderRequest) {
     let payloadItems = {};
@@ -99,42 +98,45 @@ export const spec = {
    * @return {Bid[]} An array of bids which were nested inside the server.
    */
   interpretResponse: function (serverResponse, bidRequest) {
-    const bidResponses = [];
     const serverBody = serverResponse.body;
-
-    const bids = Array.isArray(serverBody?.bids)
-      ? serverBody.bids
-      : [serverBody];
-
-    bids.forEach(bid => {
-      if (!bid || !bid.mediaType || !bid.requestId) {
-        return;
-      }
-
-      const baseResponse = {
-        requestId: bid.requestId,
-        cpm: bid.cpm,
-        width: bid.width,
-        height: bid.height,
-        creativeId: bid.creativeId,
-        currency: bid.currency,
-        netRevenue: !!bid.netRevenue,
-        ttl: bid.ttl,
-        mediaType: bid.mediaType,
+    const bidResponses = [];
+    if (serverBody.mediaType == 'banner') {
+      const bidResponse = {
+        requestId: serverBody.requestId,
+        cpm: serverBody.cpm,
+        width: serverBody.width,
+        height: serverBody.height,
+        creativeId: serverBody.creativeId,
+        currency: serverBody.currency,
+        netRevenue: false,
+        ttl: serverBody.ttl,
+        ad: serverBody.ad,
+        mediaType: 'banner',
         meta: {
-          mediaType: bid.mediaType,
-          advertiserDomains: bid.advertiserDomains || []
+          mediaType: 'banner',
+          advertiserDomains: serverBody.advertiserDomains
         }
-      };
-
-      if (bid.mediaType === 'banner') {
-        baseResponse.ad = bid.ad;
-      } else if (bid.mediaType === 'video') {
-        baseResponse.vastUrl = bid.vastUrl;
       }
-
-      bidResponses.push(baseResponse);
-    });
+      bidResponses.push(bidResponse)
+    } else if (serverBody.mediaType == 'video') {
+      const bidResponse = {
+        requestId: serverBody.requestId,
+        cpm: serverBody.cpm,
+        width: serverBody.width,
+        height: serverBody.height,
+        creativeId: serverBody.creativeId,
+        currency: serverBody.currency,
+        netRevenue: false,
+        ttl: serverBody.ttl,
+        vastUrl: serverBody.vastUrl,
+        mediaType: 'video',
+        meta: {
+          mediaType: 'video',
+          advertiserDomains: serverBody.advertiserDomains
+        }
+      }
+      bidResponses.push(bidResponse)
+    }
 
     return bidResponses;
   },

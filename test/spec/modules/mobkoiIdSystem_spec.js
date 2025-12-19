@@ -171,13 +171,12 @@ describe('mobkoiIdSystem', function () {
           adServerBaseUrl: TEST_AD_SERVER_BASE_URL
         }
       };
-      const consentObject = {
-        gdpr: {
-          consentString: TEST_CONSENT_STRING
-        }
+      const gdprConsent = {
+        gdprApplies: true,
+        consentString: TEST_CONSENT_STRING
       };
 
-      const url = mobkoiUtils.buildEquativPixelUrl(syncUserOptions, consentObject);
+      const url = mobkoiUtils.buildEquativPixelUrl(syncUserOptions, gdprConsent);
       const decodedUrl = decodeFullUrl(url);
 
       expect(decodedUrl).to.include(

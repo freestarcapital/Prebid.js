@@ -3,8 +3,6 @@
  */
 
 import {deepAccess, parseUrl, extractDomainFromHost, getWinDimensions} from '../src/utils.js';
-import { getBoundingClientRect } from '../libraries/boundingClientRect/boundingClientRect.js';
-import { getViewportCoordinates } from '../libraries/viewport/viewport.js';
 import {registerBidder} from '../src/adapters/bidderFactory.js';
 import {BANNER, VIDEO} from '../src/mediaTypes.js';
 
@@ -39,13 +37,23 @@ function getGdprQueryParams(gdprConsent) {
 }
 
 function getBannerCoords(id) {
-  const element = document.getElementById(id);
+  let element = document.getElementById(id);
+  let left = -1;
+  let top = -1;
   if (element) {
-    const {left, top} = getBoundingClientRect(element);
-    const viewport = getViewportCoordinates();
-    return [Math.round(left + (viewport.left || 0)), Math.round(top + (viewport.top || 0))];
+    left = element.offsetLeft;
+    top = element.offsetTop;
+
+    let parent = element.offsetParent;
+    if (parent) {
+      left += parent.offsetLeft;
+      top += parent.offsetTop;
+    }
+
+    return [left, top];
+  } else {
+    return null;
   }
-  return null;
 }
 
 export const spec = {

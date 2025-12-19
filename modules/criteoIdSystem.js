@@ -224,7 +224,8 @@ export const criteoIdSubmodule = {
   /**
    * get the Criteo Id from local storages and initiate a new user sync
    * @function
-   * @param {SubmoduleConfig} [submoduleConfig]
+   * @param {SubmoduleConfig} [config]
+   * @param {ConsentData} [consentData]
    * @returns {{id: {criteoId: string} | undefined}}}
    */
   getId(submoduleConfig) {

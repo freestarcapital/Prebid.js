@@ -1,7 +1,6 @@
 const TerserPlugin = require('terser-webpack-plugin');
 var prebid = require('./package.json');
 var path = require('path');
-const cacheDir = path.resolve(__dirname, '.cache/babel-loader');
 var webpack = require('webpack');
 var helpers = require('./gulpHelpers.js');
 var { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
@@ -9,9 +8,6 @@ var argv = require('yargs').argv;
 const fs = require('fs');
 const babelConfig = require('./babelConfig.js')({disableFeatures: helpers.getDisabledFeatures(), prebidDistUrlBase: argv.distUrlBase});
 const {WebpackManifestPlugin} = require('webpack-manifest-plugin')
-
-// Check if ES5 mode is requested
-const isES5Mode = argv.ES5;
 
 var plugins = [
   new webpack.EnvironmentPlugin({'LiveConnectMode': null}),
@@ -44,11 +40,6 @@ if (argv.analyze) {
 module.exports = {
   mode: 'production',
   devtool: 'source-map',
-  target: isES5Mode ? ['web', 'es5'] : 'web',
-  cache: {
-    type: 'filesystem',
-    cacheDirectory: path.resolve(__dirname, '.cache/webpack')
-  },
   resolve: {
     modules: [
       path.resolve('.'),
@@ -83,28 +74,24 @@ module.exports = {
     rules: [
       {
         test: /\.js$/,
-        exclude: isES5Mode ? [] : path.resolve('./node_modules'), // In ES5 mode, process all files
+        exclude: path.resolve('./node_modules'), // required to prevent loader from choking non-Prebid.js node_modules
         use: [
           {
             loader: 'babel-loader',
-            options: Object.assign(
-              {cacheDirectory: cacheDir, cacheCompression: false},
-              babelConfig,
-              helpers.getAnalyticsOptions()
-            ),
+            options: Object.assign({}, babelConfig, helpers.getAnalyticsOptions()),
           }
         ]
       },
-      // Only apply the second rule if not in ES5 mode
-      ...(isES5Mode ? [] : [{
+      { // This makes sure babel-loader is ran on our intended Prebid.js modules that happen to be in node_modules
+        test: /\.js$/,
         include: helpers.getArgModules().map(module => new RegExp('node_modules/' + module + '/')),
         use: [
           {
             loader: 'babel-loader',
-            options: Object.assign({cacheDirectory: cacheDir, cacheCompression: false}, babelConfig)
+            options: babelConfig
           }
         ],
-      }])
+      }
     ]
   },
   optimization: {
@@ -114,16 +101,8 @@ module.exports = {
       new TerserPlugin({
         extractComments: false, // do not generate unhelpful LICENSE comment
         terserOptions: {
-          module: isES5Mode ? false : true, // Force ES5 output if ES5 mode is enabled
-          ...(isES5Mode && {
-            ecma: 5, // Target ES5
-            compress: {
-              ecma: 5 // Ensure compression targets ES5
-            },
-            mangle: {
-              safari10: true // Ensure compatibility with older browsers
-            }
-          })        }
+          module: true, // do not prepend every module with 'use strict'; allow mangling of top-level locals
+        }
       })
     ],
     splitChunks: {

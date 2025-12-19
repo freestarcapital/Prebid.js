@@ -538,7 +538,7 @@ describe('consentManagementGpp', function () {
         await didHookRun();
         triggerCMPEvent('sectionChange', {signalStatus: 'ready'});
         await consentConfig.loadConsentData();
-        window.__gpp.resetHistory();
+        window.__gpp.reset();
         didHookRun = startHook();
         await consentConfig.loadConsentData();
         expect(await didHookRun()).to.be.true;

@@ -2,7 +2,6 @@ import { expect } from 'chai';
 import { spec } from '../../../modules/compassBidAdapter.js';
 import { BANNER, VIDEO, NATIVE } from '../../../src/mediaTypes.js';
 import { getUniqueIdentifierStr } from '../../../src/utils.js';
-import { config } from '../../../src/config.js';
 
 const bidder = 'compass';
 
@@ -481,10 +480,10 @@ describe('CompassBidAdapter', function () {
 
   describe('getUserSyncs', function() {
     it('Should return array of objects with proper sync config , include GDPR', function() {
-      const syncData = config.runWithBidder(bidder, () => spec.getUserSyncs({}, {}, {
+      const syncData = spec.getUserSyncs({}, {}, {
         consentString: 'ALL',
         gdprApplies: true,
-      }, {}));
+      }, {});
       expect(syncData).to.be.an('array').which.is.not.empty;
       expect(syncData[0]).to.be.an('object')
       expect(syncData[0].type).to.be.a('string')
@@ -493,9 +492,9 @@ describe('CompassBidAdapter', function () {
       expect(syncData[0].url).to.equal('https://sa-cs.deliverimp.com/image?pbjs=1&gdpr=1&gdpr_consent=ALL&coppa=0')
     });
     it('Should return array of objects with proper sync config , include CCPA', function() {
-      const syncData = config.runWithBidder(bidder, () => spec.getUserSyncs({}, {}, {}, {
+      const syncData = spec.getUserSyncs({}, {}, {}, {
         consentString: '1---'
-      }));
+      });
       expect(syncData).to.be.an('array').which.is.not.empty;
       expect(syncData[0]).to.be.an('object')
       expect(syncData[0].type).to.be.a('string')
@@ -504,10 +503,10 @@ describe('CompassBidAdapter', function () {
       expect(syncData[0].url).to.equal('https://sa-cs.deliverimp.com/image?pbjs=1&ccpa_consent=1---&coppa=0')
     });
     it('Should return array of objects with proper sync config , include GPP', function() {
-      const syncData = config.runWithBidder(bidder, () => spec.getUserSyncs({}, {}, {}, {}, {
+      const syncData = spec.getUserSyncs({}, {}, {}, {}, {
         gppString: 'abc123',
         applicableSections: [8]
-      }));
+      });
       expect(syncData).to.be.an('array').which.is.not.empty;
       expect(syncData[0]).to.be.an('object')
       expect(syncData[0].type).to.be.a('string')

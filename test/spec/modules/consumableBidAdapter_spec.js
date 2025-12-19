@@ -729,7 +729,7 @@ describe('Consumable BidAdapter', function () {
   describe('unifiedId from userId module', function() {
     let sandbox, bidderRequest;
     beforeEach(() => {
-      sandbox = sinon.createSandbox();
+      sandbox = sinon.sandbox.create();
       bidderRequest = deepClone(BIDDER_REQUEST_1);
     });
 

@@ -29,15 +29,14 @@ const FIELDS = {
  * List fields are also copied, but forced to the "correct" length (by truncating or padding with nulls);
  * additionally, elements within them can be moved around using the `move` argument.
  *
- * @param {Object} opts
- * @param {string[]} [opts.nullify] list of fields to force to null
- * @param {Object} [opts.move] Map from list field name to an index remapping for elements within that field (using 1 as the first index).
+ * @param {Array[String]} nullify? list of fields to force to null
+ * @param {{}} move? Map from list field name to an index remapping for elements within that field (using 1 as the first index).
  *       For example, {SensitiveDataProcessing: {1: 2, 2: [1, 3]}} means "rearrange SensitiveDataProcessing by moving
  *       the first element to the second position, and the second element to both the first and third position."
- * @param {function(Object, Object): void} [opts.fn] an optional function to run once all the processing described above is complete;
+ * @param {({}, {}) => void} fn? an optional function to run once all the processing described above is complete;
  *       it's passed two arguments, the original (state) data, and its normalized (usnat) version.
- * @param {Object} [fields]
- * @returns {function(Object): Object}
+ * @param fields
+ * @returns {function({}): {}}
  */
 export function normalizer({nullify = [], move = {}, fn}, fields = FIELDS) {
   move = Object.fromEntries(Object.entries(move).map(([k, map]) => [k,

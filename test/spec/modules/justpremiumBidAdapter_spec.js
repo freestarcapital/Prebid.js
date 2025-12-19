@@ -5,7 +5,7 @@ describe('justpremium adapter', function () {
   let sandbox;
 
   beforeEach(function() {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
   });
 
   afterEach(function() {

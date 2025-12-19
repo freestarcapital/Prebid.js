@@ -14,6 +14,7 @@ import {
 import {registerBidder} from '../src/adapters/bidderFactory.js';
 import {Renderer} from '../src/Renderer.js';
 import {BANNER, VIDEO} from '../src/mediaTypes.js';
+import {includes} from '../src/polyfill.js';
 
 const ENDPOINTS = {
   'cleanmedianet': 'https://bidder.cleanmediaads.com'
@@ -126,7 +127,7 @@ export const spec = {
       };
 
       const hasFavoredMediaType =
-        params.favoredMediaType && this.supportedMediaTypes.includes(params.favoredMediaType);
+        params.favoredMediaType && includes(this.supportedMediaTypes, params.favoredMediaType);
 
       if (!mediaTypes || mediaTypes.banner) {
         if (!hasFavoredMediaType || params.favoredMediaType === BANNER) {

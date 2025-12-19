@@ -21,6 +21,7 @@ import { Renderer } from '../src/Renderer.js';
 import { _ADAGIO } from '../libraries/adagioUtils/adagioUtils.js';
 import { config } from '../src/config.js';
 import { convertOrtbRequestToProprietaryNative } from '../src/native.js';
+import { find } from '../src/polyfill.js';
 import { getGptSlotInfoForAdUnitCode } from '../libraries/gptUtils/gptUtils.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { userSync } from '../src/userSync.js';
@@ -399,18 +400,11 @@ function autoFillParams(bid) {
     bid.params.site = adgGlobalConf.siteId.split(':')[1];
   }
 
-  if (!bid.params.placement) {
-    let p = deepAccess(bid, 'ortb2Imp.ext.data.adg_rtd.placement', '');
-    if (!p) {
-      // Use ortb2Imp.ext.data.placement for backward compatibility.
-      p = deepAccess(bid, 'ortb2Imp.ext.data.placement', '');
-    }
-
-    // `useAdUnitCodeAsPlacement` is an edge case. Useful when a Prebid Manager cannot handle properly params setting.
-    if (!p && bid.params.useAdUnitCodeAsPlacement === true) {
-      p = bid.adUnitCode;
-    }
-    bid.params.placement = p;
+  // `useAdUnitCodeAsPlacement` is an edge case. Useful when a Prebid Manager cannot handle properly params setting.
+  // In Prebid.js 9, `placement` should be defined in ortb2Imp and the `useAdUnitCodeAsPlacement` param should be removed
+  bid.params.placement = deepAccess(bid, 'ortb2Imp.ext.data.placement', bid.params.placement);
+  if (!bid.params.placement && (adgGlobalConf.useAdUnitCodeAsPlacement === true || bid.params.useAdUnitCodeAsPlacement === true)) {
+    bid.params.placement = bid.adUnitCode;
   }
 
   bid.params.adUnitElementId = deepAccess(bid, 'ortb2Imp.ext.data.divId', bid.params.adUnitElementId);
@@ -763,7 +757,7 @@ export const spec = {
         }
         if (response.bids) {
           response.bids.forEach(bidObj => {
-            const bidReq = bidRequest.data.adUnits.find(bid => bid.bidId === bidObj.requestId);
+            const bidReq = (find(bidRequest.data.adUnits, bid => bid.bidId === bidObj.requestId));
 
             if (bidReq) {
               // bidObj.meta is the `bidResponse.meta` object according to https://docs.prebid.org/dev-docs/bidder-adaptor.html#interpreting-the-response

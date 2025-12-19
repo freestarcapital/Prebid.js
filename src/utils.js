@@ -1,6 +1,6 @@
 import {config} from './config.js';
 import {klona} from 'klona/json';
-
+import {includes} from './polyfill.js';
 import {EVENTS} from './constants.js';
 import {PbPromise} from './utils/promise.js';
 import {getGlobal} from './prebidGlobal.js';
@@ -286,7 +286,9 @@ export function logWarn() {
     // eslint-disable-next-line no-console
     console.warn.apply(console, decorateLog(arguments, 'WARNING:'));
   }
-  emitEvent(EVENTS.AUCTION_DEBUG, { type: 'WARNING', arguments: arguments });
+  if (debugTurnedOn()) {
+    emitEvent(EVENTS.AUCTION_DEBUG, { type: 'WARNING', arguments: arguments });
+  }
 }
 
 export function logError() {
@@ -294,7 +296,9 @@ export function logError() {
     // eslint-disable-next-line no-console
     console.error.apply(console, decorateLog(arguments, 'ERROR:'));
   }
-  emitEvent(EVENTS.AUCTION_DEBUG, { type: 'ERROR', arguments: arguments });
+  if (debugTurnedOn()) {
+    emitEvent(EVENTS.AUCTION_DEBUG, { type: 'ERROR', arguments: arguments });
+  }
 }
 
 export function prefixLog(prefix) {
@@ -875,12 +879,12 @@ export function isValidMediaTypes(mediaTypes) {
 
   const types = Object.keys(mediaTypes);
 
-  if (!types.every(type => SUPPORTED_MEDIA_TYPES.includes(type))) {
+  if (!types.every(type => includes(SUPPORTED_MEDIA_TYPES, type))) {
     return false;
   }
 
   if (FEATURES.VIDEO && mediaTypes.video && mediaTypes.video.context) {
-    return SUPPORTED_STREAM_TYPES.includes(mediaTypes.video.context);
+    return includes(SUPPORTED_STREAM_TYPES, mediaTypes.video.context);
   }
 
   return true;

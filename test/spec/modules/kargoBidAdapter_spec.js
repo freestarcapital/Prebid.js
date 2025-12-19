@@ -1,9 +1,7 @@
 import { expect } from 'chai';
 import { spec } from 'modules/kargoBidAdapter.js';
 import { config } from 'src/config.js';
-import { getStorageManager } from 'src/storageManager.js';
 const utils = require('src/utils');
-const STORAGE = getStorageManager({bidderCode: 'kargo'});
 
 describe('kargo adapter tests', function() {
   let bid, outstreamBid, testBids, sandbox, clock, frozenNow = new Date(), oldBidderSettings;
@@ -203,7 +201,7 @@ describe('kargo adapter tests', function() {
 
     testBids = [{ ...minimumBidParams }];
 
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
     clock = sinon.useFakeTimers(frozenNow.getTime());
   });
 
@@ -1003,9 +1001,9 @@ describe('kargo adapter tests', function() {
       });
 
       it('retrieves CRB from cookies if localstorage is not functional', function() {
-        // Safari does not allow stubbing localStorage methods directly.
-        // Stub the storage manager instead so all browsers behave consistently.
-        sandbox.stub(STORAGE, 'getDataFromLocalStorage').throws();
+        // Note: this does not cause localStorage to throw an error in Firefox so in that browser this
+        // test is not 100% true to its name
+        sandbox.stub(localStorage, 'getItem').throws();
         setCrb('valid', 'invalid');
 
         const payload = getPayloadFromTestBids(testBids, bidderRequest);
@@ -1271,9 +1269,7 @@ describe('kargo adapter tests', function() {
       });
 
       it('fails gracefully if there is no localStorage', function() {
-        sandbox.stub(STORAGE, 'getDataFromLocalStorage').throws();
-        localStorage.removeItem('krg_crb');
-        document.cookie = 'krg_crb=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+        sandbox.stub(localStorage, 'getItem').throws();
         let payload = getPayloadFromTestBids(testBids);
         expect(payload.user).to.deep.equal({
           crbIDs: {},
@@ -1593,9 +1589,7 @@ describe('kargo adapter tests', function() {
       });
 
       it('fails gracefully without localStorage', function() {
-        sandbox.stub(STORAGE, 'getDataFromLocalStorage').throws();
-        localStorage.removeItem('krg_crb');
-        document.cookie = 'krg_crb=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/';
+        sandbox.stub(localStorage, 'getItem').throws();
         let payload = getPayloadFromTestBids(testBids);
         expect(payload.page).to.be.undefined;
       });

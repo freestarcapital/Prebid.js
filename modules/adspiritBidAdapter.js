@@ -32,7 +32,6 @@ export const spec = {
       bidRequest.adspiritConId = spec.genAdConId(bidRequest);
       let reqUrl = spec.getBidderHost(bidRequest);
       let placementId = utils.getBidIdParameter('placementId', bidRequest.params);
-      const eids = spec.getEids(bidRequest);
 
       reqUrl = '//' + reqUrl + RTB_URL +
         '&pid=' + placementId +
@@ -96,10 +95,10 @@ export const spec = {
             name: bidRequest.params.publisherName || ''
           }
         },
-         user: {
+        user: {
+          id: bidRequest.userId || '',
           data: bidRequest.userData || [],
           ext: {
-            eids: eids,
             consent: gdprConsentString || ''
           }
         },
@@ -138,6 +137,7 @@ export const spec = {
           }
         };
       }
+
       requests.push({
         method: 'POST',
         url: reqUrl,
@@ -148,9 +148,6 @@ export const spec = {
     }
 
     return requests;
-  },
-  getEids: function (bidRequest) {
-    return utils.deepAccess(bidRequest, 'userIdAsEids') || [];
   },
   interpretResponse: function (serverResponse, bidRequest) {
     const bidResponses = [];

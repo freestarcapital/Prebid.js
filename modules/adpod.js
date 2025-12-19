@@ -36,6 +36,7 @@ import {getHook, module, setupBeforeHookFnOnce} from '../src/hook.js';
 import {store} from '../src/videoCache.js';
 import {config} from '../src/config.js';
 import {ADPOD} from '../src/mediaTypes.js';
+import {find} from '../src/polyfill.js';
 import {auctionManager} from '../src/auctionManager.js';
 import { TARGETING_KEYS } from '../src/constants.js';
 
@@ -328,14 +329,14 @@ function checkBidDuration(videoMediaType, bidResponse) {
   if (!videoMediaType.requireExactDuration) {
     let max = Math.max(...adUnitRanges);
     if (bidDuration <= (max + buffer)) {
-      let nextHighestRange = ((adUnitRanges) || []).find(range => (range + buffer) >= bidDuration);
+      let nextHighestRange = find(adUnitRanges, range => (range + buffer) >= bidDuration);
       bidResponse.video.durationBucket = nextHighestRange;
     } else {
       logWarn(`Detected a bid with a duration value outside the accepted ranges specified in adUnit.mediaTypes.video.durationRangeSec.  Rejecting bid: `, bidResponse);
       return false;
     }
   } else {
-    if (((adUnitRanges) || []).find(range => range === bidDuration)) {
+    if (find(adUnitRanges, range => range === bidDuration)) {
       bidResponse.video.durationBucket = bidDuration;
     } else {
       logWarn(`Detected a bid with a duration value not part of the list of accepted ranges specified in adUnit.mediaTypes.video.durationRangeSec.  Exact match durations must be used for this adUnit. Rejecting bid: `, bidResponse);
@@ -449,8 +450,7 @@ export function callPrebidCacheAfterAuction(bids, callback) {
 
 /**
  * Compare function to be used in sorting long-form bids. This will compare bids on price per second.
- * @param {Object} a
- * @param {Object} b
+ * @param {Object} bid
  */
 export function sortByPricePerSecond(a, b) {
   if (a.adserverTargeting[TARGETING_KEYS.PRICE_BUCKET] / a.video.durationBucket < b.adserverTargeting[TARGETING_KEYS.PRICE_BUCKET] / b.video.durationBucket) {

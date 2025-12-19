@@ -90,6 +90,38 @@ describe('mediago:BidAdapterTests', function () {
         }
       }
     },
+    userId: {
+      tdid: 'sample-userid',
+      uid2: { id: 'sample-uid2-value' },
+      criteoId: 'sample-criteo-userid',
+      netId: 'sample-netId-userid',
+      idl_env: 'sample-idl-userid',
+      pubProvidedId: [
+        {
+          source: 'puburl.com',
+          uids: [
+            {
+              id: 'pubid2',
+              atype: 1,
+              ext: {
+                stype: 'ppuid'
+              }
+            }
+          ]
+        },
+        {
+          source: 'puburl2.com',
+          uids: [
+            {
+              id: 'pubid2'
+            },
+            {
+              id: 'pubid2-123'
+            }
+          ]
+        }
+      ]
+    },
     userIdAsEids: [
       {
         source: 'adserver.org',
@@ -146,7 +178,7 @@ describe('mediago:BidAdapterTests', function () {
       let sandbox;
 
       beforeEach(() => {
-        sandbox = sinon.createSandbox();
+        sandbox = sinon.sandbox.create();
         sandbox.stub(storage, 'getCookie');
         sandbox.stub(storage, 'setCookie');
         sandbox.stub(utils, 'generateUUID').returns('new-uuid');

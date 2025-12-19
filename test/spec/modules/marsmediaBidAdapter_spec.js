@@ -69,7 +69,7 @@ describe('marsmedia adapter tests', function () {
       }
     ];
 
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
     sandbox.stub(document, 'getElementById').withArgs('Unit-Code').returns(element);
     sandbox.stub(utils, 'getWindowTop').returns(win);
     sandbox.stub(utils, 'getWindowSelf').returns(win);

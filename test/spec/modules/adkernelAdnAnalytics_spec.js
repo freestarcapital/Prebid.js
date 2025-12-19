@@ -36,7 +36,7 @@ describe('', function () {
   let sandbox;
 
   before(function () {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
   });
 
   after(function () {
@@ -54,8 +54,7 @@ describe('', function () {
     });
 
     afterEach(function () {
-      sandbox.resetHistory();
-      sandbox.resetBehavior();
+      sandbox.reset();
     });
 
     it('should parse first direct visit as (direct)', function () {

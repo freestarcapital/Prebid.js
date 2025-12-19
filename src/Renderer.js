@@ -2,6 +2,7 @@ import { loadExternalScript } from './adloader.js';
 import {
   logError, logWarn, logMessage
 } from './utils.js';
+import {find} from './polyfill.js';
 import {getGlobal} from './prebidGlobal.js';
 import { MODULE_TYPE_PREBID } from './activities/modules.js';
 
@@ -135,7 +136,7 @@ export function executeRenderer(renderer, bid, doc) {
 
 function isRendererPreferredFromAdUnit(adUnitCode) {
   const adUnits = pbjsInstance.adUnits;
-  const adUnit = adUnits.find(adUnit => {
+  const adUnit = find(adUnits, adUnit => {
     return adUnit.code === adUnitCode;
   });
 

@@ -280,7 +280,6 @@ describe('Digital Garage Keyword Module', function () {
       request.respond(404);
     });
     it('should get profiles timeout.', function (done) {
-      const clock = sinon.useFakeTimers();
       let pbjs = cloneDeep(config);
       pbjs.adUnits = cloneDeep(AD_UNITS);
       let moduleConfig = cloneDeep(DEF_CONFIG);
@@ -311,8 +310,7 @@ describe('Digital Garage Keyword Module', function () {
         null
       );
       const request = server.requests[0];
-      if (request) {
-        clock.tick(50);
+      setTimeout(() => {
         if (request) {
           request.respond(
             200,
@@ -320,8 +318,7 @@ describe('Digital Garage Keyword Module', function () {
             JSON.stringify(DUMMY_RESPONSE)
           );
         }
-      }
-      clock.restore();
+      }, 50);
     });
     it('should get profiles ok(200).', function (done) {
       let pbjs = cloneDeep(config);

@@ -36,7 +36,7 @@
  * @param {SubmoduleConfig} config
  * @param {ConsentData|undefined} consentData
  * @param {Object} storedId - existing id, if any
- * @returns {IdResponse|function} A response object that contains id and/or callback.
+ * @returns {IdResponse|function(callback:function)} A response object that contains id and/or callback.
  */
 
 /**
@@ -82,7 +82,7 @@
  * @property {(string|undefined)} pid - placement id url param value
  * @property {(string|undefined)} publisherId - the unique identifier of the publisher in question
  * @property {(string|undefined)} ajaxTimeout - the number of milliseconds a resolution request can take before automatically being terminated
- * @property {(Array|undefined)} identifiersToResolve - the identifiers from either ls|cookie to be attached to the getId query
+ * @property {(array|undefined)} identifiersToResolve - the identifiers from either ls|cookie to be attached to the getId query
  * @property {(LiveIntentCollectConfig|undefined)} liCollectConfig - the config for LiveIntent's collect requests
  * @property {(string|undefined)} pd - publisher provided data for reconciling ID5 IDs
  * @property {(string|undefined)} emailHash - if provided, the hashed email address of a user
@@ -117,6 +117,7 @@
  * @typedef {{[idKey: string]: () => SubmoduleContainer[]}} SubmodulePriorityMap
  */
 
+import {find} from '../../src/polyfill.js';
 import {config} from '../../src/config.js';
 import * as events from '../../src/events.js';
 import {getGlobal} from '../../src/prebidGlobal.js';
@@ -141,7 +142,7 @@ import {
   isPlainObject,
   logError,
   logInfo,
-  logWarn, mergeDeep
+  logWarn
 } from '../../src/utils.js';
 import {getPPID as coreGetPPID} from '../../src/adserver.js';
 import {defer, PbPromise, delay} from '../../src/utils/promise.js';
@@ -154,7 +155,6 @@ import {ACTIVITY_ENRICH_EIDS} from '../../src/activities/activities.js';
 import {activityParams} from '../../src/activities/activityParams.js';
 import {USERSYNC_DEFAULT_CONFIG} from '../../src/userSync.js';
 import {startAuction} from '../../src/prebid.js';
-import {beforeInitAuction} from '../../src/auction.js';
 
 const MODULE_NAME = 'User ID';
 const COOKIE = STORAGE_TYPE_COOKIES;
@@ -572,21 +572,25 @@ export function enrichEids(ortb2Fragments) {
 export function addIdData({adUnits, ortb2Fragments}) {
   ortb2Fragments = ortb2Fragments ?? {global: {}, bidder: {}}
   enrichEids(ortb2Fragments);
-
-  // Set bid.userId for backward compatibility with tests
-  if (adUnits && Array.isArray(adUnits) && adUnits.length) {
-    const globalIds = getIds(initializedSubmodules.global);
-    adUnits.forEach(adUnit => {
-      if (adUnit.bids && Array.isArray(adUnit.bids)) {
-        adUnit.bids.forEach(bid => {
-          const bidderIds = Object.assign({}, globalIds, getIds(initializedSubmodules.bidder[bid.bidder] ?? {}));
-          if (Object.keys(bidderIds).length > 0) {
-            bid.userId = bidderIds;
-          }
-        });
-      }
-    });
+  if ([adUnits].some(i => !Array.isArray(i) || !i.length)) {
+    return;
   }
+  const globalIds = getIds(initializedSubmodules.global);
+  const globalEids = ortb2Fragments.global.user?.ext?.eids || [];
+  adUnits.forEach(adUnit => {
+    if (adUnit.bids && isArray(adUnit.bids)) {
+      adUnit.bids.forEach(bid => {
+        const bidderIds = Object.assign({}, globalIds, getIds(initializedSubmodules.bidder[bid.bidder] ?? {}));
+        const bidderEids = globalEids.concat(ortb2Fragments.bidder?.[bid.bidder]?.user?.ext?.eids || []);
+        if (Object.keys(bidderIds).length > 0) {
+          bid.userId = bidderIds;
+        }
+        if (bidderEids.length > 0) {
+          bid.userIdAsEids = bidderEids;
+        }
+      });
+    }
+  });
 }
 
 const INIT_CANCELED = {};
@@ -721,52 +725,16 @@ export const startAuctionHook = timedAuctionHook('userId', function requestBidsH
 });
 
 /**
- * Alias bid requests' `userIdAsEids` to `ortb2.user.ext.eids`
- * Do this lazily (instead of attaching a copy) so that it also shows EIDs added after the userId module runs (e.g. from RTD modules)
+ * Append user id data from config to bids to be accessed in adapters when there are no submodules.
+ * @param {function} fn required; The next function in the chain, used by hook.js
+ * @param {Object} reqBidsConfigObj required; This is the same param that's used in pbjs.requestBids.
  */
-function aliasEidsHook(next, bidderRequests) {
-  bidderRequests.forEach(bidderRequest => {
-    bidderRequest.bids.forEach(bid =>
-      Object.defineProperty(bid, 'userIdAsEids', {
-        configurable: true,
-        get() {
-          return bidderRequest.ortb2.user?.ext?.eids;
-        }
-      })
-    )
-  })
-  next(bidderRequests);
-}
+export const addUserIdsHook = timedAuctionHook('userId', function requestBidsHook(fn, reqBidsConfigObj) {
+  addIdData(reqBidsConfigObj);
+  // calling fn allows prebid to continue processing
+  fn.call(this, reqBidsConfigObj);
+});
 
-export function adUnitEidsHook(next, auction) {
-  // for backwards-compat, add `userIdAsEids` to ad units' bid objects
-  // before auction events are fired
-  // these are computed similarly to bid requests' `ortb2`, but unlike them,
-  // they are not subject to the same activity checks (since they are not intended for bid adapters)
-
-  const eidsByBidder = {};
-  const globalEids = auction.getFPD()?.global?.user?.ext?.eids ?? [];
-  function getEids(bidderCode) {
-    if (bidderCode == null) return globalEids;
-    if (!eidsByBidder.hasOwnProperty(bidderCode)) {
-      eidsByBidder[bidderCode] = mergeDeep(
-        {eids: []},
-        {eids: globalEids},
-        {eids: auction.getFPD()?.bidder?.[bidderCode]?.user?.ext?.eids ?? []}
-      ).eids;
-    }
-    return eidsByBidder[bidderCode];
-  }
-  auction.getAdUnits()
-    .flatMap(au => au.bids)
-    .forEach(bid => {
-      const eids = getEids(bid.bidder);
-      if (eids.length > 0) {
-        bid.userIdAsEids = eids;
-      }
-    });
-  next(auction);
-}
 /**
  * Is startAuctionHook added
  * @returns {boolean}
@@ -888,8 +856,8 @@ function retryOnCancel(initParams) {
  * return a promise that resolves to the same value as `getUserIds()` when the refresh is complete.
  * If a refresh is already in progress, it will be canceled (rejecting promises returned by previous calls to `refreshUserIds`).
  *
- * @param {string[]} [submoduleNames] submodules to refresh. If omitted, refresh all submodules.
- * @param {Function} [callback] called when the refresh is complete
+ * @param submoduleNames? submodules to refresh. If omitted, refresh all submodules.
+ * @param callback? called when the refresh is complete
  */
 function refreshUserIds({submoduleNames} = {}, callback) {
   return retryOnCancel({refresh: true, submoduleNames})
@@ -1171,12 +1139,12 @@ function updateSubmodules() {
   // do this to avoid reprocessing submodules
   // TODO: the logic does not match the comment - addedSubmodules is always a copy of submoduleRegistry
   // (if it did it would not be correct - it's not enough to find new modules, as others may have been removed or changed)
-  const addedSubmodules = submoduleRegistry.filter(i => !(submodules || []).find(j => j.name === i.name));
+  const addedSubmodules = submoduleRegistry.filter(i => !find(submodules, j => j.name === i.name));
 
   submodules.splice(0, submodules.length);
   // find submodule and the matching configuration, if found create and append a SubmoduleContainer
   addedSubmodules.map(i => {
-    const submoduleConfig = (configs || []).find(j => j.name && (j.name.toLowerCase() === i.name.toLowerCase() ||
+    const submoduleConfig = find(configs, j => j.name && (j.name.toLowerCase() === i.name.toLowerCase() ||
       (i.aliasName && j.name.toLowerCase() === i.aliasName.toLowerCase())));
     if (submoduleConfig && i.name !== submoduleConfig.name) submoduleConfig.name = i.name;
     return submoduleConfig ? {
@@ -1191,6 +1159,7 @@ function updateSubmodules() {
 
   if (submodules.length) {
     if (!addedStartAuctionHook()) {
+      startAuction.getHooks({hook: addUserIdsHook}).remove();
       startAuction.before(startAuctionHook, 100) // use higher priority than dataController / rtd
       adapterManager.callDataDeletionRequest.before(requestDataDeletion);
       coreGetPPID.after((next) => next(getPPID()));
@@ -1241,7 +1210,7 @@ export function requestDataDeletion(next, ...args) {
  */
 export function attachIdSystem(submodule) {
   submodule.findRootDomain = findRootDomain;
-  if (!(submoduleRegistry || []).find(i => i.name === submodule.name)) {
+  if (!find(submoduleRegistry, i => i.name === submodule.name)) {
     submoduleRegistry.push(submodule);
     GDPR_GVLIDS.register(MODULE_TYPE_UID, submodule.name, submodule.gvlid)
     updateSubmodules();
@@ -1291,8 +1260,6 @@ export function init(config, {mkDelay = delay} = {}) {
       }
     }
   });
-  adapterManager.makeBidRequests.after(aliasEidsHook);
-  beforeInitAuction.before(adUnitEidsHook);
 
   // exposing getUserIds function in global-name-space so that userIds stored in Prebid can be used by external codes.
   (getGlobal()).getUserIds = getUserIds;
@@ -1302,6 +1269,10 @@ export function init(config, {mkDelay = delay} = {}) {
   (getGlobal()).refreshUserIds = normalizePromise(refreshUserIds);
   (getGlobal()).getUserIdsAsync = normalizePromise(getUserIdsAsync);
   (getGlobal()).getUserIdsAsEidBySource = getUserIdsAsEidBySource;
+  if (!addedStartAuctionHook()) {
+    // Add ortb2.user.ext.eids even if 0 submodules are added
+    startAuction.before(addUserIdsHook, 100); // use higher priority than dataController / rtd
+  }
 }
 
 export function resetUserIds() {

@@ -616,6 +616,7 @@ cnvrHelper.sendErrorData = function(eventType, exception) {
     url: cnvrHelper.getPageUrl()
   };
 
+
   ajax(ERROR_URL, function () {}, JSON.stringify(error), {contentType: 'text/plain'});
 }
 

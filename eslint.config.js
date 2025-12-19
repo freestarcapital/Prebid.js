@@ -130,6 +130,7 @@ function commonConfig(overrides) {
       '@stylistic/comma-dangle': 'off',
       '@stylistic/object-curly-newline': 'off',
       '@stylistic/object-property-newline': 'off',
+      '@stylistic/no-multiple-empty-lines': 'off',
 
     }
   }, overrides);
@@ -232,14 +233,16 @@ module.exports = [
       'no-unused-vars': 'off',
       'import/extensions': 'off',
       'camelcase': 'off',
+      'no-array-constructor': 'off',
       'import-x/no-duplicates': 'off',
+      'import-x/no-absolute-path': 'off',
       'no-loss-of-precision': 'off',
       'no-redeclare': 'off',
       'no-global-assign': 'off',
       'default-case-last': 'off',
       '@stylistic/no-mixed-spaces-and-tabs': 'off',
       '@stylistic/no-tabs': 'off',
-      '@stylistic/no-trailing-spaces': 'error'
+      '@stylistic/no-trailing-spaces': 'off'
     }
   })
 ]

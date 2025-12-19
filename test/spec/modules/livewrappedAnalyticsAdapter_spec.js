@@ -314,7 +314,7 @@ describe('Livewrapped analytics adapter', function () {
   let clock;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
 
     let element = {
       getAttribute: function() {

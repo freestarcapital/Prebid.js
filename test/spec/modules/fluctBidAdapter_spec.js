@@ -57,7 +57,7 @@ describe('fluctAdapter', function () {
     let sb;
 
     beforeEach(function () {
-      sb = sinon.createSandbox();
+      sb = sinon.sandbox.create();
     });
 
     afterEach(function () {

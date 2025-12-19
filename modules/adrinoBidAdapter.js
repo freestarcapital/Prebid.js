@@ -38,7 +38,7 @@ export const spec = {
         adUnitCode: validBidRequests[i].adUnitCode,
         bidId: validBidRequests[i].bidId,
         placementHash: validBidRequests[i].params.hash,
-        eids: validBidRequests[i].userIdAsEids,
+        userId: validBidRequests[i].userId,
         referer: bidderRequest.refererInfo.page,
         userAgent: navigator.userAgent,
       }

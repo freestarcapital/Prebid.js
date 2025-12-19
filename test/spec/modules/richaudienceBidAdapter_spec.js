@@ -890,7 +890,7 @@ describe('Richaudience adapter tests', function () {
   describe('userSync', function () {
     let sandbox;
     beforeEach(function () {
-      sandbox = sinon.createSandbox();
+      sandbox = sinon.sandbox.create();
     });
     afterEach(function () {
       sandbox.restore();

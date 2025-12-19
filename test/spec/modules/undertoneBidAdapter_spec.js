@@ -310,11 +310,10 @@ describe('Undertone Adapter', () => {
         offsetLeft: 100,
         offsetTop: 100,
         offsetWidth: 300,
-        offsetHeight: 250,
-        getBoundingClientRect() { return { left: 100, top: 100, width: 300, height: 250 }; }
+        offsetHeight: 250
       };
 
-      sandbox = sinon.createSandbox();
+      sandbox = sinon.sandbox.create();
       sandbox.stub(document, 'getElementById').withArgs('div-gpt-ad-1460505748561-0').returns(element);
     });
 
@@ -519,8 +518,8 @@ describe('Undertone Adapter', () => {
       const request = spec.buildRequests(bidReq, bidderReq);
       const bid1 = JSON.parse(request.data)['x-ut-hb-params'][0];
       expect(bid1.coordinates).to.be.an('array');
-      expect(bid1.coordinates[0]).to.equal(100);
-      expect(bid1.coordinates[1]).to.equal(100);
+      expect(bid1.coordinates[0]).to.equal(200);
+      expect(bid1.coordinates[1]).to.equal(200);
     });
   });
 
