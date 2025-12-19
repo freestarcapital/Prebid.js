@@ -129,11 +129,11 @@ export function metricsFactory({now = getTime, mkNode = makeNode, mkTimer = make
 
       /**
        * @typedef {Function} HookFn
-       * @property {(function(T): void)} bail
+       * @property {Function(T): void} bail
        *
        * @template T
        * @typedef {HookFn} TimedHookFn
-       * @property {(function(): void)} stopTiming
+       * @property {Function(): void} stopTiming
        * @property {T} untimed
        */
 

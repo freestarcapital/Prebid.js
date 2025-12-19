@@ -1,11 +1,11 @@
 // this will have all of a copy of the normal fs methods as well
-const fs = require('fs-extra');
+const fs = require('fs.extra');
 const path = require('path');
 const argv = require('yargs').argv;
 const MANIFEST = 'package.json';
 const through = require('through2');
 const _ = require('lodash');
-const PluginError = require('plugin-error');
+const gutil = require('gulp-util');
 const submodules = require('./modules/.submodules.json').parentModules;
 
 const MODULE_PATH = './modules';
@@ -52,7 +52,10 @@ module.exports = {
         );
       }
     } catch (e) {
-      throw new PluginError('modules', 'failed reading: ' + argv.modules + '. Ensure the file exists and contains valid JSON.');
+      throw new gutil.PluginError({
+        plugin: 'modules',
+        message: 'failed reading: ' + argv.modules
+      });
     }
 
     try {

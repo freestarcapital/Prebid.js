@@ -1,5 +1,6 @@
 import {deepAccess, getBidIdParameter, isFn, logError, isArray, parseSizesInput, isPlainObject} from '../../src/utils.js';
 import {getAdUnitSizes} from '../sizeUtils/sizeUtils.js';
+import {findIndex} from '../../src/polyfill.js';
 
 export function getBidFloor(bid, currency = 'USD') {
   if (!isFn(bid.getFloor)) {
@@ -113,9 +114,9 @@ export function interpretResponse(serverResponse, {bidderRequest}) {
   }
 
   serverResponse.body.data.forEach(serverBid => {
-    const bidIndex = Array.isArray(bidderRequest.bids)
-      ? bidderRequest.bids.findIndex(bidRequest => bidRequest.bidId === serverBid.requestId)
-      : undefined;
+    const bidIndex = findIndex(bidderRequest.bids, (bidRequest) => {
+      return bidRequest.bidId === serverBid.requestId;
+    });
 
     if (bidIndex !== -1) {
       const bid = {

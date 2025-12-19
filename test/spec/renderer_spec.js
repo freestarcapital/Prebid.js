@@ -1,7 +1,8 @@
 import { expect } from 'chai';
 import { Renderer, executeRenderer } from 'src/Renderer.js';
 import * as utils from 'src/utils.js';
-import { loadExternalScriptStub } from 'test/mocks/adloaderStub.js';
+import { loadExternalScript } from 'src/adloader.js';
+require('test/mocks/adloaderStub.js');
 
 describe('Renderer', function () {
   let oldAdUnits;
@@ -173,7 +174,7 @@ describe('Renderer', function () {
       testRenderer.setRender(() => {})
 
       testRenderer.render()
-      expect(loadExternalScriptStub.called).to.be.true;
+      expect(loadExternalScript.called).to.be.true;
     });
 
     it('should load external script instead of publisher-defined one when backupOnly option is true in mediaTypes.video options', function() {
@@ -203,7 +204,7 @@ describe('Renderer', function () {
       testRenderer.setRender(() => {})
 
       testRenderer.render()
-      expect(loadExternalScriptStub.called).to.be.true;
+      expect(loadExternalScript.called).to.be.true;
     });
 
     it('should call loadExternalScript() for script not defined on adUnit, only when .render() is called', function() {
@@ -220,10 +221,10 @@ describe('Renderer', function () {
         id: 1,
         adUnitCode: undefined
       });
-      expect(loadExternalScriptStub.called).to.be.false;
+      expect(loadExternalScript.called).to.be.false;
 
       testRenderer.render()
-      expect(loadExternalScriptStub.called).to.be.true;
+      expect(loadExternalScript.called).to.be.true;
     });
 
     it('call\'s documentResolver when configured', function () {

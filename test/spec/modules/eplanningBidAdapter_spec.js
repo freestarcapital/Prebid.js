@@ -634,7 +634,7 @@ describe('E-Planning Adapter', function () {
           storageAllowed: true
         }
       };
-      sandbox = sinon.createSandbox();
+      sandbox = sinon.sandbox.create();
       getWindowTopStub = sandbox.stub(internal, 'getWindowTop');
       getWindowTopStub.returns(createWindow(800));
       resetWinDimensions();
@@ -1114,7 +1114,7 @@ describe('E-Planning Adapter', function () {
     let clock;
     let element;
     let getBoundingClientRectStub;
-    let sandbox = sinon.createSandbox();
+    let sandbox = sinon.sandbox.create();
     let intersectionObserverStub;
     let intersectionCallback;
 
@@ -1481,7 +1481,7 @@ describe('E-Planning Adapter', function () {
   describe('Send eids', function() {
     let sandbox;
     beforeEach(() => {
-      sandbox = sinon.createSandbox();
+      sandbox = sinon.sandbox.create();
       // TODO: bid adapters should look at request data, not call getGlobal().getUserIds
       sandbox.stub(getGlobal(), 'getUserIds').callsFake(() => ({
         pubcid: 'c29cb2ae-769d-42f6-891a-f53cadee823d',

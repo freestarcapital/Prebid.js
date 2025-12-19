@@ -229,8 +229,8 @@ describe('mobkoiAnalyticsAdapter', function () {
     afterEach(function () {
       adapter.disableAnalytics();
       sandbox.restore();
-      postAjaxStub.resetHistory();
-      sendGetRequestStub.resetHistory();
+      postAjaxStub.reset();
+      sendGetRequestStub.reset();
     });
 
     it('should call sendGetRequest while tracking BIDDER_DONE / BID_WON events', function () {

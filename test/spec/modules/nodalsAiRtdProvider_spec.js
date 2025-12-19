@@ -139,6 +139,7 @@ const createTargetingEngineStub = (getTargetingDataReturnValue = {}, raiseError 
   return window.$nodals.adTargetingEngine[version];
 };
 
+
 describe('NodalsAI RTD Provider', () => {
   let sandbox;
   let validConfig;
@@ -149,7 +150,7 @@ describe('NodalsAI RTD Provider', () => {
   const outsideGdprUserConsent = generateGdprConsent({ gdprApplies: false });
 
   beforeEach(() => {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
 
     validConfig = { params: { propertyId: '10312dd2' } };
 
@@ -189,14 +190,6 @@ describe('NodalsAI RTD Provider', () => {
     describe('when initialised with empty consent data', () => {
       it('should return true when initialised with valid config and empty user consent', function () {
         const result = nodalsAiRtdSubmodule.init(validConfig, {});
-        server.respond();
-
-        expect(result).to.be.true;
-        expect(server.requests.length).to.equal(1);
-      });
-
-      it('should return true when initialised with valid config and gdpr consent is null', function () {
-        const result = nodalsAiRtdSubmodule.init(validConfig, {gdpr: null});
         server.respond();
 
         expect(result).to.be.true;

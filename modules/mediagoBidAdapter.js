@@ -208,9 +208,14 @@ export function getCurrentTimeToUTCString() {
  */
 function getParam(validBidRequests, bidderRequest) {
   const pubcid = utils.deepAccess(validBidRequests[0], 'crumbs.pubcid');
+  const sharedid =
+    utils.deepAccess(validBidRequests[0], 'userId.sharedid.id') ||
+    utils.deepAccess(validBidRequests[0], 'userId.pubcid');
 
   const bidsUserIdAsEids = validBidRequests[0].userIdAsEids;
-  const eids = bidsUserIdAsEids;
+  const bidsUserid = validBidRequests[0].userId;
+  const eids = bidsUserIdAsEids || bidsUserid;
+  const ppuid = bidsUserid && bidsUserid.pubProvidedId;
   const content = utils.deepAccess(bidderRequest, 'ortb2.site.content');
   const cat = utils.deepAccess(bidderRequest, 'ortb2.site.cat');
   reqTimes += 1;
@@ -253,6 +258,8 @@ function getParam(validBidRequests, bidderRequest) {
       ext: {
         eids,
         bidsUserIdAsEids,
+        bidsUserid,
+        ppuid,
         firstPartyData,
         content,
         cat,
@@ -270,7 +277,7 @@ function getParam(validBidRequests, bidderRequest) {
       },
       user: {
         buyeruid: storage.getCookie(COOKIE_KEY_MGUID) || undefined,
-        id: pubcid,
+        id: sharedid || pubcid,
       },
       eids,
       site: {
@@ -383,7 +390,7 @@ export const spec = {
 
   /**
    * Register bidder specific code, which will execute if bidder timed out after an auction
-   * @param {Object} data Containing timeout specific data
+   * @param {data} Containing timeout specific data
    */
   //   onTimeout: function (data) {
   //     // console.log('onTimeout', data);
@@ -392,7 +399,7 @@ export const spec = {
 
   /**
    * Register bidder specific code, which will execute if a bid from this bidder won the auction
-   * @param {Object} bid The bid that won the auction
+   * @param {Bid} The bid that won the auction
    */
   onBidWon: function (bid) {
     // console.log('onBidWon： ', bid, config.getConfig('priceGranularity'));

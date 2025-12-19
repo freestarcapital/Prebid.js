@@ -335,6 +335,7 @@ export class IdFetchFlow {
     return typeof this.submoduleConfig.params.externalModuleUrl === 'string';
   }
 
+
   async #externalModuleFlow(configCallPromise) {
     await loadExternalModule(this.submoduleConfig.params.externalModuleUrl);
     const fetchFlowConfig = await configCallPromise;
@@ -342,9 +343,11 @@ export class IdFetchFlow {
     return this.#getExternalIntegration().fetchId5Id(fetchFlowConfig, this.submoduleConfig.params, getRefererInfo(), this.gdprConsentData, this.usPrivacyData, this.gppData);
   }
 
+
   #getExternalIntegration() {
     return window.id5Prebid && window.id5Prebid.integration;
   }
+
 
   async #regularFlow(configCallPromise) {
     const fetchFlowConfig = await configCallPromise;
@@ -352,6 +355,7 @@ export class IdFetchFlow {
     const fetchCallResponse = await this.#callId5Fetch(fetchFlowConfig.fetchCall, extensionsData);
     return this.#processFetchCallResponse(fetchCallResponse);
   }
+
 
   async #callForConfig() {
     let url = this.submoduleConfig.params.configUrl || ID5_API_CONFIG_URL; // override for debug/test purposes only
@@ -371,6 +375,7 @@ export class IdFetchFlow {
     return dynamicConfig;
   }
 
+
   async #callForExtensions(extensionsCallConfig) {
     if (extensionsCallConfig === undefined) {
       return undefined;
@@ -386,6 +391,7 @@ export class IdFetchFlow {
     logInfo(LOG_PREFIX + 'extensions response received from the server', extensions);
     return extensions;
   }
+
 
   async #callId5Fetch(fetchCallConfig, extensionsData) {
     const fetchUrl = fetchCallConfig.url;
@@ -403,6 +409,7 @@ export class IdFetchFlow {
     logInfo(LOG_PREFIX + 'fetch response received from the server', fetchResponse);
     return fetchResponse;
   }
+
 
   #createFetchRequestData() {
     const params = this.submoduleConfig.params;
@@ -458,6 +465,7 @@ export class IdFetchFlow {
     }
     return data;
   }
+
 
   #processFetchCallResponse(fetchCallResponse) {
     try {

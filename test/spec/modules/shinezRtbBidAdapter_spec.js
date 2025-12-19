@@ -278,7 +278,7 @@ describe('ShinezRtbBidAdapter', function () {
           storageAllowed: true
         }
       };
-      sandbox = sinon.createSandbox();
+      sandbox = sinon.sandbox.create();
       sandbox.stub(Date, 'now').returns(1000);
     });
 

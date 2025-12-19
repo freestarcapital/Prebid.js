@@ -144,7 +144,7 @@ describe('Adloox Analytics Adapter', function () {
 
   describe('process', function () {
     beforeEach(function() {
-      sandbox = sinon.createSandbox();
+      sandbox = sinon.sandbox.create();
 
       sandbox.stub(events, 'getEvents').returns([]);
 

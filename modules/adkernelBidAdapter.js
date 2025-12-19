@@ -18,6 +18,7 @@ import {
 } from '../src/utils.js';
 import {BANNER, NATIVE, VIDEO} from '../src/mediaTypes.js';
 import {registerBidder} from '../src/adapters/bidderFactory.js';
+import {find} from '../src/polyfill.js';
 import {config} from '../src/config.js';
 import {getAdUnitSizes} from '../libraries/sizeUtils/sizeUtils.js';
 import {getBidFloor} from '../libraries/adkernelUtils/adkernelUtils.js'
@@ -164,7 +165,7 @@ export const spec = {
       .reduce((a, b) => a.concat(b), []);
 
     return rtbBids.map(rtbBid => {
-      let imp = ((rtbRequest.imp) || []).find(imp => imp.id === rtbBid.impid);
+      let imp = find(rtbRequest.imp, imp => imp.id === rtbBid.impid);
       let prBid = {
         requestId: rtbBid.impid,
         cpm: rtbBid.price,

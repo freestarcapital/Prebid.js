@@ -109,9 +109,7 @@
         },
         enableTIDs: true
       });
-      if (pbjs.libLoaded) {
-        pbjs.setTargetingForGPTAsync();
-      }
+      pbjs.setTargetingForGPTAsync();
       pbjs.requestBids({
         bidsBackHandler: function () {
           // call for the bid response which have the high bid price 

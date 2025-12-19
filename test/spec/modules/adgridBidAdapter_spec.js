@@ -2,9 +2,8 @@ import { expect } from 'chai';
 import {
   spec, STORAGE, getLocalStorage,
 } from 'modules/adgridBidAdapter.js';
-import sinon from 'sinon';
+import { sandbox } from 'sinon';
 import { getAmxId } from '../../../libraries/nexx360Utils';
-const sandbox = sinon.createSandbox();
 
 describe('adgrid bid adapter tests', () => {
   const DEFAULT_OPTIONS = {

@@ -130,7 +130,7 @@ describe('the price floors module', function () {
   }
   beforeEach(function() {
     clock = sinon.useFakeTimers();
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
     logErrorSpy = sinon.spy(utils, 'logError');
     logWarnSpy = sinon.spy(utils, 'logWarn');
   });
@@ -2405,7 +2405,7 @@ describe('the price floors module', function () {
     }
 
     beforeEach(() => {
-      sandbox = sinon.createSandbox();
+      sandbox = sinon.sandbox.create();
       sandbox.stub(auctionManager, 'index').get(() => stubAuctionIndex({
         adUnits: [
           {

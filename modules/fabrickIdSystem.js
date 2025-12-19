@@ -43,8 +43,8 @@ export const fabrickIdSubmodule = {
    * performs action to obtain id and return a value in the callback's response argument
    * @function getId
    * @param {SubmoduleConfig} [config]
-   * @param {ConsentData} consentData
-   * @param {Object} cacheIdObj - existing id, if any
+   * @param {ConsentData}
+   * @param {Object} cacheIdObj - existing id, if any consentData]
    * @returns {IdResponse|undefined}
    */
   getId(config, consentData, cacheIdObj) {

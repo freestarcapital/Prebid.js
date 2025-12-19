@@ -55,7 +55,7 @@ describe('AGMA Analytics Adapter', () => {
   let agmaConfig, sandbox, clock;
 
   beforeEach(() => {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
     clock = sandbox.useFakeTimers();
     sandbox.stub(events, 'getEvents').returns([]);
     agmaConfig = {

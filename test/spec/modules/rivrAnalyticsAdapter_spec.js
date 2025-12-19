@@ -39,7 +39,7 @@ describe('RIVR Analytics adapter', () => {
   let timer;
 
   before(() => {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
     window.rivraddon = {
       analytics: {
         enableAnalytics: () => {},

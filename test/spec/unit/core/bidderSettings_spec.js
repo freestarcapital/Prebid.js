@@ -110,7 +110,7 @@ describe('ScopedSettings', () => {
 describe('bidderSettings', () => {
   let sandbox;
   beforeEach(() => {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
     sandbox.stub(prebidGlobal, 'getGlobal').returns({
       bidderSettings: {
         scope: {

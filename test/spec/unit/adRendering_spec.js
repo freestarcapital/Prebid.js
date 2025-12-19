@@ -27,7 +27,7 @@ import {
 describe('adRendering', () => {
   let sandbox;
   beforeEach(() => {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
     sandbox.stub(utils, 'logWarn');
     sandbox.stub(utils, 'logError');
   })

@@ -19,6 +19,7 @@
 import {submodule} from '../src/hook.js';
 import {ajaxBuilder} from '../src/ajax.js';
 import {generateUUID, isGptPubadsDefined, logError, timestamp} from '../src/utils.js';
+import {find} from '../src/polyfill.js';
 
 /**
  * @typedef {import('../modules/rtdModule/index.js').RtdSubmodule} RtdSubmodule
@@ -27,7 +28,8 @@ import {generateUUID, isGptPubadsDefined, logError, timestamp} from '../src/util
 /** @type {Object} */
 const MessageType = {
   IMPRESSION_REQUEST: 'rsdk:impression:req',
-  IMPRESSION_RESPONSE: 'rsdk:impression:res'};
+  IMPRESSION_RESPONSE: 'rsdk:impression:res',
+};
 /** @type {ModuleParams} */
 const DEFAULT_PARAMS = {
   initUrl: 'https://confirm.fiduciadlt.com/init',
@@ -152,8 +154,8 @@ function getSlotByCode(code) {
     return null;
   }
   return (
-    ((
-      slots) || []).find(
+    find(
+      slots,
       (s) => s.getSlotElementId() === code || s.getAdUnitPath() === code
     ) || null
   );
@@ -172,7 +174,7 @@ export function getSlotByWin(win) {
   }
 
   return (
-    ((slots) || []).find((s) => {
+    find(slots, (s) => {
       let slotElement = document.getElementById(s.getSlotElementId());
 
       if (slotElement) {

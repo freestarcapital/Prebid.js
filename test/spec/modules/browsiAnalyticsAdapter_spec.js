@@ -177,7 +177,7 @@ describe('browsi analytics adapter', function () {
   let sandbox;
 
   before(() => {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
     sandbox.stub(utils, 'timestamp').returns(timestamp);
 
     adapterManager.registerAnalyticsAdapter({

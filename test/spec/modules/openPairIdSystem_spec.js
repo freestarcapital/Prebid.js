@@ -17,7 +17,7 @@ describe('openPairId', function () {
   let logInfoStub;
 
   beforeEach(() => {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
     logInfoStub = sandbox.stub(utils, 'logInfo');
   });
   afterEach(() => {

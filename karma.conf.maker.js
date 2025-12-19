@@ -6,8 +6,6 @@ const babelConfig = require('./babelConfig.js');
 var _ = require('lodash');
 var webpackConf = require('./webpack.conf.js');
 var karmaConstants = require('karma').constants;
-var path = require('path');
-const cacheDir = path.resolve(__dirname, '.cache/babel-loader');
 
 function newWebpackConfig(codeCoverage, disableFeatures) {
   // Make a clone here because we plan on mutating this object, and don't want parallel tasks to trample each other.
@@ -16,10 +14,6 @@ function newWebpackConfig(codeCoverage, disableFeatures) {
   Object.assign(webpackConfig, {
     mode: 'development',
     devtool: 'inline-source-map',
-    cache: {
-      type: 'filesystem',
-      cacheDirectory: path.resolve(__dirname, '.cache/webpack-test')
-    },
   });
   ['entry', 'optimization'].forEach(prop => delete webpackConfig[prop]);
 
@@ -27,10 +21,7 @@ function newWebpackConfig(codeCoverage, disableFeatures) {
     .flatMap((r) => r.use)
     .filter((use) => use.loader === 'babel-loader')
     .forEach((use) => {
-      use.options = Object.assign(
-        {cacheDirectory: cacheDir, cacheCompression: false},
-        babelConfig({test: true, codeCoverage, disableFeatures})
-      );
+      use.options = babelConfig({test: true, codeCoverage, disableFeatures});
     });
 
   return webpackConfig;
@@ -40,6 +31,7 @@ function newPluginsArray(browserstack) {
   var plugins = [
     'karma-chrome-launcher',
     'karma-coverage',
+    'karma-es5-shim',
     'karma-mocha',
     'karma-chai',
     'karma-sinon',
@@ -55,10 +47,11 @@ function newPluginsArray(browserstack) {
   plugins.push('karma-opera-launcher');
   plugins.push('karma-safari-launcher');
   plugins.push('karma-script-launcher');
+  plugins.push('karma-ie-launcher');
   return plugins;
 }
 
-function setReporters(karmaConf, codeCoverage, browserstack, chunkNo) {
+function setReporters(karmaConf, codeCoverage, browserstack) {
   // In browserstack, the default 'progress' reporter floods the logs.
   // The karma-spec-reporter reports failures more concisely
   if (browserstack) {
@@ -74,7 +67,7 @@ function setReporters(karmaConf, codeCoverage, browserstack, chunkNo) {
   if (codeCoverage) {
     karmaConf.reporters.push('coverage');
     karmaConf.coverageReporter = {
-      dir: `build/coverage/chunks/${chunkNo}`,
+      dir: 'build/coverage',
       reporters: [
         { type: 'lcov', subdir: '.' }
       ]
@@ -112,7 +105,7 @@ function setBrowsers(karmaConf, browserstack) {
   }
 }
 
-module.exports = function(codeCoverage, browserstack, watchMode, file, disableFeatures, chunkNo) {
+module.exports = function(codeCoverage, browserstack, watchMode, file, disableFeatures) {
   var webpackConfig = newWebpackConfig(codeCoverage, disableFeatures);
   var plugins = newPluginsArray(browserstack);
   if (file) {
@@ -132,7 +125,7 @@ module.exports = function(codeCoverage, browserstack, watchMode, file, disableFe
     },
     // frameworks to use
     // available frameworks: https://npmjs.org/browse/keyword/karma-adapter
-    frameworks: ['mocha', 'chai', 'sinon', 'webpack'],
+    frameworks: ['es5-shim', 'mocha', 'chai', 'sinon', 'webpack'],
 
     // test files should not be watched or they'll run twice after an update
     // (they are still, in fact, watched through autoWatch: true)
@@ -171,16 +164,16 @@ module.exports = function(codeCoverage, browserstack, watchMode, file, disableFe
     // Continuous Integration mode
     // if true, Karma captures browsers, runs the tests and exits
     singleRun: !watchMode,
-    browserDisconnectTimeout: 1e5, // default 2000
-    browserNoActivityTimeout: 1e5, // default 10000
+    browserDisconnectTimeout: 3e5, // default 2000
+    browserNoActivityTimeout: 3e5, // default 10000
     captureTimeout: 3e5, // default 60000,
-    browserDisconnectTolerance: 1,
+    browserDisconnectTolerance: 3,
     concurrency: 5, // browserstack allows us 5 concurrent sessions
 
     plugins: plugins
   };
 
-  setReporters(config, codeCoverage, browserstack, chunkNo);
+  setReporters(config, codeCoverage, browserstack);
   setBrowsers(config, browserstack);
   return config;
 }

@@ -78,12 +78,12 @@ describe('bidderFactory', () => {
       let aliasRegistryStub, aliasRegistry;
 
       beforeEach(function () {
-        sandbox = sinon.createSandbox();
+        sandbox = sinon.sandbox.create();
         sandbox.stub(activityRules, 'isActivityAllowed').callsFake(() => true);
         ajaxStub = sandbox.stub(ajax, 'ajax');
-        addBidResponseStub.resetHistory();
+        addBidResponseStub.reset();
         getConfigSpy = sandbox.spy(config, 'getConfig');
-        doneStub.resetHistory();
+        doneStub.reset();
         aliasRegistry = {};
         aliasRegistryStub = sandbox.stub(adapterManager, 'aliasRegistry');
         aliasRegistryStub.get(() => aliasRegistry);
@@ -221,7 +221,7 @@ describe('bidderFactory', () => {
 
       describe('transaction IDs', () => {
         beforeEach(() => {
-          activityRules.isActivityAllowed.resetHistory();
+          activityRules.isActivityAllowed.reset();
           ajaxStub.callsFake((_, callback) => callback.success(null, {getResponseHeader: sinon.stub()}));
           spec.interpretResponse.callsFake(() => [
             {
@@ -511,7 +511,7 @@ describe('bidderFactory', () => {
         });
 
         beforeEach(() => {
-          activityRules.isActivityAllowed.resetHistory();
+          activityRules.isActivityAllowed.reset();
           activityRules.isActivityAllowed.callsFake((activity) => activity === ACTIVITY_TRANSMIT_UFPD ? transmitUfpdAllowed : true);
           bidder = newBidder(spec);
           spec.isBidRequestValid.returns(true);
@@ -530,8 +530,7 @@ describe('bidderFactory', () => {
           ]);
           bidder.callBids(MOCK_BIDS_REQUEST, addBidResponseStub, doneStub, ajaxStub, onTimelyResponseStub, wrappedCallback);
           sinon.assert.calledWith(ajaxStub, 'url', sinon.match.any, sinon.match.any, sinon.match({
-            browsingTopics: false,
-            suppressTopicsEnrollmentWarning: true
+            browsingTopics: false
           }));
         });
 
@@ -594,7 +593,7 @@ describe('bidderFactory', () => {
                     url,
                     sinon.match.any,
                     sinon.match.any,
-                    sinon.match({browsingTopics: shouldBeSet, suppressTopicsEnrollmentWarning: true})
+                    sinon.match({browsingTopics: shouldBeSet})
                   );
                 });
               });
@@ -650,7 +649,7 @@ describe('bidderFactory', () => {
           fakeResponse.returns('headerContent');
           callbacks.success('response body', { getResponseHeader: fakeResponse });
         });
-        addBidResponseStub.resetHistory();
+        addBidResponseStub.reset();
         doneStub.resetBehavior();
         userSyncStub = sinon.stub(userSync, 'registerSync')
         logErrorSpy = sinon.spy(utils, 'logError');
@@ -955,8 +954,8 @@ describe('bidderFactory', () => {
         });
         callBidderErrorStub = sinon.stub(adapterManager, 'callBidderError');
         eventEmitterStub = sinon.stub(events, 'emit');
-        addBidResponseStub.resetHistory();
-        doneStub.resetHistory();
+        addBidResponseStub.reset();
+        doneStub.reset();
       });
 
       afterEach(function () {

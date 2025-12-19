@@ -7,7 +7,7 @@ describe('mediaforce bid adapter', function () {
   let sandbox;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
   });
 
   afterEach(function () {
@@ -131,68 +131,66 @@ describe('mediaforce bid adapter', function () {
     const timeout = 1500;
     const auctionId = '210a474e-88f0-4646-837f-4253b7cf14fb';
 
-    function createExpectedData() {
-      return {
-        // id property removed as it is specific for each request generated
-        tmax: timeout,
+    const expectedData = {
+      // id property removed as it is specific for each request generated
+      tmax: timeout,
+      ext: {
+        mediaforce: {
+          hb_key: auctionId
+        }
+      },
+      site: {
+        id: defaultBid.params.publisher_id,
+        publisher: {id: defaultBid.params.publisher_id},
+        ref: encodeURIComponent(refererInfo.ref),
+        page: pageUrl,
+      },
+      device: {
+        ua: navigator.userAgent,
+        dnt: dnt,
+        js: 1,
+        language: language,
+      },
+      imp: [{
+        tagid: defaultBid.params.placement_id,
+        secure: secure,
+        bidfloor: 0,
         ext: {
           mediaforce: {
-            hb_key: auctionId
+            transactionId: defaultBid.ortb2Imp.ext.tid,
           }
         },
-        site: {
-          id: defaultBid.params.publisher_id,
-          publisher: {id: defaultBid.params.publisher_id},
-          ref: encodeURIComponent(refererInfo.ref),
-          page: pageUrl,
-        },
-        device: {
-          ua: navigator.userAgent,
-          dnt: dnt,
-          js: 1,
-          language: language,
-        },
-        imp: [{
-          tagid: defaultBid.params.placement_id,
-          secure: secure,
-          bidfloor: 0,
-          ext: {
-            mediaforce: {
-              transactionId: defaultBid.ortb2Imp.ext.tid,
-            }
-          },
-          banner: {w: 300, h: 250},
-          native: {
-            ver: '1.2',
-            request: {
-              assets: [
-                {id: 1, title: {len: 800}, required: 1},
-                {id: 3, img: {w: 300, h: 250, type: 3}, required: 1},
-                {id: 5, data: {type: 1}, required: 0}
-              ],
-              context: 1,
-              plcmttype: 1,
-              ver: '1.2'
-            }
-          },
-          video: {
-            mimes: ['video/mp4'],
-            minduration: 5,
-            maxduration: 30,
-            protocols: [2, 3],
-            w: 640,
-            h: 480,
-            startdelay: 0,
-            linearity: 1,
-            skip: 1,
-            skipmin: 5,
-            skipafter: 10,
-            playbackmethod: [1],
-            api: [1, 2]
+        banner: {w: 300, h: 250},
+        native: {
+          ver: '1.2',
+          request: {
+            assets: [
+              {id: 1, title: {len: 800}, required: 1},
+              {id: 3, img: {w: 300, h: 250, type: 3}, required: 1},
+              {id: 5, data: {type: 1}, required: 0}
+            ],
+            context: 1,
+            plcmttype: 1,
+            ver: '1.2'
           }
-        }],
-      };
-    }
+        },
+        video: {
+          mimes: ['video/mp4'],
+          minduration: 5,
+          maxduration: 30,
+          protocols: [2, 3],
+          w: 640,
+          h: 480,
+          startdelay: 0,
+          linearity: 1,
+          skip: 1,
+          skipmin: 5,
+          skipafter: 10,
+          playbackmethod: [1],
+          api: [1, 2]
+        }
+      }],
+    };
 
     const multiBid = [
       {
@@ -250,7 +248,7 @@ describe('mediaforce bid adapter', function () {
       let [request] = spec.buildRequests(bidRequests, bidderRequest);
       let data = JSON.parse(request.data);
 
-      let expectedDataCopy = utils.deepClone(createExpectedData());
+      let expectedDataCopy = utils.deepClone(expectedData);
       assert.exists(data.id);
 
       expectedDataCopy.id = data.id
@@ -311,7 +309,7 @@ describe('mediaforce bid adapter', function () {
 
       let data = JSON.parse(request.data);
 
-      let expectedDataCopy = utils.deepClone(createExpectedData());
+      let expectedDataCopy = utils.deepClone(expectedData);
       assert.exists(data.id);
 
       expectedDataCopy.id = data.id
@@ -340,6 +338,7 @@ describe('mediaforce bid adapter', function () {
       const data = JSON.parse(request.data);
       assert.notExists(data.imp[0].banner, 'Banner object should be omitted');
     });
+
 
     it('should return proper requests for multiple imps', function () {
       let bidderRequest = {

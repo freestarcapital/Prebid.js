@@ -264,7 +264,7 @@ describe('adtargetBidAdapter', () => {
     });
 
     describe('publisher environment', () => {
-      const sandbox = sinon.createSandbox();
+      const sandbox = sinon.sandbox.create();
       sandbox.stub(config, 'getConfig').callsFake((key) => {
         const config = {
           'coppa': true

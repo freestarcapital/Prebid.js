@@ -144,12 +144,6 @@ const displayBidderRequest = {
   bids: [{ bidId: '2e41f65424c87c' }]
 };
 
-const ageVerificationData = {
-  id: "123456789123456789",
-  status: "accepted",
-  decisionDate: "2011-10-05T14:48:00.000Z"
-};
-
 const displayBidderRequestWithConsents = {
   bidderCode: 'bidderCode',
   bids: [{ bidId: '2e41f65424c87c' }],
@@ -161,14 +155,7 @@ const displayBidderRequestWithConsents = {
     gppString: 'abc12345234',
     applicableSections: [7, 8]
   },
-  uspConsent: 'iHaveIt',
-  ortb2: {
-    regs: {
-      ext: {
-        age_verification: ageVerificationData
-      }
-    }
-  }
+  uspConsent: 'iHaveIt'
 };
 
 const videoEqResponse = [{
@@ -363,7 +350,7 @@ describe('adtelligentBidAdapter', () => {
     });
 
     describe('publisher environment', () => {
-      const sandbox = sinon.createSandbox();
+      const sandbox = sinon.sandbox.create();
       sandbox.stub(config, 'getConfig').callsFake((key) => {
         const config = {
           'coppa': true
@@ -392,9 +379,6 @@ describe('adtelligentBidAdapter', () => {
       it('sets UserId\'s', () => {
         expect(bidRequestWithPubSettingsData.UserIds).to.be.deep.equal(DISPLAY_REQUEST.userId);
       })
-      it('sets AgeVerification', () => {
-        expect(bidRequestWithPubSettingsData.AgeVerification).to.deep.equal(ageVerificationData);
-      });
     })
   });
 

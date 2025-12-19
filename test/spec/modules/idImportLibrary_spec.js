@@ -7,7 +7,6 @@ import {hook} from '../../../src/hook.js';
 import * as activities from '../../../src/activities/rules.js';
 import { ACTIVITY_ENRICH_UFPD } from '../../../src/activities/activities.js';
 import { CONF_DEFAULT_FULL_BODY_SCAN, CONF_DEFAULT_INPUT_SCAN } from '../../../modules/idImportLibrary.js';
-import {server} from 'test/mocks/xhr.js';
 
 var expect = require('chai').expect;
 
@@ -18,6 +17,7 @@ const mockMutationObserver = {
 }
 
 describe('IdImportLibrary Tests', function () {
+  let fakeServer;
   let sandbox;
   let clock;
   let fn = sinon.spy();
@@ -28,8 +28,7 @@ describe('IdImportLibrary Tests', function () {
   });
 
   beforeEach(function () {
-    utils.logInfo.restore?.();
-    utils.logError.restore?.();
+    fakeServer = sinon.fakeServer.create();
     sinon.stub(utils, 'logInfo');
     sinon.stub(utils, 'logError');
   });
@@ -37,12 +36,13 @@ describe('IdImportLibrary Tests', function () {
   afterEach(function () {
     utils.logInfo.restore();
     utils.logError.restore();
+    fakeServer.restore();
     idImportlibrary.setConfig({});
   });
 
   describe('setConfig', function () {
     beforeEach(function() {
-      sandbox = sinon.createSandbox();
+      sandbox = sinon.sandbox.create();
       clock = sinon.useFakeTimers(1046952000000); // 2003-03-06T12:00:00Z
     });
 
@@ -111,7 +111,7 @@ describe('IdImportLibrary Tests', function () {
       clock = sinon.useFakeTimers(1046952000000); // 2003-03-06T12:00:00Z
       mutationObserverStub = sinon.stub(window, 'MutationObserver').returns(mockMutationObserver);
       userId = sandbox.stub(getGlobal(), 'getUserIds').returns({id: {'MOCKID': '1111'}});
-      server.respondWith('POST', 'URL', [200,
+      fakeServer.respondWith('POST', 'URL', [200,
         {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'
@@ -238,7 +238,7 @@ describe('IdImportLibrary Tests', function () {
       clock = sinon.useFakeTimers(1046952000000); // 2003-03-06T12:00:00Z
       mutationObserverStub = sinon.stub(window, 'MutationObserver');
       jsonSpy = sinon.spy(JSON, 'stringify');
-      server.respondWith('POST', 'URL', [200,
+      fakeServer.respondWith('POST', 'URL', [200,
         {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*'

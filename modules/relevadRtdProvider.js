@@ -9,8 +9,9 @@
 import {deepSetValue, isEmpty, logError, mergeDeep} from '../src/utils.js';
 import {submodule} from '../src/hook.js';
 import {ajax} from '../src/ajax.js';
-import {config} from '../src/config.js';
+import {findIndex} from '../src/polyfill.js';
 import {getRefererInfo} from '../src/refererDetection.js';
+import {config} from '../src/config.js';
 
 const MODULE_NAME = 'realTimeData';
 const SUBMODULE_NAME = 'RelevadRTDModule';
@@ -30,10 +31,10 @@ export let serverData = {}; // Tracks data returned from Relevad RTD server
 /**
  * Provides contextual IAB categories and segments to the bidders.
  *
- * @param      {Object}    reqBidsConfigObj  Bids request configuration
- * @param      {Function}  onDone            Ajax callback
- * @param      {Object}    moduleConfig      Rtd module configuration
- * @param      {Object}    userConsent       user GDPR consent
+ * @param      {<type>}    reqBidsConfigObj  Bids request configuration
+ * @param      {Function}  onDone            Ajax callbacek
+ * @param      {<type>}    moduleConfig      Rtd module configuration
+ * @param      {<type>}    userConsent       user GDPR consent
  */
 export function getBidRequestData(reqBidsConfigObj, onDone, moduleConfig, userConsent) {
   moduleConfig.params = moduleConfig.params || {};
@@ -80,8 +81,8 @@ export function getBidRequestData(reqBidsConfigObj, onDone, moduleConfig, userCo
 /**
  * Sets global ORTB user and site data
  *
- * @param      {Object}  ortb2     The global ORTB structure
- * @param      {Object}  rtdData   Rtd segments and categories
+ * @param      {dictionary}  ortb2     The gloabl ORTB structure
+ * @param      {dictionary}  rtdData   Rtd segments and categories
  */
 export function setGlobalOrtb2(ortb2, rtdData) {
   try {
@@ -95,9 +96,9 @@ export function setGlobalOrtb2(ortb2, rtdData) {
 /**
  * Compose ORTB2 data fragment from RTD data
  *
- * @param  {Object}  rtdData RTD segments and categories
+ * @param  {dictionary}  rtdData RTD segments and categories
  * @param  {string}      prefix  Site path prefix
- * @return {Object} ORTB2 fragment ready to be merged into global or bidder ORTB
+ * @return {dictionary} ORTB2 fragment ready to be merged into global or bidder ORTB
  */
 function composeOrtb2Data(rtdData, prefix) {
   const segments = rtdData.segments;
@@ -126,9 +127,9 @@ function composeOrtb2Data(rtdData, prefix) {
 /**
  * Sets ORTB user and site data for a given bidder
  *
- * @param      {Object}  bidderOrtbFragment  The bidder ORTB fragment
- * @param      {Object}  bidder     The bidder name
- * @param      {Object}  rtdData    RTD categories and segments
+ * @param      {dictionary}  bidderOrtbFragment  The bidder ORTB fragment
+ * @param      {object}  bidder     The bidder name
+ * @param      {object}  rtdData    RTD categories and segments
  */
 function setBidderSiteAndContent(bidderOrtbFragment, bidder, rtdData) {
   try {
@@ -149,9 +150,9 @@ function setBidderSiteAndContent(bidderOrtbFragment, bidder, rtdData) {
 /**
  * Filters dictionary entries
  *
- * @param      {Object}   dict A dictionary with numeric values
+ * @param      {array of {key:value}}   dict A dictionary with numeric values
  * @param      {string}  minscore       The minimum value
- * @return     {Array<string>} Array of category names with scores greater or equal to minscore
+ * @return     {array[names]} Array of category names with scores greater or equal to minscore
  */
 function filterByScore(dict, minscore) {
   if (dict && !isEmpty(dict)) {
@@ -205,9 +206,9 @@ function getFiltered(data, minscore) {
 /**
  * Adds Rtd data to global ORTB structure and bidder requests
  *
- * @param      {Object}  reqBids       The bid requests list
- * @param      {Object}  data          The Rtd data
- * @param      {Object}  moduleConfig  The Rtd module configuration
+ * @param      {<type>}  reqBids       The bid requests list
+ * @param      {<type>}  data          The Rtd data
+ * @param      {<type>}  moduleConfig  The Rtd module configuration
  */
 export function addRtdData(reqBids, data, moduleConfig) {
   moduleConfig = moduleConfig || {};
@@ -246,7 +247,7 @@ export function addRtdData(reqBids, data, moduleConfig) {
     noWhitelists && deepSetValue(adUnit, 'ortb2Imp.ext.data.relevad_rtd', relevadList);
 
     adUnit.hasOwnProperty('bids') && adUnit.bids.forEach(bid => {
-      let bidderIndex = (moduleConfig.params.hasOwnProperty('bidders') ? moduleConfig.params.bidders.findIndex(function (i) {
+      let bidderIndex = (moduleConfig.params.hasOwnProperty('bidders') ? findIndex(moduleConfig.params.bidders, function (i) {
         return i.bidder === bid.bidder;
       }) : false);
       const indexFound = !!(typeof bidderIndex == 'number' && bidderIndex >= 0);

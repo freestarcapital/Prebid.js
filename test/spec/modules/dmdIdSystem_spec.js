@@ -12,16 +12,11 @@ describe('Dmd ID System', function () {
   };
 
   beforeEach(function () {
-    if (utils.logError.restore && utils.logError.restore.sinon) {
-      utils.logError.restore();
-    }
     logErrorStub = sinon.stub(utils, 'logError');
   });
 
   afterEach(function () {
-    if (logErrorStub && logErrorStub.restore) {
-      logErrorStub.restore();
-    }
+    logErrorStub.restore();
   });
 
   it('should log an error if no configParams were passed into getId', function () {

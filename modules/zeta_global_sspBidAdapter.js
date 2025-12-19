@@ -138,10 +138,9 @@ export const spec = {
       }
     };
     const rInfo = bidderRequest.refererInfo;
-    if (rInfo) {
-      payload.site.page = cropPage(rInfo.page || rInfo.topmostLocation);
-      payload.site.domain = parseDomain(payload.site.page, {noLeadingWww: true});
-    }
+    // TODO: do the fallbacks make sense here?
+    payload.site.page = cropPage(rInfo.page || rInfo.topmostLocation);
+    payload.site.domain = parseDomain(payload.site.page, {noLeadingWww: true});
 
     payload.device.ua = navigator.userAgent;
     payload.device.language = navigator.language;
@@ -177,15 +176,6 @@ export const spec = {
     // CCPA
     if (bidderRequest && bidderRequest.uspConsent) {
       deepSetValue(payload, 'regs.ext.us_privacy', bidderRequest.uspConsent);
-    }
-
-    // Attaching GPP Consent Params
-    if (bidderRequest?.gppConsent?.gppString) {
-      deepSetValue(payload, 'regs.gpp', bidderRequest.gppConsent.gppString);
-      deepSetValue(payload, 'regs.gpp_sid', bidderRequest.gppConsent.applicableSections);
-    } else if (bidderRequest?.ortb2?.regs?.gpp) {
-      deepSetValue(payload, 'regs.gpp', bidderRequest.ortb2.regs.gpp);
-      deepSetValue(payload, 'regs.gpp_sid', bidderRequest.ortb2.regs.gpp_sid);
     }
 
     // schain
@@ -266,7 +256,7 @@ export const spec = {
   /**
    * Register User Sync.
    */
-  getUserSyncs: (syncOptions, responses, gdprConsent, uspConsent, gppConsent) => {
+  getUserSyncs: (syncOptions, responses, gdprConsent, uspConsent) => {
     let syncurl = '';
 
     // Attaching GDPR Consent Params in UserSync url
@@ -278,12 +268,6 @@ export const spec = {
     // CCPA
     if (uspConsent) {
       syncurl += '&us_privacy=' + encodeURIComponent(uspConsent);
-    }
-
-    // GPP Consent
-    if (gppConsent?.gppString && gppConsent?.applicableSections?.length) {
-      syncurl += '&gpp=' + encodeURIComponent(gppConsent.gppString);
-      syncurl += '&gpp_sid=' + encodeURIComponent(gppConsent?.applicableSections?.join(','));
     }
 
     // coppa compliance

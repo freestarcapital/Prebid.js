@@ -103,7 +103,7 @@ export const merkleIdSubmodule = {
    * decode the stored id value for passing to bid requests
    * @function
    * @param {string} value
-   * @returns {{eids:Array}}
+   * @returns {{eids:arrayofields}}
    */
   decode(value) {
     // Legacy support for a single id

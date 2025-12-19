@@ -22,6 +22,7 @@ describe('relevatehealth adapter', function() {
       },
       params: {
         placement_id: 110011,
+        user_id: '11211',
         width: 160,
         height: 600,
         domain: '',
@@ -81,17 +82,18 @@ describe('relevatehealth adapter', function() {
   });
 
   describe('validations', function() {
-    it('isBidValid : placement_id is passed', function() {
+    it('isBidValid : placement_id and user_id are passed', function() {
       let bid = {
           bidder: 'relevatehealth',
           params: {
-            placement_id: 110011
+            placement_id: 110011,
+            user_id: '11211'
           }
         },
         isValid = spec.isBidRequestValid(bid);
       expect(isValid).to.equals(true);
     });
-    it('isBidValid : placement_id is not passed', function() {
+    it('isBidValid : placement_id and user_id are not passed', function() {
       let bid = {
           bidder: 'relevatehealth',
           params: {
@@ -99,6 +101,34 @@ describe('relevatehealth adapter', function() {
             height: 600,
             domain: '',
             bid_floor: 0.5
+          }
+        },
+        isValid = spec.isBidRequestValid(bid);
+      expect(isValid).to.equals(false);
+    });
+    it('isBidValid : placement_id is passed but user_id is not passed', function() {
+      let bid = {
+          bidder: 'relevatehealth',
+          params: {
+            placement_id: 110011,
+            width: 160,
+            height: 600,
+            domain: '',
+            bid_floor: 0.5
+          }
+        },
+        isValid = spec.isBidRequestValid(bid);
+      expect(isValid).to.equals(false);
+    });
+    it('isBidValid : user_id is passed but placement_id is not passed', function() {
+      let bid = {
+          bidder: 'relevatehealth',
+          params: {
+            width: 160,
+            height: 600,
+            domain: '',
+            bid_floor: 0.5,
+            user_id: '11211'
           }
         },
         isValid = spec.isBidRequestValid(bid);
@@ -142,7 +172,7 @@ describe('relevatehealth adapter', function() {
       };
       let _Request = spec.buildRequests(request, bidRequest);
       let data = JSON.parse(_Request.data);
-      expect(data[0].regs.ext.us_privacy).to.equal('1NYN');
+      expect(data[0].us_privacy).to.equal('1NYN');
     });
   });
   describe('Validate response ', function() {
@@ -176,8 +206,8 @@ describe('relevatehealth adapter', function() {
       };
       let _Request = spec.buildRequests(request, bidderReq);
       let data = JSON.parse(_Request.data);
-      expect(data[0].regs.gpp).to.equal('gpp-string-test');
-      expect(data[0].regs.gpp_sid[0]).to.equal(5);
+      expect(data[0].gpp).to.equal('gpp-string-test');
+      expect(data[0].gpp_sid[0]).to.equal(5);
     });
     it('Request params check with GPP Consent read from ortb2', function() {
       let bidderReq = {
@@ -190,8 +220,8 @@ describe('relevatehealth adapter', function() {
       };
       let _Request = spec.buildRequests(request, bidderReq);
       let data = JSON.parse(_Request.data);
-      expect(data[0].regs.gpp).to.equal('gpp-test-string');
-      expect(data[0].regs.gpp_sid[0]).to.equal(5);
+      expect(data[0].gpp).to.equal('gpp-test-string');
+      expect(data[0].gpp_sid[0]).to.equal(5);
     });
     it(' Bid request should have coppa flag if its true', () => {
       let bidderReq = {
@@ -203,7 +233,7 @@ describe('relevatehealth adapter', function() {
       };
       let _Request = spec.buildRequests(request, bidderReq);
       let data = JSON.parse(_Request.data);
-      expect(data[0].regs.coppa).to.equal(1);
+      expect(data[0].coppa).to.equal(1);
     });
   });
 });

@@ -128,7 +128,7 @@ describe('UnrulyAdapter', function () {
   let fakeRenderer;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
     sandbox.stub(utils, 'logError');
     sandbox.stub(Renderer, 'install');
 

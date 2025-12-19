@@ -391,9 +391,8 @@ export const spec = {
   /**
    * Make a server request from the list of BidRequests.
    *
-   * @param {Array} validBidRequests - an array of bids
-   * @param {Object} bidderRequest
-   * @return {Object} Info describing the request to the server.
+   * @param {validBidRequests[]} - an array of bids
+   * @return ServerRequest Info describing the request to the server.
    */
   buildRequests: function(validBidRequests, bidderRequest) {
     function resolveEndpoint() {
@@ -497,7 +496,7 @@ export const spec = {
 
   /**
    * Register bidder specific code, which will execute if bidder timed out after an auction
-   * @param {Object} data Containing timeout specific data
+   * @param {data} Containing timeout specific data
    */
   onTimeout: function(data) {
     window.nobid.timeoutTotal++;

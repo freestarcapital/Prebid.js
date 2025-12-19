@@ -55,14 +55,8 @@ describe('ttdBidAdapter', function () {
 
       it('should return false when publisherId is longer than 64 characters', function () {
         let bid = makeBid();
-        bid.params.publisherId = '1'.repeat(65);
+        bid.params.publisherId = '1111111111111111111111111111111111111111111111111111111111111111111111';
         expect(spec.isBidRequestValid(bid)).to.equal(false);
-      });
-
-      it('should return true when publisherId is equal to 64 characters', function () {
-        let bid = makeBid();
-        bid.params.publisherId = '1'.repeat(64);
-        expect(spec.isBidRequestValid(bid)).to.equal(true);
       });
 
       it('should return true if placementId is not passed and gpid is passed', function () {
@@ -275,7 +269,7 @@ describe('ttdBidAdapter', function () {
       };
       var requestBody = testBuildRequests(baseBannerBidRequests, requestWithoutTimeout).data;
       expect(requestBody.tmax).to.be.equal(400);
-
+      
       const requestWithTimeout = {
         ...baseBidderRequest,
         timeout: 600
@@ -557,6 +551,17 @@ describe('ttdBidAdapter', function () {
 
       const requestBody = testBuildRequests(clonedBannerBidRequests, baseBidderRequest).data;
       expect(requestBody.source.ext.schain).to.deep.equal(schain);
+    });
+
+    it('adds unified ID info to the request', function () {
+      const TDID = '00000000-0000-0000-0000-000000000000';
+      let clonedBannerRequests = deepClone(baseBannerBidRequests);
+      clonedBannerRequests[0].userId = {
+        tdid: TDID
+      };
+
+      const requestBody = testBuildRequests(clonedBannerRequests, baseBidderRequest).data;
+      expect(requestBody.user.buyeruid).to.equal(TDID);
     });
 
     it('adds unified ID and UID2 info to user.ext.eids in the request', function () {

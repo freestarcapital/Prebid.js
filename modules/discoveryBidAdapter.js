@@ -131,8 +131,9 @@ export function getCookieTimeToUTCString() {
 
 /**
  * format imp ad test ext params
- * @param {Object} bidRequest single bid request
- * @param {Object} bidderRequest bidder request object
+ *
+ * @param validBidRequest sigleBidRequest
+ * @param bidderRequest
  */
 function addImpExtParams(bidRequest = {}, bidderRequest = {}) {
   const { deepAccess } = utils;
@@ -247,8 +248,11 @@ export const buildUTMTagData = (url) => {
  * @return {Object}
  */
 function getParam(validBidRequests, bidderRequest) {
-  const sharedid = utils.deepAccess(validBidRequests[0], 'crumbs.pubcid');
-  const eids = validBidRequests[0].userIdAsEids;
+  const sharedid =
+    utils.deepAccess(validBidRequests[0], 'userId.sharedid.id') ||
+    utils.deepAccess(validBidRequests[0], 'userId.pubcid') ||
+    utils.deepAccess(validBidRequests[0], 'crumbs.pubcid');
+  const eids = validBidRequests[0].userIdAsEids || validBidRequests[0].userId;
 
   let isMobile = getDevice() ? 1 : 0;
   // input test status by Publisher. more frequently for test true req
@@ -486,7 +490,7 @@ export const spec = {
 
   /**
    * Register bidder specific code, which will execute if bidder timed out after an auction
-   * @param {Object} data Containing timeout specific data
+   * @param {data} Containing timeout specific data
    */
   onTimeout: function (data) {
     utils.logError('DiscoveryDSP adapter timed out for the auction.');
@@ -495,7 +499,7 @@ export const spec = {
 
   /**
    * Register bidder specific code, which  will execute if a bid from this bidder won the auction
-   * @param {Object} bid The bid that won the auction
+   * @param {Bid} The bid that won the auction
    */
   onBidWon: function (bid) {
     if (bid['nurl']) {

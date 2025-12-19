@@ -9,7 +9,7 @@ describe('greenbidsBidAdapter', () => {
   let sandbox;
 
   beforeEach(function () {
-    sandbox = sinon.createSandbox();
+    sandbox = sinon.sandbox.create();
   });
 
   afterEach(function () {

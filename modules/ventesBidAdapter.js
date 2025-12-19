@@ -1,9 +1,9 @@
 import {BANNER, NATIVE, VIDEO} from '../src/mediaTypes.js';
 import {isArray, isNumber, isPlainObject, isStr, replaceAuctionPrice} from '../src/utils.js';
+import {find} from '../src/polyfill.js';
 import {registerBidder} from '../src/adapters/bidderFactory.js';
 import { convertOrtbRequestToProprietaryNative } from '../src/native.js';
 import {convertCamelToUnderscore} from '../libraries/appnexusUtils/anUtils.js';
-import {hasUserInfo} from '../libraries/adrelevantisUtils/bidderUtils.js';
 
 const BID_METHOD = 'POST';
 const BIDDER_URL = 'https://ad.ventesavenues.in/va/ad';
@@ -54,6 +54,10 @@ function validateMediaSizes(mediaSize) {
       mediaSize.every(size => (isNumber(size) && size >= 0));
 }
 
+function hasUserInfo(bid) {
+  return !!bid.params.user;
+}
+
 function validateParameters(parameters) {
   if (!(parameters.placementId)) {
     return false;
@@ -96,12 +100,13 @@ function createServerRequestFromAdUnits(adUnits, bidRequestId, adUnitContext) {
     data: generateBidRequestsFromAdUnits(adUnits, bidRequestId, adUnitContext),
     options: {
       contentType: 'application/json',
-      withCredentials: false}
+      withCredentials: false,
+    }
   }
 }
 
 function generateBidRequestsFromAdUnits(bidRequests, bidRequestId, adUnitContext) {
-  const userObjBid = ((bidRequests) || []).find(hasUserInfo);
+  const userObjBid = find(bidRequests, hasUserInfo);
   let userObj = {};
   if (userObjBid) {
     Object.keys(userObjBid.params.user)
@@ -125,7 +130,7 @@ function generateBidRequestsFromAdUnits(bidRequests, bidRequestId, adUnitContext
       });
   }
 
-  const deviceObjBid = ((bidRequests) || []).find(hasDeviceInfo);
+  const deviceObjBid = find(bidRequests, hasDeviceInfo);
   let deviceObj;
   if (deviceObjBid && deviceObjBid.params && deviceObjBid.params.device) {
     deviceObj = {};
@@ -148,7 +153,7 @@ function generateBidRequestsFromAdUnits(bidRequests, bidRequestId, adUnitContext
   payload.at = 1
   payload.cur = ['USD']
   payload.imp = bidRequests.reduce(generateImpressionsFromAdUnit, [])
-  const appDeviceObjBid = ((bidRequests) || []).find(hasAppInfo);
+  const appDeviceObjBid = find(bidRequests, hasAppInfo);
   if (!appDeviceObjBid) {
     payload.site = generateSiteFromAdUnitContext(bidRequests, adUnitContext)
   } else {
