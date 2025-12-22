@@ -13,13 +13,25 @@ export const getCreativeRendererSource = hook('sync', function (bidResponse) {
 
 export const getCreativeRenderer = (function() {
   const renderers = {};
-  return function (bidResponse) {
+  return async function (bidResponse) {
     const src = getCreativeRendererSource(bidResponse);
     if (!renderers.hasOwnProperty(src)) {
-      renderers[src] = new PbPromise((resolve) => {
-        const iframe = createInvisibleIframe();
-        iframe.srcdoc = `<script>${src}</script>`;
-        iframe.onload = () => resolve(iframe.contentWindow.render);
+      renderers[src] = await new PbPromise((resolve) => {
+        const iframe = createInvisibleIframe()
+        iframe.srcdoc = `<script>${src}</script>
+  <script>
+    window.parent.postMessage(
+        { type: 'RENDERER_READY_${bidResponse.adId}' },
+        '*'
+  );</script>`;
+        const listenerForRendererReady = (event) => {
+          if (event.source !== iframe.contentWindow) return;
+          if (event.data?.type === `RENDERER_READY_${bidResponse.adId}`) {
+            window.removeEventListener('message', listenerForRendererReady);
+            resolve(iframe.contentWindow.render);
+          }
+        }
+        window.addEventListener('message', listenerForRendererReady);
         document.body.appendChild(iframe);
       })
     }
