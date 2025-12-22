@@ -43,7 +43,8 @@ var adUnits = [
             param1: 'loremipsum',
             param2: 'dolorsitamet'
           },
-          placementId: 'testBanner'
+          placementId: 'testBanner',
+          endpointId: 'testEndpoint'
         }
       }
     ]
