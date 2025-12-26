@@ -362,22 +362,25 @@ export function renderAdDirect(doc, adId, options) {
   }
 
   function renderFn(adData) {
-    waitForDocumentReady(doc)
-      .then(() => getCreativeRenderer(bid))
-      .then((render) => render(adData, {
-        sendMessage: (type, data) => messageHandler(type, data, bid),
-        mkFrame: createIframe,
-      }, doc.defaultView))
+    PbPromise.all([
+      getCreativeRenderer(bid),
+      waitForDocumentReady(doc)
+    ]).then(([render]) => render(adData, {
+      sendMessage: (type, data) => messageHandler(type, data, bid),
+      mkFrame: createIframe,
+    }, doc.defaultView))
       .then(
-        () => emitAdRenderSucceeded({doc, bid, id: bid.adId}),
+        () => {
+        // TODO: this is almost certainly the wrong way to do this
+          const creativeComment = document.createComment(`Creative ${bid.creativeId} served by ${bid.bidder} Prebid.js Header Bidding`);
+          insertElement(creativeComment, doc, 'html');
+          return emitAdRenderSucceeded({doc, bid, id: bid.adId})
+        },
         (e) => {
           fail(e?.reason || AD_RENDER_FAILED_REASON.EXCEPTION, e?.message)
           e?.stack && logError(e);
         }
       );
-    // TODO: this is almost certainly the wrong way to do this
-    const creativeComment = document.createComment(`Creative ${bid.creativeId} served by ${bid.bidder} Prebid.js Header Bidding`);
-    insertElement(creativeComment, doc, 'html');
   }
   try {
     if (!adId || !doc) {
