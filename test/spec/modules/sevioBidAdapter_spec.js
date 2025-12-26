@@ -275,6 +275,16 @@ describe('sevioBidAdapter', function () {
     expect(requests[0].data.keywords.tokens).to.deep.equal(['keyword1', 'keyword2']);
   });
 
+  // Minimal env shims some helpers rely on
+  Object.defineProperty(window, 'visualViewport', {
+    value: { width: 1200, height: 800 },
+    configurable: true
+  });
+  Object.defineProperty(window, 'screen', {
+    value: { width: 1920, height: 1080 },
+    configurable: true
+  });
+
   function mkBid(overrides) {
     return Object.assign({
       bidId: 'bid-1',
@@ -342,7 +352,7 @@ describe('sevioBidAdapter', function () {
           get() { throw new Error('cross-origin'); }
         });
         const out = spec.buildRequests([mkBid()], baseBidderRequest);
-        expect(out[0].data[0].text).to.equal('Local Title');
+        expect(out[0].data.context[0].text).to.equal('Local Title');
         Object.defineProperty(window, 'top', original);
         restored = true;
       } catch (e) {
@@ -497,6 +507,7 @@ describe('sevioBidAdapter', function () {
 
       expect(payload).to.not.have.property('currency');
     });
+
     it('parses comma-separated keywords string into tokens array', function () {
       const singleBidRequest = [{
         bidder: 'sevio',

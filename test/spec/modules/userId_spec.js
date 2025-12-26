@@ -11,13 +11,13 @@ import {
   requestDataDeletion,
   setStoredValue,
   setSubmoduleRegistry,
+  COOKIE_SUFFIXES, HTML5_SUFFIXES,
   syncDelay, adUnitEidsHook,
 } from 'modules/userId/index.js';
 import {UID1_EIDS} from 'libraries/uid1Eids/uid1Eids.js';
-import {createEidsArray, EID_CONFIG} from 'modules/userId/eids.js';
+import {createEidsArray, EID_CONFIG, getEids} from 'modules/userId/eids.js';
 import {config} from 'src/config.js';
 import * as utils from 'src/utils.js';
-import {deepAccess, getPrebidInternal} from 'src/utils.js';
 import * as events from 'src/events.js';
 import {EVENTS} from 'src/constants.js';
 import {getGlobal} from 'src/prebidGlobal.js';
@@ -26,8 +26,7 @@ import {setEventFiredFlag as liveIntentIdSubmoduleDoNotFireEvent} from '../../..
 import {sharedIdSystemSubmodule} from 'modules/sharedIdSystem.js';
 import {pubProvidedIdSubmodule} from 'modules/pubProvidedIdSystem.js';
 import * as mockGpt from '../integration/faker/googletag.js';
-import 'src/prebid.js';
-import {startAuction} from 'src/prebid';
+import {requestBids, startAuction} from 'src/prebid.js';
 import {hook} from '../../../src/hook.js';
 import {mockGdprConsent} from '../../helpers/consentData.js';
 import {getPPID} from '../../../src/adserver.js';
@@ -37,11 +36,18 @@ import {MODULE_TYPE_UID} from '../../../src/activities/modules.js';
 import {ACTIVITY_ENRICH_EIDS} from '../../../src/activities/activities.js';
 import {ACTIVITY_PARAM_COMPONENT_NAME, ACTIVITY_PARAM_COMPONENT_TYPE} from '../../../src/activities/params.js';
 import {extractEids} from '../../../modules/prebidServerBidAdapter/bidderConfig.js';
+import {generateSubmoduleContainers, addIdData } from '../../../modules/userId/index.js';
 import { registerActivityControl } from '../../../src/activities/rules.js';
-import { addIdData } from '../../../modules/userId/index.js';
+import {
+  discloseStorageUse,
+  STORAGE_TYPE_COOKIES,
+  STORAGE_TYPE_LOCALSTORAGE,
+  getStorageManager,
+  getCoreStorageManager
+} from '../../../src/storageManager.js';
 
-let assert = require('chai').assert;
-let expect = require('chai').expect;
+const assert = require('chai').assert;
+const expect = require('chai').expect;
 const EXPIRED_COOKIE_DATE = 'Thu, 01 Jan 1970 00:00:01 GMT';
 const CONSENT_LOCAL_STORAGE_NAME = '_pbjs_userid_consent_data';
 
@@ -268,7 +274,7 @@ describe('User ID', function () {
 
     afterEach(function () {
       mockGpt.enable();
-      $$PREBID_GLOBAL$$.requestBids.removeAll();
+      requestBids.removeAll();
       config.resetConfig();
       coreStorage.setCookie.restore();
       utils.logWarn.restore();
@@ -877,7 +883,7 @@ describe('User ID', function () {
     })
 
     it('should set googletag ppid correctly', function () {
-      let adUnits = [getAdUnitMock()];
+      const adUnits = [getAdUnitMock()];
       init(config);
       setSubmoduleRegistry([sharedIdSystemSubmodule]);
 
@@ -899,7 +905,7 @@ describe('User ID', function () {
     });
 
     it('should set googletag ppid correctly when prioritized according to config available to core', () => {
-      let adUnits = [getAdUnitMock()];
+      const adUnits = [getAdUnitMock()];
       init(config);
       setSubmoduleRegistry([
         // some of the ids are padded to have length >= 32 characters
@@ -1004,7 +1010,7 @@ describe('User ID', function () {
     });
 
     it('should set PPID when the source needs to call out to the network', () => {
-      let adUnits = [getAdUnitMock()];
+      const adUnits = [getAdUnitMock()];
       init(config);
       const callback = sinon.stub();
       setSubmoduleRegistry([{
@@ -1041,7 +1047,7 @@ describe('User ID', function () {
     });
 
     it('should log a warning if PPID too big or small', function () {
-      let adUnits = [getAdUnitMock()];
+      const adUnits = [getAdUnitMock()];
 
       init(config);
       setSubmoduleRegistry([sharedIdSystemSubmodule]);
@@ -1141,7 +1147,7 @@ describe('User ID', function () {
       beforeEach(() => {
         mockIdCallback = sinon.stub();
         coreStorage.setCookie('MOCKID', '', EXPIRED_COOKIE_DATE);
-        let mockIdSystem = {
+        const mockIdSystem = {
           name: 'mockId',
           decode: function(value) {
             return {
@@ -1267,9 +1273,9 @@ describe('User ID', function () {
       })
     });
     it('pbjs.refreshUserIds updates submodules', function(done) {
-      let sandbox = sinon.createSandbox();
-      let mockIdCallback = sandbox.stub().returns({id: {'MOCKID': '1111'}});
-      let mockIdSystem = {
+      const sandbox = sinon.createSandbox();
+      const mockIdCallback = sandbox.stub().returns({id: {'MOCKID': '1111'}});
+      const mockIdSystem = {
         name: 'mockId',
         decode: function(value) {
           return {
@@ -1371,11 +1377,11 @@ describe('User ID', function () {
       coreStorage.setCookie('MOCKID', '', EXPIRED_COOKIE_DATE);
       coreStorage.setCookie('refreshedid', '', EXPIRED_COOKIE_DATE);
 
-      let sandbox = sinon.createSandbox();
-      let mockIdCallback = sandbox.stub().returns({id: {'MOCKID': '1111'}});
-      let refreshUserIdsCallback = sandbox.stub();
+      const sandbox = sinon.createSandbox();
+      const mockIdCallback = sandbox.stub().returns({id: {'MOCKID': '1111'}});
+      const refreshUserIdsCallback = sandbox.stub();
 
-      let mockIdSystem = {
+      const mockIdSystem = {
         name: 'mockId',
         decode: function(value) {
           return {
@@ -1385,9 +1391,9 @@ describe('User ID', function () {
         getId: mockIdCallback
       };
 
-      let refreshedIdCallback = sandbox.stub().returns({id: {'REFRESH': '1111'}});
+      const refreshedIdCallback = sandbox.stub().returns({id: {'REFRESH': '1111'}});
 
-      let refreshedIdSystem = {
+      const refreshedIdSystem = {
         name: 'refreshedId',
         decode: function(value) {
           return {
@@ -1436,7 +1442,7 @@ describe('User ID', function () {
     afterEach(function () {
       // removed cookie
       coreStorage.setCookie(PBJS_USER_ID_OPTOUT_NAME, '', EXPIRED_COOKIE_DATE);
-      $$PREBID_GLOBAL$$.requestBids.removeAll();
+      requestBids.removeAll();
       utils.logInfo.restore();
     });
 
@@ -1465,7 +1471,7 @@ describe('User ID', function () {
     });
 
     afterEach(function () {
-      $$PREBID_GLOBAL$$.requestBids.removeAll();
+      requestBids.removeAll();
       utils.logInfo.restore();
     });
 
@@ -1634,7 +1640,7 @@ describe('User ID', function () {
       });
 
       afterEach(function () {
-        $$PREBID_GLOBAL$$.requestBids.removeAll();
+        requestBids.removeAll();
         config.resetConfig();
         sandbox.restore();
         coreStorage.setCookie('MOCKID', '', EXPIRED_COOKIE_DATE);
@@ -1960,15 +1966,16 @@ describe('User ID', function () {
         });
 
         const eids = await getGlobalEids();
-        expect(eids).to.deep.contain({
-          source: 'example.com',
-          uids: [{
-            id: 'value read from cookie or local storage',
-            ext: {
-              stype: 'ppuid'
-            }
-          }]
-        });
+        expect(eids).to.deep.contain(
+          {
+            source: 'example.com',
+            uids: [{
+              id: 'value read from cookie or local storage',
+              ext: {
+                stype: 'ppuid'
+              }
+            }]
+          });
         expect(eids).to.deep.contain({
           source: 'provider.com',
           uids: [{
@@ -2019,6 +2026,97 @@ describe('User ID', function () {
         const eids = await getGlobalEids();
         expect(eids.find(eid => eid.source === 'mockid')).to.exist;
       });
+
+      describe('storage disclosure', () => {
+        let disclose;
+        function discloseStorageHook(next, ...args) {
+          disclose(...args);
+          next(...args);
+        }
+        before(() => {
+          discloseStorageUse.before(discloseStorageHook)
+        })
+        after(() => {
+          discloseStorageUse.getHooks({hook: discloseStorageHook}).remove();
+        })
+        beforeEach(() => {
+          disclose = sinon.stub();
+          setSubmoduleRegistry([
+            {
+              name: 'mockId',
+            }
+          ]);
+        });
+
+        function setStorage(storage) {
+          config.setConfig({
+            userSync: {
+              userIds: [{
+                name: 'mockId',
+                storage
+              }]
+            }
+          })
+        }
+
+        function expectDisclosure(storageType, name, maxAgeSeconds) {
+          const suffixes = storageType === STORAGE_TYPE_COOKIES ? COOKIE_SUFFIXES : HTML5_SUFFIXES;
+          suffixes.forEach(suffix => {
+            const expectation = {
+              identifier: name + suffix,
+              type: storageType === STORAGE_TYPE_COOKIES ? 'cookie' : 'web',
+              purposes: [1, 2, 3, 4, 7],
+            }
+            if (storageType === STORAGE_TYPE_COOKIES) {
+              Object.assign(expectation, {
+                maxAgeSeconds: maxAgeSeconds,
+                cookieRefresh: true
+              })
+            }
+            sinon.assert.calledWith(disclose, 'userId', expectation)
+          })
+        }
+
+        it('should disclose cookie storage', async () => {
+          setStorage({
+            name: 'mid_cookie',
+            type: STORAGE_TYPE_COOKIES,
+            expires: 1
+          })
+          await getGlobal().refreshUserIds();
+          expectDisclosure(STORAGE_TYPE_COOKIES, 'mid_cookie', 1 * 24 * 60 * 60);
+        });
+
+        it('should disclose html5 storage', async () => {
+          setStorage({
+            name: 'mid_localStorage',
+            type: STORAGE_TYPE_LOCALSTORAGE,
+            expires: 1
+          });
+          await getGlobal().refreshUserIds();
+          expectDisclosure(STORAGE_TYPE_LOCALSTORAGE, 'mid_localStorage');
+        });
+
+        it('should disclose both', async () => {
+          setStorage({
+            name: 'both',
+            type: `${STORAGE_TYPE_COOKIES}&${STORAGE_TYPE_LOCALSTORAGE}`,
+            expires: 1
+          });
+          await getGlobal().refreshUserIds();
+          expectDisclosure(STORAGE_TYPE_COOKIES, 'both', 1 * 24 * 60 * 60);
+          expectDisclosure(STORAGE_TYPE_LOCALSTORAGE, 'both');
+        });
+
+        it('should handle cookies with no expires', async () => {
+          setStorage({
+            name: 'cookie',
+            type: STORAGE_TYPE_COOKIES
+          });
+          await getGlobal().refreshUserIds();
+          expectDisclosure(STORAGE_TYPE_COOKIES, 'cookie', 0);
+        })
+      })
 
       describe('activity controls', () => {
         let isAllowed;
@@ -2382,9 +2480,40 @@ describe('User ID', function () {
   });
 
   describe('handles config with ESP configuration in user sync object', function() {
+    before(() => {
+      mockGpt.reset();
+    })
+    beforeEach(() => {
+      window.googletag.secureSignalProviders = {
+        push: sinon.stub()
+      };
+    });
+
+    afterEach(() => {
+      mockGpt.reset();
+    })
+
     describe('Call registerSignalSources to register signal sources with gtag', function () {
       it('pbjs.registerSignalSources should be defined', () => {
         expect(typeof (getGlobal()).registerSignalSources).to.equal('function');
+      });
+
+      it('passes encrypted signal sources to GPT', function () {
+        const clock = sandbox.useFakeTimers();
+        init(config);
+        config.setConfig({
+          userSync: {
+            encryptedSignalSources: {
+              registerDelay: 0,
+              sources: [{source: ['pubcid.org'], encrypt: false}]
+            }
+          }
+        });
+        getGlobal().registerSignalSources();
+        clock.tick(1);
+        sinon.assert.calledWith(window.googletag.secureSignalProviders.push, sinon.match({
+          id: 'pubcid.org'
+        }))
       });
     })
 
@@ -2418,7 +2547,7 @@ describe('User ID', function () {
         });
         const encrypt = false;
         return (getGlobal()).getEncryptedEidsForSource(signalSources[0], encrypt).then((data) => {
-          let users = (getGlobal()).getUserIdsAsEids();
+          const users = (getGlobal()).getUserIdsAsEids();
           expect(data).to.equal(users[0].uids[0].id);
         })
       });
@@ -2830,7 +2959,7 @@ describe('User ID', function () {
             }
           }));
         });
-        it('shoud not restrict if ID comes from unrestricted module', async () => {
+        it('should not restrict if ID comes from unrestricted module', async () => {
           idValues.mockId1 = [];
           idValues.mockId2 = [];
           idValues.mockId3 = [];
@@ -3089,5 +3218,131 @@ describe('User ID', function () {
       adUnitEidsHook(next, auction);
       expect(adUnits[0].bids[0].userIdAsEids).to.eql(['global']);
     })
+  });
+
+  describe('generateSubmoduleContainers', () => {
+    it('should properly map registry to submodule containers for empty previous submodule containers', () => {
+      const previousSubmoduleContainers = [];
+      const submoduleRegistry = [
+        sharedIdSystemSubmodule,
+        createMockIdSubmodule('mockId1Module', { id: { uid2: { id: 'uid2_value' } } }, null, null),
+        createMockIdSubmodule('mockId2Module', { id: { uid2: { id: 'uid2_value' } } }, null, null),
+      ];
+      const configRegistry = [{ name: 'sharedId' }];
+      const result = generateSubmoduleContainers({}, configRegistry, previousSubmoduleContainers, submoduleRegistry);
+      expect(result).to.have.lengthOf(1);
+      expect(result[0].submodule.name).to.eql('sharedId');
+    });
+
+    it('should properly map registry to submodule containers for non-empty previous submodule containers', () => {
+      const previousSubmoduleContainers = [
+        {submodule: {name: 'notSharedId'}, config: {name: 'notSharedId'}},
+        {submodule: {name: 'notSharedId2'}, config: {name: 'notSharedId2'}},
+      ];
+      const submoduleRegistry = [
+        sharedIdSystemSubmodule,
+        createMockIdSubmodule('mockId1Module', { id: { uid2: { id: 'uid2_value' } } }, null, null),
+        createMockIdSubmodule('mockId2Module', { id: { uid2: { id: 'uid2_value' } } }, null, null),
+      ];
+      const configRegistry = [{ name: 'sharedId' }];
+      const result = generateSubmoduleContainers({}, configRegistry, previousSubmoduleContainers, submoduleRegistry);
+      expect(result).to.have.lengthOf(1);
+      expect(result[0].submodule.name).to.eql('sharedId');
+    });
+
+    it('should properly map registry to submodule containers for retainConfig flag', () => {
+      const previousSubmoduleContainers = [
+        {submodule: {name: 'shouldBeKept'}, config: {name: 'shouldBeKept'}},
+      ];
+      const submoduleRegistry = [
+        sharedIdSystemSubmodule,
+        createMockIdSubmodule('shouldBeKept', { id: { uid2: { id: 'uid2_value' } } }, null, null),
+      ];
+      const configRegistry = [{ name: 'sharedId' }];
+      const result = generateSubmoduleContainers({retainConfig: true}, configRegistry, previousSubmoduleContainers, submoduleRegistry);
+      expect(result).to.have.lengthOf(2);
+      expect(result[0].submodule.name).to.eql('sharedId');
+      expect(result[1].submodule.name).to.eql('shouldBeKept');
+    });
+
+    it('should properly map registry to submodule containers for autoRefresh flag', () => {
+      const previousSubmoduleContainers = [
+        {submodule: {name: 'modified'}, config: {name: 'modified', auctionDelay: 300}},
+        {submodule: {name: 'unchanged'}, config: {name: 'unchanged', auctionDelay: 300}},
+      ];
+      const submoduleRegistry = [
+        createMockIdSubmodule('modified', { id: { uid2: { id: 'uid2_value' } } }, null, null),
+        createMockIdSubmodule('new', { id: { uid2: { id: 'uid2_value' } } }, null, null),
+        createMockIdSubmodule('unchanged', { id: { uid2: { id: 'uid2_value' } } }, null, null),
+      ];
+      const configRegistry = [
+        {name: 'modified', auctionDelay: 200},
+        {name: 'new'},
+        {name: 'unchanged', auctionDelay: 300},
+      ];
+      const result = generateSubmoduleContainers({autoRefresh: true}, configRegistry, previousSubmoduleContainers, submoduleRegistry);
+      expect(result).to.have.lengthOf(3);
+      const itemsWithRefreshIds = result.filter(item => item.refreshIds);
+      const submoduleNames = itemsWithRefreshIds.map(item => item.submodule.name);
+      expect(submoduleNames).to.deep.eql(['modified', 'new']);
+    });
+  });
+  describe('user id modules - enforceStorageType', () => {
+    let warnLogSpy;
+    const UID_MODULE_NAME = 'userIdModule';
+    const cookieName = 'testCookie';
+    const userSync = {
+      userIds: [
+        {
+          name: UID_MODULE_NAME,
+          storage: {
+            type: STORAGE_TYPE_LOCALSTORAGE,
+            name: 'storageName'
+          }
+        }
+      ]
+    };
+
+    before(() => {
+      setSubmoduleRegistry([
+        createMockIdSubmodule(UID_MODULE_NAME, {id: {uid2: {id: 'uid2_value'}}}, null, []),
+      ]);
+    })
+
+    beforeEach(() => {
+      warnLogSpy = sinon.spy(utils, 'logWarn');
+    });
+
+    afterEach(() => {
+      warnLogSpy.restore();
+      getCoreStorageManager('test').setCookie(cookieName, '', EXPIRED_COOKIE_DATE)
+    });
+
+    it('should not warn when reading', () => {
+      config.setConfig({userSync});
+      const storage = getStorageManager({moduleType: MODULE_TYPE_UID, moduleName: UID_MODULE_NAME});
+      storage.cookiesAreEnabled();
+      sinon.assert.notCalled(warnLogSpy);
+    })
+
+    it('should warn and allow userId module to store data for enforceStorageType unset', () => {
+      config.setConfig({userSync});
+      const storage = getStorageManager({moduleType: MODULE_TYPE_UID, moduleName: UID_MODULE_NAME});
+      storage.setCookie(cookieName, 'value', 20000);
+      sinon.assert.calledWith(warnLogSpy, `${UID_MODULE_NAME} attempts to store data in ${STORAGE_TYPE_COOKIES} while configuration allows ${STORAGE_TYPE_LOCALSTORAGE}.`);
+      expect(storage.getCookie(cookieName)).to.eql('value');
+    });
+
+    it('should not allow userId module to store data for enforceStorageType set to true', () => {
+      config.setConfig({
+        userSync: {
+          enforceStorageType: true,
+          ...userSync,
+        }
+      })
+      const storage = getStorageManager({moduleType: MODULE_TYPE_UID, moduleName: UID_MODULE_NAME});
+      storage.setCookie(cookieName, 'value', 20000);
+      expect(storage.getCookie(cookieName)).to.not.exist;
+    });
   });
 });
