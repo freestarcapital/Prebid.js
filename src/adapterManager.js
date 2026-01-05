@@ -396,6 +396,7 @@ adapterManager.makeBidRequests = hook('sync', function (adUnits, auctionStart, a
       timeout: cbTimeout,
       refererInfo,
       metrics,
+      src: 'client'
     });
     const adapter = _bidderRegistry[bidderCode];
     if (!adapter) {
