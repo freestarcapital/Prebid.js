@@ -61,7 +61,7 @@ const converter = ortbConverter({
 
     const response = buildBidResponse(bid, context);
 
-    if (context.mediaType == 'video') {
+    if (context.mediaType === 'video') {
       response.nurl = bid.nurl;
       response.vastUrl = deepAccess(bid, 'ext.prebid.cache.vastXml.url') ?? null;
     }
@@ -179,8 +179,8 @@ export const spec = {
    * @return boolean True if this is a valid bid, and false otherwise.
    */
   isBidRequestValid: function (bid) {
-    let bannerParams = deepAccess(bid, 'mediaTypes.banner');
-    let videoParams = deepAccess(bid, 'mediaTypes.video');
+    const bannerParams = deepAccess(bid, 'mediaTypes.banner');
+    const videoParams = deepAccess(bid, 'mediaTypes.video');
 
     if (!bid.params) {
       logError('The bid params are missing');
@@ -203,9 +203,9 @@ export const spec = {
      */
 
     if (bannerParams) {
-      let sizes = bannerParams.sizes;
+      const sizes = bannerParams.sizes;
 
-      if (!sizes || parseSizesInput(sizes).length == 0) {
+      if (!sizes || parseSizesInput(sizes).length === 0) {
         logError('mediaTypes.banner.sizes must be set for banner placement at the right format.');
         return false;
       }
@@ -216,7 +216,7 @@ export const spec = {
      */
 
     if (videoParams) {
-      if (parseSizesInput(videoParams.playerSize).length == 0) {
+      if (parseSizesInput(videoParams.playerSize).length === 0) {
         logError('mediaTypes.video.playerSize must be set for video placement at the right format.');
         return false;
       }

@@ -319,15 +319,15 @@ export const eids = {
     }
   },
   'nexxen': {
-      source: 'liveintent.unrulymedia.com',
-      atype: 3,
-      getValue: function(data) {
-        return data.id;
-      },
-      getUidExt: function(data) {
-        if (data.ext) {
-          return data.ext;
-        }
+    source: 'liveintent.unrulymedia.com',
+    atype: 3,
+    getValue: function(data) {
+      return data.id;
+    },
+    getUidExt: function(data) {
+      if (data.ext) {
+        return data.ext;
       }
+    }
   }
 }

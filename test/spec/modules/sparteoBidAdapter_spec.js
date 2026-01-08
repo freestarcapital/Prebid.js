@@ -232,14 +232,14 @@ describe('SparteoAdapter', function () {
       });
 
       it('should return false because the networkId is missing', function () {
-        let wrongBid = deepClone(VALID_BID_BANNER);
+        const wrongBid = deepClone(VALID_BID_BANNER);
         delete wrongBid.params.networkId;
 
         expect(adapter.isBidRequestValid(wrongBid)).to.equal(false);
       });
 
       it('should return false because the banner size is missing', function () {
-        let wrongBid = deepClone(VALID_BID_BANNER);
+        const wrongBid = deepClone(VALID_BID_BANNER);
 
         wrongBid.mediaTypes.banner.sizes = '123456';
         expect(adapter.isBidRequestValid(wrongBid)).to.equal(false);
@@ -249,7 +249,7 @@ describe('SparteoAdapter', function () {
       });
 
       it('should return false because the video player size paramater is missing', function () {
-        let wrongBid = deepClone(VALID_BID_VIDEO);
+        const wrongBid = deepClone(VALID_BID_VIDEO);
 
         wrongBid.mediaTypes.video.playerSize = '123456';
         expect(adapter.isBidRequestValid(wrongBid)).to.equal(false);
@@ -358,7 +358,7 @@ describe('SparteoAdapter', function () {
           });
         }
 
-        let formattedReponse = [
+        const formattedReponse = [
           {
             requestId: '1a2b3c4d',
             seatBidId: 'cdbb6982-a269-40c7-84e5-04797f11d87a',

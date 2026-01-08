@@ -30,8 +30,8 @@ const TIMEOUT_ERROR = 'timeout-error';
 const CURRENCY_USD = 'USD';
 const BID_PRECISION = 2;
 const EMPTY_STRING = '';
-// todo: input profileId and profileVersionId ; defaults to zero or one
-const DEFAULT_PUBLISHER_ID = null;
+// Default values for IDs - standardized as strings
+const DEFAULT_PUBLISHER_ID = null; // null since publisherId is mandatory
 const DEFAULT_PROFILE_ID = '0';
 const DEFAULT_PROFILE_VERSION_ID = '0';
 
@@ -93,7 +93,8 @@ function sendAjaxRequest({ endpoint, method, queryParams = '', body = null }) {
   return ajax(url, null, body, { method });
 };
 
-function copyRequiredBidDetails(bid) {
+function copyRequiredBidDetails(bid, bidRequest) {
+  // First check if bid has mediaTypes/sizes, otherwise fallback to bidRequest
   return pick(bid, [
     'bidder',
     'bidderCode',
@@ -112,8 +113,8 @@ function copyRequiredBidDetails(bid) {
   ]);
 }
 
-function setBidStatus(bid, args) {
-  switch (args.getStatusCode()) {
+function setBidStatus(bid, status) {
+  switch (status) {
     case STATUS.GOOD:
       bid.status = SUCCESS;
       delete bid.error; // it's possible for this to be set by a previous timeout
@@ -184,18 +185,19 @@ function isS2SBidder(bidder) {
 }
 
 function isOWPubmaticBid(adapterName) {
-  let s2sConf = config.getConfig('s2sConfig');
-  let s2sConfArray = s2sConf ? (isArray(s2sConf) ? s2sConf : [s2sConf]) : [];
+  const s2sConf = config.getConfig('s2sConfig');
+  const s2sConfArray = s2sConf ? (isArray(s2sConf) ? s2sConf : [s2sConf]) : [];
   return s2sConfArray.some(conf => {
     if (adapterName === ADAPTER_CODE && conf.defaultVendor === VENDOR_OPENWRAP &&
       conf.bidders.indexOf(ADAPTER_CODE) > -1) {
       return true;
     }
+    return false;
   })
 }
 
 function getAdUnit(adUnits, adUnitId) {
-  return adUnits.filter(adUnit => (adUnit.divID && adUnit.divID == adUnitId) || (adUnit.code == adUnitId))[0];
+  return adUnits.filter(adUnit => (adUnit.divID && adUnit.divID === adUnitId) || (adUnit.code === adUnitId))[0];
 }
 
 function getTgId() {
@@ -231,8 +233,9 @@ function getFeatureLevelDetails(auctionCache) {
 
 function getListOfIdentityPartners() {
   const namespace = getGlobal();
+  if (!isFn(namespace.getUserIds)) return;
   const publisherProvidedEids = namespace.getConfig("ortb2.user.eids") || [];
-  const availableUserIds = namespace.adUnits[0]?.bids[0]?.userId || {};
+  const availableUserIds = namespace.getUserIds() || {};
   const identityModules = namespace.getConfig('userSync')?.userIds || [];
   const identityModuleNameMap = identityModules.reduce((mapping, module) => {
     if (module.storage?.name) {
@@ -327,9 +330,9 @@ function executeBidWonLoggerCall(auctionId, adUnitId) {
   if (isOWPubmaticBid(adapterName) && isS2SBidder(winningBid.bidder)) {
     return;
   }
-  let origAdUnit = getAdUnit(cache.auctions[auctionId]?.origAdUnits, adUnitId) || {};
-  let owAdUnitId = origAdUnit.owAdUnitId || getGptSlotInfoForAdUnitCode(adUnitId)?.gptSlot || adUnitId;
-  let auctionCache = cache.auctions[auctionId];
+  const origAdUnit = getAdUnit(cache.auctions[auctionId]?.origAdUnits, adUnitId) || {};
+  const owAdUnitId = origAdUnit.owAdUnitId || getGptSlotInfoForAdUnitCode(adUnitId)?.gptSlot || adUnitId;
+  const auctionCache = cache.auctions[auctionId];
   const payload = {
     fd: getFeatureLevelDetails(auctionCache),
     rd: { ctr: _country || '', ...getRootLevelDetails(auctionCache, auctionId) },
@@ -359,9 +362,9 @@ function readSaveCountry(e) {
 const eventHandlers = {
   auctionInit: (args) => {
     s2sBidders = (function () {
-      let result = [];
+      const result = [];
       try {
-        let s2sConf = config.getConfig('s2sConfig');
+        const s2sConf = config.getConfig('s2sConfig');
         if (isArray(s2sConf)) {
           s2sConf.forEach(conf => {
             if (conf?.bidders) {
@@ -374,9 +377,9 @@ const eventHandlers = {
       } catch (e) {
         logError('Error processing s2s bidders:', e);
       }
-      return result;
+      return result || [];
     }());
-    let cacheEntry = pick(args, [
+    const cacheEntry = pick(args, [
       'timestamp',
       'timeout',
       'bidderDonePendingCount', () => args.bidderRequests.length,
@@ -413,7 +416,7 @@ const eventHandlers = {
       logWarn(LOG_PRE_FIX + 'Got null requestId in bidResponseHandler');
       return;
     }
-    let requestId = args.originalRequestId || args.requestId;
+    const requestId = args.originalRequestId || args.requestId;
     let bid = cache.auctions[args.auctionId].adUnitCodes[args.adUnitCode].bids[requestId][0];
     if (!bid) {
       logError(LOG_PRE_FIX + 'Could not find associated bid request for bid response with requestId: ', args.requestId);
@@ -445,7 +448,7 @@ const eventHandlers = {
 
     bid.adId = args.adId;
     bid.source = formatSource(bid.source || args.source);
-    setBidStatus(bid, args);
+    setBidStatus(bid, 1);
     const latency = args?.timeToRespond || Date.now() - cache.auctions[args.auctionId].timestamp;
     const auctionTime = cache.auctions[args.auctionId].timeout;
     // Check if latency is greater than auctiontime+150, then log auctiontime+150 to avoid large numbers
@@ -472,16 +475,12 @@ const eventHandlers = {
       cache.auctions[args.auctionId].bidderDonePendingCount--;
     }
     args.bids.forEach(bid => {
-      let cachedBid = cache.auctions[bid.auctionId].adUnitCodes[bid.adUnitCode].bids[bid.bidId || bid.originalRequestId || bid.requestId];
+      const cachedBid = cache.auctions[bid.auctionId].adUnitCodes[bid.adUnitCode].bids[bid.bidId || bid.originalRequestId || bid.requestId];
       if (typeof bid.serverResponseTimeMs !== 'undefined') {
         cachedBid.serverLatencyTimeMs = bid.serverResponseTimeMs;
       }
       if (!cachedBid.status) {
         cachedBid.status = NO_BID;
-        if (bid.floorData && isFn(bid.getFloor)) {
-          const frvData = bid.getFloor();
-          cache.auctions[args.auctionId].adUnitCodes[bid.adUnitCode].floorRuleValue = frvData?.floor;
-        }
       }
       if (!cachedBid.clientLatencyTimeMs) {
         cachedBid.clientLatencyTimeMs = Date.now() - cache.auctions[bid.auctionId].timestamp;
@@ -490,7 +489,7 @@ const eventHandlers = {
   },
 
   bidWon: (args) => {
-    let auctionCache = cache.auctions[args.auctionId];
+    const auctionCache = cache.auctions[args.auctionId];
     auctionCache.adUnitCodes[args.adUnitCode].wonBidId = args.originalRequestId || args.requestId;
     auctionCache.adUnitCodes[args.adUnitCode].bidWonAdId = args.adId;
     executeBidWonLoggerCall(args.auctionId, args.adUnitCode);
@@ -498,7 +497,7 @@ const eventHandlers = {
 
   auctionEnd: (args) => {
     // if for the given auction bidderDonePendingCount == 0 then execute logger call sooners
-    let highestCpmBids = getGlobal().getHighestCpmBids() || [];
+    const highestCpmBids = getGlobal().getHighestCpmBids() || [];
     readSaveCountry(args);
     setTimeout(() => {
       executeBidsLoggerCall.call(this, args, highestCpmBids);
@@ -509,8 +508,8 @@ const eventHandlers = {
     // db = 1 and t = 1 means bidder did NOT respond with a bid but we got a timeout notification
     // db = 0 and t = 1 means bidder did  respond with a bid but post timeout
     args.forEach(badBid => {
-      let auctionCache = cache.auctions[badBid.auctionId];
-      let bid = auctionCache.adUnitCodes[badBid.adUnitCode].bids[badBid.bidId || badBid.originalRequestId || badBid.requestId][0];
+      const auctionCache = cache.auctions[badBid.auctionId];
+      const bid = auctionCache.adUnitCodes[badBid.adUnitCode].bids[badBid.bidId || badBid.originalRequestId || badBid.requestId][0];
       if (bid) {
         bid.status = ERROR;
         bid.error = {
@@ -525,25 +524,23 @@ const eventHandlers = {
 
 /// /////////// ADAPTER DEFINITION //////////////
 
-let baseAdapter = adapter({ analyticsType: 'endpoint' });
-let pubmaticAdapter = Object.assign({}, baseAdapter, {
+const baseAdapter = adapter({analyticsType: 'endpoint'});
+const pubmaticAdapter = Object.assign({}, baseAdapter, {
 
   enableAnalytics(conf = {}) {
     let error = false;
 
     if (typeof conf.options === 'object') {
-      if (conf.options.publisherId) {
-        publisherId = String(conf.options.publisherId).trim();
-      }
-      profileId = String(conf.options?.profileId || '').trim() || DEFAULT_PROFILE_ID;
-      profileVersionId = String(conf.options?.profileVersionId || '').trim() || DEFAULT_PROFILE_VERSION_ID;
+      publisherId = String(conf.options.publisherId || '').trim();
+      profileId = String(conf.options.profileId || '').trim() || DEFAULT_PROFILE_ID;
+      profileVersionId = String(conf.options.profileVersionId || '').trim() || DEFAULT_PROFILE_VERSION_ID;
     } else {
       logError(LOG_PRE_FIX + 'Config not found.');
       error = true;
     }
 
     if (!publisherId) {
-      logError(LOG_PRE_FIX + 'Missing publisherId(String).');
+      logError(LOG_PRE_FIX + 'Missing publisherId.');
       error = true;
     }
 

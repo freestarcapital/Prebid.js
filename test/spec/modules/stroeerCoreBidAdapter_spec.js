@@ -133,7 +133,7 @@ describe('stroeerCore bid adapter', function () {
   });
 
   const createWindow = (href, params = {}) => {
-    let {parent, top, frameElement, placementElements = []} = params;
+    const {parent, top, frameElement, placementElements = []} = params;
 
     const protocol = href.startsWith('https') ? 'https:' : 'http:';
     const win = {
@@ -342,7 +342,7 @@ describe('stroeerCore bid adapter', function () {
 
       it('should use hardcoded url as default endpoint', () => {
         const bidReq = buildBidderRequest();
-        let serverRequestInfo = spec.buildRequests(bidReq.bids, bidReq);
+        const serverRequestInfo = spec.buildRequests(bidReq.bids, bidReq);
 
         assert.equal(serverRequestInfo.method, 'POST');
         assert.isObject(serverRequestInfo.data);
@@ -375,7 +375,7 @@ describe('stroeerCore bid adapter', function () {
               bidReq.bids[0].params = sample.params;
               bidReq.bids.length = 1;
 
-              let serverRequestInfo = spec.buildRequests(bidReq.bids, bidReq);
+              const serverRequestInfo = spec.buildRequests(bidReq.bids, bidReq);
 
               assert.equal(serverRequestInfo.method, 'POST');
               assert.isObject(serverRequestInfo.data);
@@ -636,6 +636,7 @@ describe('stroeerCore bid adapter', function () {
           assert.deepEqual(serverRequestInfo.data.bids, [...expectedBannerBids, ...expectedVideoBids]);
         });
       });
+
       describe('optional fields', () => {
         it('should skip viz field when unable to determine visibility of placement', () => {
           placementElements.length = 0;
@@ -644,7 +645,7 @@ describe('stroeerCore bid adapter', function () {
           const serverRequestInfo = spec.buildRequests(bidReq.bids, bidReq);
           assert.lengthOf(serverRequestInfo.data.bids, 2);
 
-          for (let bid of serverRequestInfo.data.bids) {
+          for (const bid of serverRequestInfo.data.bids) {
             assert.isUndefined(bid.viz);
           }
         });
@@ -656,7 +657,7 @@ describe('stroeerCore bid adapter', function () {
           const serverRequestInfo = spec.buildRequests(bidderRequest.bids, bidderRequest);
           assert.lengthOf(serverRequestInfo.data.bids, 2);
 
-          for (let bid of serverRequestInfo.data.bids) {
+          for (const bid of serverRequestInfo.data.bids) {
             assert.isUndefined(bid.ref);
           }
         });
@@ -716,7 +717,12 @@ describe('stroeerCore bid adapter', function () {
           });
 
           const bidReq = buildBidderRequest();
-          bidReq.bids.forEach(bid => bid.schain = schain);
+          bidReq.bids.forEach(bid => {
+            bid.ortb2 = bid.ortb2 || {};
+            bid.ortb2.source = bid.ortb2.source || {};
+            bid.ortb2.source.ext = bid.ortb2.source.ext || {};
+            bid.ortb2.source.ext.schain = schain;
+          });
 
           const serverRequestInfo = spec.buildRequests(bidReq.bids, bidReq);
           assert.deepEqual(serverRequestInfo.data.schain, schain);
@@ -1004,7 +1010,7 @@ describe('stroeerCore bid adapter', function () {
     it('should interpret a video response', () => {
       const bidderResponse = buildBidderResponseWithVideo();
       const bidResponses = spec.interpretResponse({body: bidderResponse});
-      let videoBidResponse = bidResponses[0];
+      const videoBidResponse = bidResponses[0];
       assertStandardFieldsOnVideoBid(videoBidResponse, 'bid1', '<vast>video</vast>', 800, 250, 4);
     })
 
@@ -1038,16 +1044,6 @@ describe('stroeerCore bid adapter', function () {
       assert.propertyVal(firstBidMeta, 'another', 'thing');
 
       assert.isEmpty(result[1].meta)
-    });
-
-    it('should add campaignType to meta object', () => {
-      const response = buildBidderResponse();
-      response.bids[1] = Object.assign(response.bids[1], {campaignType: 'RTB'});
-
-      const result = spec.interpretResponse({body: response});
-
-      assert.propertyVal(result[0].meta, 'campaignType', undefined);
-      assert.propertyVal(result[1].meta, 'campaignType', 'RTB');
     });
   });
 

@@ -2,14 +2,14 @@ import {attachIdSystem, coreStorage, init, setSubmoduleRegistry} from 'modules/u
 import {config} from 'src/config.js';
 import {euidIdSubmodule} from 'modules/euidIdSystem.js';
 import 'modules/consentManagementTcf.js';
-import 'src/prebid.js';
+import {requestBids} from '../../../src/prebid.js';
 import {apiHelpers, cookieHelpers, runAuction, setGdprApplies} from './uid2IdSystem_helpers.js';
 import {hook} from 'src/hook.js';
 import {uninstall as uninstallTcfControl} from 'modules/tcfControl.js';
 import {server} from 'test/mocks/xhr';
 import {createEidsArray} from '../../../modules/userId/eids.js';
 
-let expect = require('chai').expect;
+const expect = require('chai').expect;
 
 // N.B. Most of the EUID code is shared with UID2 - the tests here only cover the happy path.
 // Most of the functionality is covered by the UID2 tests.
@@ -49,7 +49,7 @@ const expectOptout = (bid) => expect(findEuid(bid)).to.be.undefined;
 const expectNoIdentity = (bid) => expect(findEuid(bid)).to.be.undefined;
 
 describe('EUID module', function() {
-  let suiteSandbox, restoreSubtleToUndefined = false;
+  let suiteSandbox; let restoreSubtleToUndefined = false;
 
   const configureEuidResponse = (httpStatus, response) => server.respondWith('POST', apiUrl, (xhr) => xhr.respond(httpStatus, headers, response));
   const configureEuidCstgResponse = (httpStatus, response) => server.respondWith('POST', cstgApiUrl, (xhr) => xhr.respond(httpStatus, headers, response));
@@ -82,7 +82,7 @@ describe('EUID module', function() {
     setSubmoduleRegistry([euidIdSubmodule]);
   });
   afterEach(function() {
-    $$PREBID_GLOBAL$$.requestBids.removeAll();
+    requestBids.removeAll();
     config.resetConfig();
     cookieHelpers.clearCookies(moduleCookieName, publisherCookieName);
     coreStorage.removeDataFromLocalStorage(moduleCookieName);
