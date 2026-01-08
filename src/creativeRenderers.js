@@ -13,10 +13,10 @@ export const getCreativeRendererSource = hook('sync', function (bidResponse) {
 
 export const getCreativeRenderer = (function() {
   const renderers = {};
-  return async function (bidResponse) {
+  return function (bidResponse) {
     const src = getCreativeRendererSource(bidResponse);
     if (!renderers.hasOwnProperty(src)) {
-      renderers[src] = await new PbPromise((resolve) => {
+      renderers[src] = new PbPromise((resolve) => {
         const iframe = createInvisibleIframe()
         iframe.srcdoc = `<script>${src}</script>
   <script>

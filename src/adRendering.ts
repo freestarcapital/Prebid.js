@@ -362,12 +362,13 @@ export function renderAdDirect(doc, adId, options) {
   }
 
   function renderFn(adData) {
-    waitForDocumentReady(doc)
-      .then(() => getCreativeRenderer(bid))
-      .then((render) => render(adData, {
-        sendMessage: (type, data) => messageHandler(type, data, bid),
-        mkFrame: createIframe,
-      }, doc.defaultView))
+    PbPromise.all([
+      getCreativeRenderer(bid),
+      waitForDocumentReady(doc)
+    ]).then(([render]) => render(adData, {
+      sendMessage: (type, data) => messageHandler(type, data, bid),
+      mkFrame: createIframe,
+    }, doc.defaultView))
       .then(
         () => emitAdRenderSucceeded({doc, bid, id: bid.adId}),
         (e) => {
