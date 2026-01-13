@@ -146,18 +146,7 @@ Building with just these adapters will result in a smaller bundle which should a
 
         $ gulp build --modules=openxBidAdapter,rubiconBidAdapter,sovrnBidAdapter
 
-Alternatively, a `.json` file can be specified that contains a list of modules you would like to include.
-
-    $ gulp build --modules=modules.json
-
-With `modules.json` containing the following
-```json modules.json
-[
-  "openxBidAdapter",
-  "rubiconBidAdapter",
-  "sovrnBidAdapter"
-]
-```
+If no `--modules` argument is provided, all available modules will be included in the build.
 
 **Build prebid.js using npm for bundling**
 
@@ -166,7 +155,7 @@ In case you'd like to explicitly show that your project uses `prebid.js` and wan
 - Add `prebid.js` as a `npm` dependency of your project: `npm install prebid.js`
 - Run the `prebid.js` build under the `node_modules/prebid.js/` folder
 
-        $ gulp build --modules=path/to/your/list-of-modules.json
+        $ gulp build --modules=openxBidAdapter,rubiconBidAdapter,sovrnBidAdapter
 
 Most likely your custom `prebid.js` will only change when there's:
 
@@ -181,8 +170,8 @@ If you need to generate multiple distinct bundles from the same Prebid version, 
 
 ```
 gulp build
-gulp bundle --tag one --modules=one.json
-gulp bundle --tag two --modules=two.json
+gulp bundle --tag one --modules=module1,module2,module3
+gulp bundle --tag two --modules=module4,module5,module6
 ```
 
 This generates slightly larger files, but has the advantage of being much faster to run (after the initial `gulp build`). It's also the method used by [the Prebid.org download page](https://docs.prebid.org/download.html).
