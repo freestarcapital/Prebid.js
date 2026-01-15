@@ -42,6 +42,7 @@
     "newspassidBidAdapter",
     "onetagBidAdapter",
     "openxBidAdapter",
+    "optableRtdProvider",
     "pairIdSystem",
     "prebidServerBidAdapter",
     "priceFloors",
