@@ -653,6 +653,7 @@ const adapterManager = {
           getTid,
         }),
         auctionStart: auctionStart,
+        src: 'client',
         timeout: cbTimeout,
         refererInfo,
         metrics,
