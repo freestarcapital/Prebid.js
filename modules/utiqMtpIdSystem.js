@@ -15,14 +15,6 @@ import { getGlobal } from '../src/prebidGlobal.js';
  * @typedef {import('../modules/userId/index.js').Submodule} Submodule
  */
 
-/**
- * @typedef {import('../modules/userId/index.js').Submodule} Submodule
- */
-
-/**
- * @typedef {import('../modules/userId/index.js').Submodule} Submodule
- */
-
 const MODULE_NAME = 'utiqMtpId';
 const LOG_PREFIX = 'Utiq MTP module';
 
