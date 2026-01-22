@@ -653,10 +653,10 @@ const adapterManager = {
           getTid,
         }),
         auctionStart: auctionStart,
-        src: 'client',
         timeout: cbTimeout,
         refererInfo,
         metrics,
+        src: 'client',
         alwaysHasCapacity: adapter?.getSpec?.().alwaysHasCapacity,
       });
       if (!adapter) {
