@@ -20,4 +20,4 @@ jobs:
           registry-url: https://npm.pkg.github.com
           scope: '@freestarcapital'
       - run: npm install
-      - run: gulp build --modules=modules.json
+      - run: gulp build
