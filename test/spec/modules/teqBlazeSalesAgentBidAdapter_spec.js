@@ -3,15 +3,9 @@ import { spec } from '../../../modules/teqBlazeSalesAgentBidAdapter.js';
 import { BANNER, VIDEO, NATIVE } from '../../../src/mediaTypes.js';
 import { getUniqueIdentifierStr } from '../../../src/utils.js';
 
-<<<<<<<< HEAD:test/spec/modules/loyalBidAdapter_spec.js
-const bidder = 'loyal';
-
-describe('LoyalBidAdapter', function () {
-========
 const bidder = 'teqBlazeSalesAgent';
 
 describe('TeqBlazeSalesAgentBidAdapter', function () {
->>>>>>>> 10.27.0:test/spec/modules/teqBlazeSalesAgentBidAdapter_spec.js
   const userIdAsEids = [{
     source: 'test.org',
     uids: [{
@@ -32,11 +26,7 @@ describe('TeqBlazeSalesAgentBidAdapter', function () {
         }
       },
       params: {
-<<<<<<<< HEAD:test/spec/modules/loyalBidAdapter_spec.js
-        placementId: 'testBanner'
-========
         placementId: 'testBanner',
->>>>>>>> 10.27.0:test/spec/modules/teqBlazeSalesAgentBidAdapter_spec.js
       },
       userIdAsEids
     },
@@ -51,11 +41,7 @@ describe('TeqBlazeSalesAgentBidAdapter', function () {
         }
       },
       params: {
-<<<<<<<< HEAD:test/spec/modules/loyalBidAdapter_spec.js
-        placementId: 'testVideo'
-========
         placementId: 'testVideo',
->>>>>>>> 10.27.0:test/spec/modules/teqBlazeSalesAgentBidAdapter_spec.js
       },
       userIdAsEids
     },
@@ -112,9 +98,6 @@ describe('TeqBlazeSalesAgentBidAdapter', function () {
       device: {
         w: 1512,
         h: 982,
-<<<<<<<< HEAD:test/spec/modules/loyalBidAdapter_spec.js
-        language: 'en-UK'
-========
         language: 'en-UK',
       },
       site: {
@@ -127,7 +110,6 @@ describe('TeqBlazeSalesAgentBidAdapter', function () {
             }
           }
         }
->>>>>>>> 10.27.0:test/spec/modules/teqBlazeSalesAgentBidAdapter_spec.js
       }
     },
     timeout: 500
@@ -201,61 +183,9 @@ describe('TeqBlazeSalesAgentBidAdapter', function () {
         expect(placement.bidfloor).to.exist.and.to.equal(0);
         expect(placement.type).to.exist.and.to.equal('publisher');
         expect(placement.eids).to.exist.and.to.be.deep.equal(userIdAsEids);
-<<<<<<<< HEAD:test/spec/modules/loyalBidAdapter_spec.js
-
-        if (placement.adFormat === BANNER) {
-          expect(placement.sizes).to.be.an('array');
-        }
-        switch (placement.adFormat) {
-          case BANNER:
-            expect(placement.sizes).to.be.an('array');
-            break;
-          case VIDEO:
-            expect(placement.playerSize).to.be.an('array');
-            expect(placement.minduration).to.be.an('number');
-            expect(placement.maxduration).to.be.an('number');
-            break;
-          case NATIVE:
-            expect(placement.native).to.be.an('object');
-            break;
-        }
-      }
-    });
-
-    it('Returns valid endpoints', function () {
-      const bids = [
-        {
-          bidId: getUniqueIdentifierStr(),
-          bidder: bidder,
-          mediaTypes: {
-            [BANNER]: {
-              sizes: [[300, 250]]
-            }
-          },
-          params: {
-            endpointId: 'testBanner',
-          },
-          userIdAsEids
-        }
-      ];
-
-      const serverRequest = spec.buildRequests(bids, bidderRequest);
-
-      const { placements } = serverRequest.data;
-      for (let i = 0, len = placements.length; i < len; i++) {
-        const placement = placements[i];
-        expect(placement.endpointId).to.be.oneOf(['testBanner', 'testVideo', 'testNative']);
-        expect(placement.adFormat).to.be.oneOf([BANNER, VIDEO, NATIVE]);
-        expect(placement.bidId).to.be.a('string');
-        expect(placement.schain).to.be.an('object');
-        expect(placement.bidfloor).to.exist.and.to.equal(0);
-        expect(placement.type).to.exist.and.to.equal('network');
-        expect(placement.eids).to.exist.and.to.be.deep.equal(userIdAsEids);
-========
         expect(placement.axei).to.exist.and.to.be.equal('include');
         expect(placement.axex).to.exist.and.to.be.equal('exclude');
         expect(placement.axem).to.exist.and.to.be.equal('macro');
->>>>>>>> 10.27.0:test/spec/modules/teqBlazeSalesAgentBidAdapter_spec.js
 
         if (placement.adFormat === BANNER) {
           expect(placement.sizes).to.be.an('array');
@@ -328,11 +258,6 @@ describe('TeqBlazeSalesAgentBidAdapter', function () {
       expect(data).to.be.an('object');
       expect(data).to.have.property('gpp');
       expect(data).to.have.property('gpp_sid');
-<<<<<<<< HEAD:test/spec/modules/loyalBidAdapter_spec.js
-
-      expect(bidderRequest).to.have.property('ortb2');
-========
->>>>>>>> 10.27.0:test/spec/modules/teqBlazeSalesAgentBidAdapter_spec.js
     })
   });
 
