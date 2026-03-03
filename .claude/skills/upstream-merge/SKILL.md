@@ -50,7 +50,6 @@ Ensure these two entries are present after resolving:
 **Top-level key** (after `"keywords"` block):
 ```json
 "globalVarName": "fsprebid",
-"defineGlobal": true,
 ```
 
 **First entry in `devDependencies`**:
