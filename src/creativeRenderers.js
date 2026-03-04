@@ -18,12 +18,13 @@ export const getCreativeRenderer = (function() {
     if (!renderers.hasOwnProperty(src)) {
       renderers[src] = new PbPromise((resolve) => {
         const iframe = createInvisibleIframe()
-        iframe.srcdoc = `<script>${src}</script>
-  <script>
-    window.parent.postMessage(
-        { type: 'RENDERER_READY_${bidResponse.adId}' },
-        '*'
-  );</script>`;
+        iframe.srcdoc = `
+            <script>${src}</script>
+            <script>
+              window.parent.postMessage(
+                  { type: 'RENDERER_READY_${bidResponse.adId}' },
+                  '*'
+            );</script>`;
         const listenerForRendererReady = (event) => {
           if (event.source !== iframe.contentWindow) return;
           if (event.data?.type === `RENDERER_READY_${bidResponse.adId}`) {
