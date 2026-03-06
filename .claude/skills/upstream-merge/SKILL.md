@@ -14,6 +14,11 @@ Automates merging a new upstream Prebid.js release into this fork.
 
 ## Steps
 
+### 0. Ensure upstream remote is configured
+```bash
+git remote get-url upstream 2>/dev/null || git remote add upstream https://github.com/prebid/Prebid.js
+```
+
 ### 1. Fetch upstream tags
 ```bash
 git fetch upstream --tags
@@ -43,6 +48,16 @@ For each conflicted file, apply the rules below, then stage it:
 git add <file>
 ```
 
+#### General conflict resolution rule
+
+**When our fork's edits conflict with upstream: keep our fork's edits, accept upstream changes that don't conflict, then notify the user.**
+
+After resolving all conflicts, report to the user:
+- Which files had conflicts beyond the known rules below
+- What fork-specific edits were preserved in each
+
+The file-specific rules below take precedence for known files.
+
 #### 4a. `package.json` conflicts
 
 Ensure these two entries are present after resolving:
@@ -50,7 +65,6 @@ Ensure these two entries are present after resolving:
 **Top-level key** (after `"keywords"` block):
 ```json
 "globalVarName": "fsprebid",
-"defineGlobal": true,
 ```
 
 **First entry in `devDependencies`**:
