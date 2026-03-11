@@ -207,6 +207,18 @@ export function canAccessWindowTop() {
 }
 
 /**
+ * Returns the window to use for fingerprinting reads: win if provided, otherwise top or self.
+ * @param {Window} [win]
+ * @returns {Window}
+ */
+export function getFallbackWindow(win) {
+  if (win) {
+    return win;
+  }
+  return canAccessWindowTop() ? internal.getWindowTop() : internal.getWindowSelf();
+}
+
+/**
  * Wrappers to console.(log | info | warn | error). Takes N arguments, the same as the native methods
  */
 // eslint-disable-next-line no-restricted-syntax
@@ -231,9 +243,7 @@ export function logWarn() {
     // eslint-disable-next-line no-console
     console.warn.apply(console, decorateLog(arguments, 'WARNING:'));
   }
-  if (debugTurnedOn()) {
-    emitEvent(EVENTS.AUCTION_DEBUG, { type: 'WARNING', arguments: arguments });
-  }
+  emitEvent(EVENTS.AUCTION_DEBUG, { type: 'WARNING', arguments: arguments });
 }
 
 // eslint-disable-next-line no-restricted-syntax
@@ -242,9 +252,7 @@ export function logError() {
     // eslint-disable-next-line no-console
     console.error.apply(console, decorateLog(arguments, 'ERROR:'));
   }
-  if (debugTurnedOn()) {
-    emitEvent(EVENTS.AUCTION_DEBUG, { type: 'ERROR', arguments: arguments });
-  }
+  emitEvent(EVENTS.AUCTION_DEBUG, { type: 'ERROR', arguments: arguments });
 }
 
 export function prefixLog(prefix) {
