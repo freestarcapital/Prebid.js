@@ -87,6 +87,3 @@ typings/
 # Webpack cache
 .cache/
 .eslintcache
-
-# Claude-code
-.claude/settings.local.json

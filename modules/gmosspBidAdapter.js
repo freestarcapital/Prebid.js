@@ -1,6 +1,5 @@
 import { getCurrencyFromBidderRequest } from '../libraries/ortb2Utils/currency.js';
 import { tryAppendQueryString } from '../libraries/urlUtils/urlUtils.js';
-import {getDNT} from '../libraries/dnt/index.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { BANNER } from '../src/mediaTypes.js';
 import {
@@ -51,7 +50,6 @@ export const spec = {
 
     const urlInfo = getUrlInfo(bidderRequest.refererInfo);
     const cur = getCurrencyType(bidderRequest);
-    const dnt = getDNT() ? '1' : '0';
 
     for (let i = 0; i < validBidRequests.length; i++) {
       let queryString = '';
@@ -76,7 +74,6 @@ export const spec = {
       queryString = tryAppendQueryString(queryString, 'meta_url', urlInfo.canonicalLink);
       queryString = tryAppendQueryString(queryString, 'ref', urlInfo.ref);
       queryString = tryAppendQueryString(queryString, 'cur', cur);
-      queryString = tryAppendQueryString(queryString, 'dnt', dnt);
 
       bidRequests.push({
         method: 'GET',
@@ -94,7 +91,7 @@ export const spec = {
    * @param {Array} requests
    * @return {Array} An array of bids which were nested inside the server.
    */
- interpretResponse: function (bidderResponse, requests) {
+  interpretResponse: function (bidderResponse, requests) {
     const res = bidderResponse.body;
 
     if (isEmpty(res)) {
