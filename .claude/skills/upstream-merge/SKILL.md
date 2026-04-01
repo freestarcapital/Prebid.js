@@ -89,7 +89,35 @@ try {
 
 Accept all other upstream changes to this file.
 
-#### 4c. Install dependencies and stage package-lock.json
+#### 4c. `src/constants.ts` conflicts
+
+Ensure the debug mode constant uses the fork's custom value:
+
+```ts
+export const DEBUG_MODE = 'fspb_debug';
+```
+
+Upstream uses `'pbjs_debug'` — always replace with `'fspb_debug'`.
+
+#### 4d. `src/utils.js` conflicts
+
+Ensure `logWarn()` and `logError()` wrap the `AUCTION_DEBUG` event emission in a `debugTurnedOn()` guard. Upstream emits unconditionally; our fork only emits when debug is on:
+
+```js
+// In logWarn():
+if (debugTurnedOn()) {
+  emitEvent(EVENTS.AUCTION_DEBUG, { type: 'WARNING', arguments: arguments });
+}
+
+// In logError():
+if (debugTurnedOn()) {
+  emitEvent(EVENTS.AUCTION_DEBUG, { type: 'ERROR', arguments: arguments });
+}
+```
+
+Accept all other upstream changes to this file.
+
+#### 4e. Install dependencies and stage package-lock.json
 
 Run `npm i` **before** completing the merge commit so that `package-lock.json` is included in the merge commit:
 
@@ -98,7 +126,7 @@ npm i
 git add .
 ```
 
-#### 4d. Complete the merge
+#### 4f. Complete the merge
 ```bash
 git merge --continue
 ```
@@ -120,4 +148,6 @@ A successful build (no errors) confirms the merge is clean.
 - [ ] `package.json` contains `"globalVarName": "fsprebid"`
 - [ ] `package.json` contains `"@babel/plugin-proposal-private-methods": "^7.18.6"` in `devDependencies`
 - [ ] `gulpHelpers.js` contains the `module-alias.json` aliasing block
+- [ ] `src/constants.ts` has `DEBUG_MODE = 'fspb_debug'`
+- [ ] `src/utils.js` has `debugTurnedOn()` guard around `AUCTION_DEBUG` events in `logWarn()` and `logError()`
 - [ ] `npx gulp build` exits with no errors
