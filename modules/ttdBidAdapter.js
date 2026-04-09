@@ -3,8 +3,8 @@ import { config } from '../src/config.js';
 import { registerBidder } from '../src/adapters/bidderFactory.js';
 import { BANNER, VIDEO } from '../src/mediaTypes.js';
 import { isNumber } from '../src/utils.js';
-import { getDNT } from '../libraries/dnt/index.js';
 import { getConnectionType } from '../libraries/connectionInfo/connectionUtils.js'
+import { getDNT } from '../libraries/dnt/index.js';
 
 /**
  * @typedef {import('../src/adapters/bidderFactory.js').BidRequest} BidRequest
@@ -113,11 +113,6 @@ function getUser(bidderRequest, firstPartyData) {
   var eids = utils.deepAccess(bidderRequest, 'bids.0.userIdAsEids')
   if (eids && eids.length) {
     utils.deepSetValue(user, 'ext.eids', eids);
-
-    const tdid = eids.find(eid => eid.source == 'adserver.org')?.uids?.[0]?.id;
-    if (tdid) {
-      user.buyeruid = tdid
-    }
   }
 
   utils.mergeDeep(user, firstPartyData.user)
@@ -178,7 +173,7 @@ function getImpression(bidRequest) {
   const secure = utils.deepAccess(bidRequest, 'ortb2Imp.secure');
   impression.secure = isNumber(secure) ? secure : 1
 
-  const {video: _, ...ortb2ImpWithoutVideo} = bidRequest.ortb2Imp; // if enabled, video is already assigned above
+  const { video: _, ...ortb2ImpWithoutVideo } = bidRequest.ortb2Imp; // if enabled, video is already assigned above
   utils.mergeDeep(impression, ortb2ImpWithoutVideo)
 
   return impression;
