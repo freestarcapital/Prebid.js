@@ -909,25 +909,122 @@ describe('stroeerCore bid adapter', function () {
           assert.deepEqual(sentOrtb2, ortb2);
         });
 
-        it('should add the Cookie Deprecation Label', () => {
+        it('should add the special format parameters', () => {
           const bidReq = buildBidderRequest();
 
-          const cDepObj = {
-            cdep: 'example_label_1'
+          const sfp0 = {
+            'field1': {
+              'abc': '123',
+            }
           };
 
+          const sfp1 = {
+            'field3': 'xyz'
+          };
+
+          bidReq.bids[0].params.sfp = utils.deepClone(sfp0);
+          bidReq.bids[1].params.sfp = utils.deepClone(sfp1);
+
+          const serverRequestInfo = spec.buildRequests(bidReq.bids, bidReq);
+
+          assert.deepEqual(serverRequestInfo.data.bids[0].sfp, sfp0);
+          assert.deepEqual(serverRequestInfo.data.bids[1].sfp, sfp1);
+        });
+
+        it('should add the special format parameters even when it is an empty object', () => {
+          const bidReq = buildBidderRequest();
+
+          bidReq.bids[0].params.sfp = {};
+
+          const serverRequestInfo = spec.buildRequests(bidReq.bids, bidReq);
+
+          assert.deepEqual(serverRequestInfo.data.bids[0].sfp, {});
+          assert.isUndefined(serverRequestInfo.data.bids[1].sfp);
+        });
+
+        it('should add the ortb2 site extension', () => {
+          const bidReq = buildBidderRequest();
+
           const ortb2 = {
-            device: {
-              ext: cDepObj
+            site: {
+              domain: 'example.com',
+              ext: {
+                data: {
+                  abc: '123'
+                }
+              }
             }
           };
 
           bidReq.ortb2 = utils.deepClone(ortb2);
 
           const serverRequestInfo = spec.buildRequests(bidReq.bids, bidReq);
+
+          const sentOrtb2 = serverRequestInfo.data.ortb2;
+          assert.deepEqual(sentOrtb2, { site: { ext: ortb2.site.ext } })
+        });
+
+        it('should add the bid transaction id', () => {
+          const bidReq = buildBidderRequest();
+          const uuid0 = 'f9545c4c-7d3f-4941-9319-d515af162085';
+          const uuid1 = '8ce92d85-e9b0-4682-8025-bf58d452b2a7';
+
+          bidReq.bids[0].transactionId = uuid0;
+          bidReq.bids[1].transactionId = uuid1;
+
+          const serverRequestInfo = spec.buildRequests(bidReq.bids, bidReq);
+
+          const [bid0, bid1] = serverRequestInfo.data.bids;
+
+          assert.equal(bid0.tid, uuid0);
+          assert.equal(bid1.tid, uuid1);
+        });
+
+        it('should add the source transaction id', () => {
+          const bidReq = buildBidderRequest();
+          const tid = '7c3c82b2-30bb-49dc-9e3b-0148cd769a28';
+
+          const ortb2 = {
+            source: {
+              tid
+            }
+          };
+
+          bidReq.ortb2 = utils.deepClone(ortb2);
+
+          const serverRequestInfo = spec.buildRequests(bidReq.bids, bidReq);
+
           const sentOrtb2 = serverRequestInfo.data.ortb2;
 
-          assert.deepEqual(sentOrtb2, ortb2);
+          assert.equal(sentOrtb2.source.tid, tid);
+        });
+
+        describe('ortb2Imp interface', () => {
+          it('should add the Global Placement IDs (GPID)', () => {
+            const bidReq = buildBidderRequest();
+
+            bidReq.bids[0].ortb2Imp = {
+              ext: {
+                gpid: '/8292/homepage-top',
+                do: 'not care about this'
+              }
+            };
+
+            bidReq.bids[1].ortb2Imp = {
+              random: {
+                number: 2329
+              },
+              ext: {
+                gpid: '/2231/bottom'
+              }
+            };
+
+            const serverRequestInfo = spec.buildRequests(bidReq.bids, bidReq);
+            const [bid1, bid2] = serverRequestInfo.data.bids;
+
+            assert.deepEqual(bid1.ortb2Imp, { ext: { gpid: '/8292/homepage-top' } });
+            assert.deepEqual(bid2.ortb2Imp, { ext: { gpid: '/2231/bottom' } });
+          });
         });
 
         it('should add the special format parameters', () => {

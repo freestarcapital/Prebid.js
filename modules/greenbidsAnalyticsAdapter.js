@@ -12,14 +12,6 @@ import { deepClone, generateUUID, logError, logInfo, logWarn, getParameterByName
  * @typedef {object} Message Payload message sent to the Greenbids API
  */
 
-/**
- * @typedef {import('../src/adapters/bidderFactory.js').Bid} Bid
- */
-
-/**
- * @typedef {object} Message Payload message sent to the Greenbids API
- */
-
 const analyticsType = 'endpoint';
 
 export const ANALYTICS_VERSION = '2.3.2';

@@ -8,10 +8,6 @@ import { deepAccess, getBidIdParameter, logError } from '../src/utils.js';
  * @typedef {import('../src/adapters/bidderFactory.js').Bid} Bid
  */
 
-/**
- * @typedef {import('../src/adapters/bidderFactory.js').Bid} Bid
- */
-
 const BIDDER_CODE = 'viant';
 const ENDPOINT = 'https://bidders-us.adelphic.net/d/rtb/v25/prebid/bidder'
 const ADAPTER_VERSION = '2.0.0';

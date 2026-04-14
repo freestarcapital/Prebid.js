@@ -16,12 +16,6 @@ import { isPlainObject } from '../src/utils.js';
  * @typedef {import('../modules/userId/index.js').ConsentData} ConsentData
  */
 
-/**
- * @typedef {import('../modules/userId/index.js').Submodule} Submodule
- * @typedef {import('../modules/userId/index.js').SubmoduleConfig} SubmoduleConfig
- * @typedef {import('../modules/userId/index.js').ConsentData} ConsentData
- */
-
 const MODULE_NAME = 'deepintentId';
 export const storage = getStorageManager({ moduleType: MODULE_TYPE_UID, moduleName: MODULE_NAME });
 
