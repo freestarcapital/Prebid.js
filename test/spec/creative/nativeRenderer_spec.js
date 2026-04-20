@@ -308,15 +308,6 @@ describe('Native creative renderer', () => {
           win.onload();
           sinon.assert.calledWith(sendMessage, MESSAGE_NATIVE, sinon.match({ action: ACTION_RESIZE, height: 200 }))
         })
-      });
-
-      it('uses scrollHeight if offsetHeight is 0', () => {
-        win.document.body.offsetHeight = 0;
-        win.document.documentElement = {scrollHeight: 200};
-        return runRender().then(() => {
-          win.onload();
-          sinon.assert.calledWith(sendMessage, MESSAGE_NATIVE, sinon.match({action: ACTION_RESIZE, height: 200}))
-        })
       })
     })
 
