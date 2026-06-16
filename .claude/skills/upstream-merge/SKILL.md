@@ -117,7 +117,24 @@ if (debugTurnedOn()) {
 
 Accept all other upstream changes to this file.
 
-#### 4e. Install dependencies and stage package-lock.json
+#### 4e. Remove all upstream GitHub Actions / CI
+
+This fork runs no upstream CI (no env vars / secrets are provided). Every upstream
+merge re-introduces whatever workflows the new release added, so they must be
+removed each time. **Run this even if the merge had no conflicts** — a clean merge
+still pulls in new upstream workflow files.
+
+```bash
+git rm -r --ignore-unmatch .github/workflows .github/actions .github/codeql
+```
+
+Then confirm nothing CI-related remains:
+
+```bash
+find .github -type f 2>/dev/null   # expect no output (or only non-CI files the fork keeps)
+```
+
+#### 4f. Install dependencies and stage package-lock.json
 
 Run `npm i` **before** completing the merge commit so that `package-lock.json` is included in the merge commit:
 
@@ -126,7 +143,7 @@ npm i
 git add .
 ```
 
-#### 4f. Complete the merge
+#### 4g. Complete the merge
 ```bash
 git merge --continue
 ```
@@ -150,4 +167,5 @@ A successful build (no errors) confirms the merge is clean.
 - [ ] `gulpHelpers.js` contains the `module-alias.json` aliasing block
 - [ ] `src/constants.ts` has `DEBUG_MODE = 'fspb_debug'`
 - [ ] `src/utils.js` has `debugTurnedOn()` guard around `AUCTION_DEBUG` events in `logWarn()` and `logError()`
+- [ ] No upstream GitHub Actions remain (`.github/workflows`, `.github/actions`, `.github/codeql` removed)
 - [ ] `npx gulp build` exits with no errors
