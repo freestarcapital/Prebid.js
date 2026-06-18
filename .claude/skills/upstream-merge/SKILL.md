@@ -99,25 +99,55 @@ export const DEBUG_MODE = 'fspb_debug';
 
 Upstream uses `'pbjs_debug'` — always replace with `'fspb_debug'`.
 
-#### 4d. `src/utils.js` conflicts
+#### 4d. `AUCTION_DEBUG` emission guard (logging helpers)
 
-Ensure `logWarn()` and `logError()` wrap the `AUCTION_DEBUG` event emission in a `debugTurnedOn()` guard. Upstream emits unconditionally; our fork only emits when debug is on:
+The fork only emits the `AUCTION_DEBUG` event when debug is on; upstream emits it
+unconditionally from `logWarn()` / `logError()`. Ensure that emission is wrapped in
+a `debugTurnedOn()` guard.
 
-```js
-// In logWarn():
-if (debugTurnedOn()) {
-  emitEvent(EVENTS.AUCTION_DEBUG, { type: 'WARNING', arguments: arguments });
-}
+**As of upstream 11.18.0 the logging helpers were moved out of `src/utils.js` into
+`src/utils/logging.ts`** (`src/utils.js` now just re-exports `debugTurnedOn`). The
+helpers are built by a shared `makeLogger()` factory, so the guard lives there:
 
-// In logError():
-if (debugTurnedOn()) {
-  emitEvent(EVENTS.AUCTION_DEBUG, { type: 'ERROR', arguments: arguments });
+```ts
+// src/utils/logging.ts — inside makeLogger()'s returned function:
+if (emit && debugTurnedOn()) {
+  emitEvent(EVENTS.AUCTION_DEBUG, { type: LEVELS[level] as DebugEvent['type'], arguments: args });
 }
 ```
 
-Accept all other upstream changes to this file.
+If a future release relocates these helpers again, find the file emitting
+`AUCTION_DEBUG` (`git grep AUCTION_DEBUG -- 'src/*'`) and apply the same
+`debugTurnedOn()` guard there. In older layouts (≤ 11.13.0) the functions lived
+directly in `src/utils.js`:
 
-#### 4e. Install dependencies and stage package-lock.json
+```js
+// In logWarn() / logError():
+if (debugTurnedOn()) {
+  emitEvent(EVENTS.AUCTION_DEBUG, { type: 'WARNING' /* or 'ERROR' */, arguments: arguments });
+}
+```
+
+Accept all other upstream changes to these files.
+
+#### 4e. Remove all upstream GitHub Actions / CI
+
+This fork runs no upstream CI (no env vars / secrets are provided). Every upstream
+merge re-introduces whatever workflows the new release added, so they must be
+removed each time. **Run this even if the merge had no conflicts** — a clean merge
+still pulls in new upstream workflow files.
+
+```bash
+git rm -r --ignore-unmatch .github/workflows .github/actions .github/codeql
+```
+
+Then confirm nothing CI-related remains:
+
+```bash
+find .github -type f 2>/dev/null   # expect no output (or only non-CI files the fork keeps)
+```
+
+#### 4f. Install dependencies and stage package-lock.json
 
 Run `npm i` **before** completing the merge commit so that `package-lock.json` is included in the merge commit:
 
@@ -126,7 +156,7 @@ npm i
 git add .
 ```
 
-#### 4f. Complete the merge
+#### 4g. Complete the merge
 ```bash
 git merge --continue
 ```
@@ -149,5 +179,6 @@ A successful build (no errors) confirms the merge is clean.
 - [ ] `package.json` contains `"@babel/plugin-proposal-private-methods": "^7.18.6"` in `devDependencies`
 - [ ] `gulpHelpers.js` contains the `module-alias.json` aliasing block
 - [ ] `src/constants.ts` has `DEBUG_MODE = 'fspb_debug'`
-- [ ] `src/utils.js` has `debugTurnedOn()` guard around `AUCTION_DEBUG` events in `logWarn()` and `logError()`
+- [ ] `AUCTION_DEBUG` emission is guarded by `debugTurnedOn()` (in `src/utils/logging.ts` as of 11.18.0; was `src/utils.js` ≤ 11.13.0)
+- [ ] No upstream GitHub Actions remain (`.github/workflows`, `.github/actions`, `.github/codeql` removed)
 - [ ] `npx gulp build` exits with no errors

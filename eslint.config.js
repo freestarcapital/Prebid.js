@@ -112,8 +112,7 @@ module.exports = [
     rules: {
       'comma-dangle': 'off',
       '@stylistic/comma-dangle': 'off',
-      semi: 'off',
-      '@stylistic/semi': 'off',
+      '@stylistic/semi': ['error', 'always'],
       'no-undef': 2,
       'no-console': 'error',
       'space-before-function-paren': 'off',
@@ -180,6 +179,15 @@ module.exports = [
       '@stylistic/quotes': 'off',
       '@stylistic/quote-props': 'off',
       '@stylistic/multiline-ternary': 'off',
+    }
+  },
+  {
+    files: getSourceFolders().map(dir => `${dir}/**/*.d.ts`),
+    ignores: [
+      'src/types/**/*'
+    ],
+    rules: {
+      'prebid/declaration-filename': 'error'
     }
   },
   ...Object.entries(allowedImports).map(([path, allowed]) => {
