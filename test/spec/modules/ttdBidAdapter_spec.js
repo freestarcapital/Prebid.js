@@ -1100,6 +1100,34 @@ describe('ttdBidAdapter', function () {
     });
   });
 
+  describe('buildRequests-endpointCompression', function () {
+    const bidRequest = [{
+      'bidder': 'ttd',
+      'params': {
+        'supplySourceId': 'supplier',
+        'publisherId': '13144370',
+        'placementId': '1gaa015'
+      },
+      'mediaTypes': { 'banner': { 'sizes': [[300, 250]] } },
+      'ortb2Imp': { 'ext': { 'tid': '8651474f-58b1-4368-b812-84f8c937a099' } },
+      'bidId': '243310435309b5',
+      'bidderRequestId': '18084284054531',
+      'auctionId': 'e7b34fa3-8654-424e-8c49-03e509e53d8c',
+    }];
+    const bidderRequest = {
+      'bidderCode': 'ttd',
+      'bidderRequestId': '18084284054531',
+      'timeout': 3000,
+      ortb2: {},
+      'refererInfo': { page: 'https://www.example.com/', ref: '', domain: 'example.com' },
+    };
+
+    it('sets endpointCompression to true', function () {
+      const request = testBuildRequests(bidRequest, bidderRequest);
+      expect(request.options.endpointCompression).to.be.true;
+    });
+  });
+
   describe('interpretResponse-empty', function () {
     it('should handle empty response', function () {
       const result = spec.interpretResponse({});
@@ -1197,7 +1225,8 @@ describe('ttdBidAdapter', function () {
         }
       },
       'options': {
-        'withCredentials': true
+        'withCredentials': true,
+        'endpointCompression': true
       }
     };
 
@@ -1372,7 +1401,8 @@ describe('ttdBidAdapter', function () {
         }
       },
       'options': {
-        'withCredentials': true
+        'withCredentials': true,
+        'endpointCompression': true
       }
     };
 
@@ -1477,7 +1507,8 @@ describe('ttdBidAdapter', function () {
         }
       },
       'options': {
-        'withCredentials': true
+        'withCredentials': true,
+        'endpointCompression': true
       }
     };
 
@@ -1677,7 +1708,8 @@ describe('ttdBidAdapter', function () {
         }
       },
       'options': {
-        'withCredentials': true
+        'withCredentials': true,
+        'endpointCompression': true
       }
     };
 
