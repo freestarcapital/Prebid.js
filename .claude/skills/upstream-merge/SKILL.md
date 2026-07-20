@@ -130,7 +130,23 @@ if (debugTurnedOn()) {
 
 Accept all other upstream changes to these files.
 
-#### 4e. Remove all upstream GitHub Actions / CI
+#### 4e. `prebidServerBidAdapter/ortbConverter.js` — dual-PBS cluster name stamp
+
+The dual-PBS fan-out (`PFG-assertive-yield-dual-pbs`) tags bidWon analytics by the winning
+PBS cluster. The `bidResponse` hook in `modules/prebidServerBidAdapter/ortbConverter.js` must
+stamp the cluster's s2sConfig name onto each bid, immediately after
+`bidResponse.requestBidder = ...`:
+
+```js
+bidResponse.s2sConfigName = context.s2sBidRequest?.s2sConfig?.name;
+```
+
+The line is marked `// [FREESTAR fork patch — PFG-assertive-yield-dual-pbs]`. Upstream never
+annotates a response bid with its s2sConfig, so this must be re-added on every merge. If
+upstream refactors the hook, re-locate the anchor via
+`git grep 'bidResponse.requestBidder = ' -- modules/prebidServerBidAdapter` and re-apply.
+
+#### 4f. Remove all upstream GitHub Actions / CI
 
 This fork runs no upstream CI (no env vars / secrets are provided). Every upstream
 merge re-introduces whatever workflows the new release added, so they must be
@@ -147,7 +163,7 @@ Then confirm nothing CI-related remains:
 find .github -type f 2>/dev/null   # expect no output (or only non-CI files the fork keeps)
 ```
 
-#### 4f. Install dependencies and stage package-lock.json
+#### 4g. Install dependencies and stage package-lock.json
 
 Run `npm i` **before** completing the merge commit so that `package-lock.json` is included in the merge commit:
 
@@ -156,7 +172,7 @@ npm i
 git add .
 ```
 
-#### 4g. Complete the merge
+#### 4h. Complete the merge
 ```bash
 git merge --continue
 ```
@@ -179,6 +195,7 @@ A successful build (no errors) confirms the merge is clean.
 - [ ] `package.json` contains `"@babel/plugin-proposal-private-methods": "^7.18.6"` in `devDependencies`
 - [ ] `gulpHelpers.js` contains the `module-alias.json` aliasing block
 - [ ] `src/constants.ts` has `DEBUG_MODE = 'fspb_debug'`
+- [ ] `prebidServerBidAdapter/ortbConverter.js` `bidResponse` hook sets `bidResponse.s2sConfigName = context.s2sBidRequest?.s2sConfig?.name` (dual-PBS cluster tag; marked `[FREESTAR fork patch]`)
 - [ ] `AUCTION_DEBUG` emission is guarded by `debugTurnedOn()` (in `src/utils/logging.ts` as of 11.18.0; was `src/utils.js` ≤ 11.13.0)
 - [ ] No upstream GitHub Actions remain (`.github/workflows`, `.github/actions`, `.github/codeql` removed)
 - [ ] `npx gulp build` exits with no errors

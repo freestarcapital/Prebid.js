@@ -3231,6 +3231,22 @@ describe('S2S Adapter', function () {
       expect(addBidResponse.firstCall.args[1]).to.have.property('requestId', '123');
     });
 
+    // [FREESTAR fork patch — PFG-assertive-yield-dual-pbs] the ortbConverter bidResponse hook
+    // stamps the winning cluster's s2sConfig name onto the bid so bidWon analytics can tag
+    // stored-request/null-bidder bids (real, un-aliased bidderCode) by their originating cluster.
+    it('stamps the winning bid with its s2sConfig name', function () {
+      const namedConfig = utils.deepClone(CONFIG);
+      namedConfig.name = 'assertive-yield';
+      const namedRequest = utils.deepClone(REQUEST);
+      namedRequest.s2sConfig = namedConfig;
+      config.setConfig({ s2sConfig: namedConfig });
+      adapter.callBids(namedRequest, BID_REQUESTS, addBidResponse, done, ajax);
+      server.requests[0].respond(200, {}, JSON.stringify(RESPONSE_OPENRTB));
+
+      sinon.assert.calledOnce(addBidResponse);
+      expect(addBidResponse.firstCall.args[1]).to.have.property('s2sConfigName', 'assertive-yield');
+    });
+
     it('should have dealId in bidObject', function () {
       config.setConfig({ s2sConfig: CONFIG });
       adapter.callBids(REQUEST, BID_REQUESTS, addBidResponse, done, ajax);
