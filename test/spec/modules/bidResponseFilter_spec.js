@@ -526,5 +526,36 @@ describe('bidResponseFilter', () => {
       sinon.assert.notCalled(reject);
       sinon.assert.calledOnce(call);
     });
+
+    function sizelessBid() {
+      return {
+        mediaType: 'banner',
+        meta: {
+          mediaType: 'banner',
+          primaryCatId: 'EXAMPLE-CAT-ID',
+          advertiserDomains: ['domain1.com'],
+          attr: [],
+          cattax: 1
+        }
+      };
+    }
+
+    it('should reject a banner bid with no width/height when size.blockUnknown is true', () => {
+      config.setConfig({ bidResponseFilter: { size: { blockUnknown: true } } });
+      const reject = sinon.stub();
+      const call = sinon.stub();
+      addBidResponseHook(call, 'adcode', sizelessBid(), reject, sizeIndex([[300, 250]]));
+      sinon.assert.calledWith(reject, BID_SIZE_REJECTION_REASON);
+      sinon.assert.notCalled(call);
+    });
+
+    it('should pass a banner bid with no width/height by default (blockUnknown false)', () => {
+      config.setConfig({ bidResponseFilter: {} });
+      const reject = sinon.stub();
+      const call = sinon.stub();
+      addBidResponseHook(call, 'adcode', sizelessBid(), reject, sizeIndex([[300, 250]]));
+      sinon.assert.notCalled(reject);
+      sinon.assert.calledOnce(call);
+    });
   });
 });

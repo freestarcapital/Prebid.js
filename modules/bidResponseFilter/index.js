@@ -94,8 +94,10 @@ export function addBidResponseHook(next, adUnitCode, bid, reject, index = auctio
   } else if ((mediaTypesConfig.enforce && (!allowedMediaTypes.includes(metaMediaType) || rejectIbvBannerOnMultiFormat)) ||
     (mediaTypesConfig.blockUnknown && !metaMediaType)) {
     reject(BID_MEDIA_TYPE_REJECTION_REASON);
-  } else if (bid.mediaType === 'banner' &&
-    sizeConfig.enforce && bidSize && requestedSizes.length && !requestedSizes.includes(bidSize)) {
+  } else if (bid.mediaType === 'banner' && (
+    (sizeConfig.enforce && bidSize && requestedSizes.length && !requestedSizes.includes(bidSize)) ||
+    (sizeConfig.blockUnknown && !bidSize)
+  )) {
     reject(BID_SIZE_REJECTION_REASON);
   } else {
     return next(adUnitCode, bid, reject);
