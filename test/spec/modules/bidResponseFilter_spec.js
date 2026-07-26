@@ -1,3 +1,4 @@
+import { expect } from 'chai';
 import {
   addBidResponseHook,
   BID_ADV_DOMAINS_REJECTION_REASON,
@@ -557,5 +558,31 @@ describe('bidResponseFilter', () => {
       sinon.assert.notCalled(reject);
       sinon.assert.calledOnce(call);
     });
+  });
+
+  it('should not throw and should pass the bid when neither the request nor the ad unit has ortb2Imp', () => {
+    config.setConfig({ bidResponseFilter: {} });
+    const reject = sinon.stub();
+    const call = sinon.stub();
+    const index = {
+      getOrtb2: () => ({}),
+      getBidRequest: () => ({ mediaTypes: { banner: { sizes: [[300, 250]] } } }), // no ortb2Imp
+      getAdUnit: () => ({}) // no ortb2Imp
+    };
+    const bid = {
+      width: 300,
+      height: 250,
+      mediaType: 'banner',
+      meta: {
+        mediaType: 'banner',
+        primaryCatId: 'EXAMPLE-CAT-ID',
+        advertiserDomains: ['domain1.com'],
+        attr: [],
+        cattax: 1
+      }
+    };
+    expect(() => addBidResponseHook(call, 'adcode', bid, reject, index)).to.not.throw();
+    sinon.assert.notCalled(reject);
+    sinon.assert.calledOnce(call);
   });
 });
