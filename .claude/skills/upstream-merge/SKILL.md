@@ -130,7 +130,23 @@ if (debugTurnedOn()) {
 
 Accept all other upstream changes to these files.
 
-#### 4e. Remove all upstream GitHub Actions / CI
+#### 4e. `modules/bidResponseFilter/index.js` — banner size enforcement (fork rule)
+
+The fork extends the shared `bidResponseFilter` module with a **`size`** rule that rejects
+banner bids whose `width×height` was not among the requested sizes for that bid — core does
+**not** check response size against requested sizes. If upstream changes this module, keep the
+fork's additions:
+
+- the `BID_SIZE_REJECTION_REASON = 'Size is not allowed'` constant,
+- the `size` config block (`{ enforce: true, blockUnknown: false, ...moduleConfig?.size }`) read in `addBidResponseHook`,
+- the `else if` branch comparing `` `${bid.width}x${bid.height}` `` against
+  `parseSizesInput(bidRequest?.mediaTypes?.banner?.sizes || bidRequest?.sizes)` (banner only),
+- the `parseSizesInput` import from `src/utils.js`.
+
+Keep the fork's `size` rule; accept upstream's other changes to the module. Design spec:
+`docs/superpowers/specs/2026-07-26-bidresponsefilter-size-design.md`.
+
+#### 4f. Remove all upstream GitHub Actions / CI
 
 This fork runs no upstream CI (no env vars / secrets are provided). Every upstream
 merge re-introduces whatever workflows the new release added, so they must be
@@ -147,7 +163,7 @@ Then confirm nothing CI-related remains:
 find .github -type f 2>/dev/null   # expect no output (or only non-CI files the fork keeps)
 ```
 
-#### 4f. Install dependencies and stage package-lock.json
+#### 4g. Install dependencies and stage package-lock.json
 
 Run `npm i` **before** completing the merge commit so that `package-lock.json` is included in the merge commit:
 
@@ -156,7 +172,7 @@ npm i
 git add .
 ```
 
-#### 4g. Complete the merge
+#### 4h. Complete the merge
 ```bash
 git merge --continue
 ```
@@ -180,5 +196,6 @@ A successful build (no errors) confirms the merge is clean.
 - [ ] `gulpHelpers.js` contains the `module-alias.json` aliasing block
 - [ ] `src/constants.ts` has `DEBUG_MODE = 'fspb_debug'`
 - [ ] `AUCTION_DEBUG` emission is guarded by `debugTurnedOn()` (in `src/utils/logging.ts` as of 11.18.0; was `src/utils.js` ≤ 11.13.0)
+- [ ] `modules/bidResponseFilter/index.js` keeps the fork's `size` rule (`BID_SIZE_REJECTION_REASON`, `size` config block, banner size `else if`, `parseSizesInput` import)
 - [ ] No upstream GitHub Actions remain (`.github/workflows`, `.github/actions`, `.github/codeql` removed)
 - [ ] `npx gulp build` exits with no errors
