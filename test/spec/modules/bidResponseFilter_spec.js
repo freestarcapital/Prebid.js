@@ -4,6 +4,7 @@ import {
   BID_ATTR_REJECTION_REASON,
   BID_CATEGORY_REJECTION_REASON,
   BID_MEDIA_TYPE_REJECTION_REASON,
+  BID_SIZE_REJECTION_REASON,
   MODULE_NAME,
   reset
 } from '../../../modules/bidResponseFilter/index.js';
@@ -435,5 +436,43 @@ describe('bidResponseFilter', () => {
     addBidResponseHook(call, 'adcode', bid, reject, mockAuctionIndex);
     sinon.assert.calledWith(reject, BID_MEDIA_TYPE_REJECTION_REASON);
     sinon.assert.notCalled(call);
+  });
+
+  describe('size match', () => {
+    // Builds an index whose bid passes cat/adv/attr/mediaTypes so the size branch is reached.
+    function sizeIndex(sizes) {
+      return {
+        getOrtb2: () => ({}),
+        getBidRequest: () => ({
+          mediaTypes: { banner: { sizes } },
+          ortb2Imp: {}
+        }),
+        getAdUnit: () => ({})
+      };
+    }
+    // A bid that clears the earlier rules; width/height/mediaType at top level (as core sets them).
+    function sizeBid({ width, height }) {
+      return {
+        width,
+        height,
+        mediaType: 'banner',
+        meta: {
+          mediaType: 'banner',
+          primaryCatId: 'EXAMPLE-CAT-ID',
+          advertiserDomains: ['domain1.com'],
+          attr: [],
+          cattax: 1
+        }
+      };
+    }
+
+    it('should reject a banner bid whose size was not requested', () => {
+      config.setConfig({ bidResponseFilter: {} });
+      const reject = sinon.stub();
+      const call = sinon.stub();
+      addBidResponseHook(call, 'adcode', sizeBid({ width: 300, height: 600 }), reject, sizeIndex([[300, 250]]));
+      sinon.assert.calledWith(reject, BID_SIZE_REJECTION_REASON);
+      sinon.assert.notCalled(call);
+    });
   });
 });

@@ -1,12 +1,14 @@
 import { auctionManager } from '../../src/auctionManager.js';
 import { config } from '../../src/config.js';
 import { getHook } from '../../src/hook.js';
+import { parseSizesInput } from '../../src/utils.js';
 
 export const MODULE_NAME = 'bidResponseFilter';
 export const BID_CATEGORY_REJECTION_REASON = 'Category is not allowed';
 export const BID_ADV_DOMAINS_REJECTION_REASON = 'Adv domain is not allowed';
 export const BID_ATTR_REJECTION_REASON = 'Attr is not allowed';
 export const BID_MEDIA_TYPE_REJECTION_REASON = `Media type is not allowed`;
+export const BID_SIZE_REJECTION_REASON = `Size is not allowed`;
 
 let moduleConfig;
 let enabled = false;
@@ -17,6 +19,12 @@ function isIbvBannerOnMultiFormatAdUnit(metaMediaType, bidRequest) {
     mediaTypes.length > 1 &&
     bidRequest?.mediaTypes?.video?.context === 'inbanner';
 }
+
+/**
+ * @typedef {Object} BidResponseFilterSizeConfig
+ * @property {boolean} [enforce=true] Reject banner bids whose width×height was not requested.
+ * @property {boolean} [blockUnknown=false] Reject banner bids that have no width/height.
+ */
 
 function init() {
   config.getConfig(MODULE_NAME, (cfg) => {
@@ -38,7 +46,7 @@ export function reset() {
 export function addBidResponseHook(next, adUnitCode, bid, reject, index = auctionManager.index) {
   const { bcat = [], badv = [], cattax = 1 } = index.getOrtb2(bid) || {};
   const bidRequest = index.getBidRequest(bid);
-  const battr = bidRequest?.ortb2Imp[bid.mediaType]?.battr || index.getAdUnit(bid)?.ortb2Imp[bid.mediaType]?.battr || [];
+  const battr = bidRequest?.ortb2Imp?.[bid.mediaType]?.battr || index.getAdUnit(bid)?.ortb2Imp?.[bid.mediaType]?.battr || [];
 
   const catConfig = { enforce: true, blockUnknown: true, ...(moduleConfig?.cat || {}) };
   const advConfig = { enforce: true, blockUnknown: true, ...(moduleConfig?.adv || {}) };
@@ -49,6 +57,7 @@ export function addBidResponseHook(next, adUnitCode, bid, reject, index = auctio
     rejectIbvBannerOnMultiFormat: false,
     ...(moduleConfig?.mediaTypes || {})
   };
+  const sizeConfig = { enforce: true, blockUnknown: false, ...(moduleConfig?.size || {}) };
 
   const {
     primaryCatId, secondaryCatIds = [],
@@ -63,6 +72,10 @@ export function addBidResponseHook(next, adUnitCode, bid, reject, index = auctio
   const normalizedRequestCattax = Number(cattax);
   const isCattaxMatch = normalizedMetaCattax === normalizedRequestCattax;
   const allowedMediaTypes = Object.keys(bidRequest?.mediaTypes || {});
+  const requestedSizes = parseSizesInput(bidRequest?.mediaTypes?.banner?.sizes || bidRequest?.sizes);
+  const bidSize = (bid.mediaType === 'banner' && bid.width != null && bid.height != null)
+    ? `${bid.width}x${bid.height}`
+    : null;
   const rejectIbvBannerOnMultiFormat = mediaTypesConfig.rejectIbvBannerOnMultiFormat &&
     isIbvBannerOnMultiFormatAdUnit(metaMediaType, bidRequest);
   if ((catConfig.enforce && isCattaxMatch && bcat.some(category => [primaryCatId, ...secondaryCatIds].includes(category))) ||
@@ -81,6 +94,9 @@ export function addBidResponseHook(next, adUnitCode, bid, reject, index = auctio
   } else if ((mediaTypesConfig.enforce && (!allowedMediaTypes.includes(metaMediaType) || rejectIbvBannerOnMultiFormat)) ||
     (mediaTypesConfig.blockUnknown && !metaMediaType)) {
     reject(BID_MEDIA_TYPE_REJECTION_REASON);
+  } else if (bid.mediaType === 'banner' &&
+    sizeConfig.enforce && bidSize && requestedSizes.length && !requestedSizes.includes(bidSize)) {
+    reject(BID_SIZE_REJECTION_REASON);
   } else {
     return next(adUnitCode, bid, reject);
   }
