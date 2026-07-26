@@ -474,5 +474,57 @@ describe('bidResponseFilter', () => {
       sinon.assert.calledWith(reject, BID_SIZE_REJECTION_REASON);
       sinon.assert.notCalled(call);
     });
+
+    it('should pass a banner bid whose size was requested', () => {
+      config.setConfig({ bidResponseFilter: {} });
+      const reject = sinon.stub();
+      const call = sinon.stub();
+      addBidResponseHook(call, 'adcode', sizeBid({ width: 300, height: 250 }), reject, sizeIndex([[300, 250], [728, 90]]));
+      sinon.assert.notCalled(reject);
+      sinon.assert.calledOnce(call);
+    });
+
+    it('should not reject a size mismatch when size.enforce is false', () => {
+      config.setConfig({ bidResponseFilter: { size: { enforce: false } } });
+      const reject = sinon.stub();
+      const call = sinon.stub();
+      addBidResponseHook(call, 'adcode', sizeBid({ width: 300, height: 600 }), reject, sizeIndex([[300, 250]]));
+      sinon.assert.notCalled(reject);
+      sinon.assert.calledOnce(call);
+    });
+
+    it('should not reject when the request has no resolvable banner sizes', () => {
+      config.setConfig({ bidResponseFilter: {} });
+      const reject = sinon.stub();
+      const call = sinon.stub();
+      addBidResponseHook(call, 'adcode', sizeBid({ width: 300, height: 600 }), reject, sizeIndex([]));
+      sinon.assert.notCalled(reject);
+      sinon.assert.calledOnce(call);
+    });
+
+    it('should not apply the size rule to non-banner bids', () => {
+      config.setConfig({ bidResponseFilter: {} });
+      const reject = sinon.stub();
+      const call = sinon.stub();
+      const bid = {
+        width: 640, height: 480,
+        mediaType: 'video',
+        meta: {
+          mediaType: 'video',
+          primaryCatId: 'EXAMPLE-CAT-ID',
+          advertiserDomains: ['domain1.com'],
+          attr: [],
+          cattax: 1
+        }
+      };
+      const index = {
+        getOrtb2: () => ({}),
+        getBidRequest: () => ({ mediaTypes: { video: {} }, ortb2Imp: {} }),
+        getAdUnit: () => ({})
+      };
+      addBidResponseHook(call, 'adcode', bid, reject, index);
+      sinon.assert.notCalled(reject);
+      sinon.assert.calledOnce(call);
+    });
   });
 });
