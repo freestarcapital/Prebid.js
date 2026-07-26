@@ -1,6 +1,7 @@
 import { expect } from 'chai';
 import { spec } from 'modules/ttdBidAdapter';
 import { deepClone } from 'src/utils.js';
+import * as utils from 'src/utils.js';
 import { config } from 'src/config';
 import { detectReferer } from 'src/refererDetection.js';
 
@@ -804,6 +805,9 @@ describe('ttdBidAdapter', function () {
     beforeEach(function () {
       sandbox = sinon.createSandbox();
       bidderConfigStub = sandbox.stub(config, 'getBidderConfig');
+      // Keep the gzip header tests deterministic regardless of the test browser's
+      // CompressionStream support; individual tests override this when needed.
+      sandbox.stub(utils, 'isGzipCompressionSupported').returns(true);
     });
 
     afterEach(function () {
@@ -827,6 +831,15 @@ describe('ttdBidAdapter', function () {
       bidderConfigStub.returns({ ttd: { gzipEnabled: true } });
       const request = testBuildRequests(baseBannerBidRequests, baseBidderRequest);
       expect(request.options.customHeaders).to.deep.equal({ 'Content-Encoding': 'gzip' });
+    });
+
+    it('should not add a Content-Encoding header when gzip is unsupported by the browser', function () {
+      bidderConfigStub.returns({ ttd: { gzipEnabled: true } });
+      utils.isGzipCompressionSupported.returns(false);
+      const request = testBuildRequests(baseBannerBidRequests, baseBidderRequest);
+      // endpointCompression stays true (core still decides), but the header is dropped
+      expect(request.options.endpointCompression).to.be.true;
+      expect(request.options.customHeaders).to.be.undefined;
     });
 
     it('should not add a Content-Encoding header in debug mode even when gzip is enabled', function () {

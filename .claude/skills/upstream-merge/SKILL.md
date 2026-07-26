@@ -166,6 +166,37 @@ Or if `--continue` is not applicable (all conflicts already staged):
 git commit -m "chore: merge upstream TAG_NAME"
 ```
 
+#### 4h. TTD gzip compression (`modules/ttdBidAdapter.js`) — **fork-only feature**
+
+The **entire** TTD gzip-compression feature lives only in this fork; upstream's
+`ttdBidAdapter.js` has no gzip handling. Any upstream merge that touches this adapter
+must **preserve the whole feature**, not just individual lines. The pieces to keep:
+
+- `DEFAULT_GZIP_ENABLED` constant and the `getGzipSetting(bidderCode)` helper — reads
+  `gzipEnabled` from `config.getBidderConfig()` for the active bidder code (honors the
+  `thetradedesk` alias, falls back to the canonical `ttd` code, parses boolean/string).
+- The `isDebugMode()` helper (mirrors core's debug-mode check via `DEBUG_MODE`).
+- In `buildRequests`, the request `options`:
+  - `endpointCompression: gzipEnabled` — tells core whether to compress the body.
+  - `customHeaders: { 'Content-Encoding': 'gzip' }` — sent **only** when
+    `sendGzipHeader` is true:
+
+    ```js
+    const sendGzipHeader = gzipEnabled && !isDebugMode() && utils.isGzipCompressionSupported();
+    ```
+
+All three terms of `sendGzipHeader` are required so the header decision matches core's
+compression decision (`enableGZipCompression && !debugMode && isGzipCompressionSupported()`
+in `src/adapters/bidderFactory.ts`). The third term
+(`utils.isGzipCompressionSupported()`) is essential: without it, browsers lacking
+`CompressionStream` (older iOS Safari, Firefox, in-app webviews) get a plaintext body
+with a gzip header, and TTD's edge gunzips it into an empty body.
+
+The matching tests live in the `gzip`/`endpointCompression` describe block of
+`test/spec/modules/ttdBidAdapter_spec.js` (including
+`should not add a Content-Encoding header when gzip is unsupported by the browser`) —
+preserve them too. Accept all other upstream changes to this file.
+
 ### 5. Verify the build
 ```bash
 npx gulp build
@@ -180,5 +211,6 @@ A successful build (no errors) confirms the merge is clean.
 - [ ] `gulpHelpers.js` contains the `module-alias.json` aliasing block
 - [ ] `src/constants.ts` has `DEBUG_MODE = 'fspb_debug'`
 - [ ] `AUCTION_DEBUG` emission is guarded by `debugTurnedOn()` (in `src/utils/logging.ts` as of 11.18.0; was `src/utils.js` ≤ 11.13.0)
+- [ ] `modules/ttdBidAdapter.js` retains the fork-only gzip feature: `getGzipSetting`/`DEFAULT_GZIP_ENABLED`, `endpointCompression: gzipEnabled`, and the `Content-Encoding: gzip` header gated on `gzipEnabled && !isDebugMode() && utils.isGzipCompressionSupported()`
 - [ ] No upstream GitHub Actions remain (`.github/workflows`, `.github/actions`, `.github/codeql` removed)
 - [ ] `npx gulp build` exits with no errors

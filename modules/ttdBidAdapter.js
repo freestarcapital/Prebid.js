@@ -457,9 +457,11 @@ export const spec = {
     const url = selectEndpoint(bidderRequest.bids[0].params) + bidderRequest.bids[0].params.supplySourceId;
 
     const gzipEnabled = getGzipSetting(bidderRequest.bidderCode);
-    // Core skips compression in debug mode, so only advertise the gzip encoding when the body
-    // will actually be compressed — otherwise the endpoint receives a mismatched header.
-    const sendGzipHeader = gzipEnabled && !isDebugMode();
+    // Core compresses the body only when gzip is enabled, debug mode is off, AND the browser
+    // supports CompressionStream (src/adapters/bidderFactory.ts). Advertise the gzip encoding
+    // under the exact same conditions — otherwise the endpoint gunzips a plaintext body and the
+    // app receives an empty response.
+    const sendGzipHeader = gzipEnabled && !isDebugMode() && utils.isGzipCompressionSupported();
 
     const serverRequest = {
       method: 'POST',
