@@ -1,16 +1,37 @@
 ---
 name: upstream-merge
-description: Use when merging a new upstream Prebid.js release tag into the freestarcapital fork. Prompts for ticket name and release version, runs git fetch/merge, resolves known fork-specific conflicts, runs npm install and gulp build.
+description: Use when merging a new upstream Prebid.js release tag into the freestarcapital fork. Prompts for ticket name and release version, rebuilds the tree from pure upstream, re-applies the small fork footprint, resolves the few real overlap conflicts, runs npm install and gulp build.
 ---
 
 # Upstream Merge
 
-Automates merging a new upstream Prebid.js release into this fork.
+Merges a new upstream Prebid.js release into this fork **without drowning in ~1750
+spurious conflicts**.
+
+## Why not a plain `git merge`
+
+This `freestar`/`fsprebid` fork's git history does **not** share commit lineage with
+upstream `prebid/Prebid.js` release tags: `git merge-base HEAD <tag>` resolves to an
+ancient base (~8.49.0, May 2024) even though the fork tracks 11.x. So a naive
+`git merge <tag>` 3-way-merges against that ancient base and produces ~1750 conflicts —
+almost the whole tree. **These are noise, not real divergence.**
+
+The fork's actual customizations are small and stable — on the order of ~135 files
+(mostly fork-private adapters/modules the fork *adds*, and upstream CI the fork
+*deletes*). Only a handful are genuine *modifications* to files upstream also changes;
+those are the only real conflicts. The strategy below rebuilds the working tree to pure
+upstream, then re-lays the fork footprint on top, so you only hand-merge that handful.
 
 ## Inputs — prompt the user for these before starting
 
-1. **TICKET_NAME** — branch name for this merge (e.g. `PFG-1234-prebid-10.22.0`)
-2. **TAG_NAME** — upstream release tag to merge (e.g. `10.22.0`)
+1. **TICKET_NAME** — Jira ticket for this merge (e.g. `PFG-5232`). The branch name must
+   also contain `agent` or `codex` per the repo's CLAUDE.md branch rule — use e.g.
+   `PFG-5232-prebid-11.25.0-agent`.
+2. **NEW_TAG** — upstream release tag to merge to. If the user says "latest", pick the
+   highest `git tag -l '11.*' | sort -V | tail -1` after fetching (Step 1).
+
+**PREV_TAG** (the upstream tag the fork currently sits on) is auto-detected in Step 2 —
+do not ask for it.
 
 ## Steps
 
@@ -22,62 +43,129 @@ git remote get-url upstream 2>/dev/null || git remote add upstream https://githu
 ### 1. Fetch upstream tags
 ```bash
 git fetch upstream --tags
+git tag -l '11.*' | sort -V | tail -8    # confirm NEW_TAG is available; pick latest if asked
 ```
 
-### 2. Create and checkout new branch
+### 2. Determine PREV_TAG (current fork base) and start the branch from `main`
+
+`PREV_TAG` is the recent tag whose diff against the fork is *smallest* (that diff **is**
+the fork footprint). Check the last couple of tags:
 ```bash
-git checkout -b TICKET_NAME
+git checkout main && git pull
+for t in <candidate tags>; do echo -n "$t: "; git diff --name-only HEAD $t | wc -l; done
 ```
-
-### 3. Merge the release tag
+The tag with the ~135-file diff is PREV_TAG. Then:
 ```bash
-git merge TAG_NAME
+git checkout -b TICKET_NAME        # e.g. PFG-5232-prebid-11.25.0-agent (must contain 'agent'/'codex')
 ```
 
-If there are no conflicts, skip to Step 5.
-
-### 4. Resolve merge conflicts
-
-After the merge, check conflict status:
+### 3. Classify the fork footprint (read-only, before touching anything)
 ```bash
-git status
+git diff --name-status PREV_TAG HEAD > /tmp/fork_footprint.txt   # HEAD = fork main
+awk '$1=="D"{print $2}' /tmp/fork_footprint.txt > /tmp/D_files.txt   # fork DELETES (mostly upstream CI)
+awk '$1=="A"{print $2}' /tmp/fork_footprint.txt > /tmp/A_files.txt   # fork-private ADDITIONS
+awk '$1=="M"{print $2}' /tmp/fork_footprint.txt > /tmp/M_files.txt   # fork MODIFICATIONS
+
+# The only files needing a real 3-way merge = fork-modified ∩ upstream-changed-between-tags:
+comm -12 <(sort /tmp/M_files.txt) <(git diff --name-only PREV_TAG NEW_TAG | sort) > /tmp/M_merge.txt
+grep -vxF -f /tmp/M_merge.txt /tmp/M_files.txt > /tmp/M_safe.txt      # fork-modified, upstream untouched
+cat /tmp/M_merge.txt        # typically 3-6 files, incl. package.json, package-lock.json
 ```
 
-For each conflicted file, apply the rules below, then stage it:
+### 4. Rebuild the tree and re-apply the fork footprint
+
+#### 4.1 Start the merge to set MERGE_HEAD (ignore the conflict spew)
 ```bash
-git add <file>
+git merge --no-edit NEW_TAG                 # exits 1 with ~hundreds of conflicts — expected, ignore
+git rev-parse -q --verify MERGE_HEAD        # must print a hash (the merge is in progress)
 ```
 
-#### General conflict resolution rule
-
-**When our fork's edits conflict with upstream: keep our fork's edits, accept upstream changes that don't conflict, then notify the user.**
-
-After resolving all conflicts, report to the user:
-- Which files had conflicts beyond the known rules below
-- What fork-specific edits were preserved in each
-
-The file-specific rules below take precedence for known files.
-
-#### 4a. `package.json` conflicts
-
-Ensure these two entries are present after resolving:
-
-**Top-level key** (after `"keywords"` block):
-```json
-"globalVarName": "fsprebid",
+#### 4.2 Reset the whole tree to pure upstream (MERGE_HEAD survives)
+```bash
+git read-tree -u --reset NEW_TAG            # index + worktree become exactly NEW_TAG
+git diff --stat NEW_TAG                     # must be empty
 ```
 
-**First entry in `devDependencies`**:
-```json
-"@babel/plugin-proposal-private-methods": "^7.18.6",
+#### 4.3 Re-apply the fork footprint
+```bash
+# Remove the files the fork deletes (upstream CI, etc.)
+tr '\n' '\0' < /tmp/D_files.txt | xargs -0 git rm -f --ignore-unmatch
+
+# Restore fork additions + fork-modified-but-upstream-untouched files straight from main.
+# GOTCHA: `git checkout HEAD -- <list>` is ATOMIC — if any path is missing in HEAD it
+# restores NOTHING. Only feed it A + M_safe (all present in HEAD); never include D paths.
+cat /tmp/A_files.txt /tmp/M_safe.txt > /tmp/restore.txt
+tr '\n' '\0' < /tmp/restore.txt | xargs -0 git checkout HEAD --
 ```
 
-Accept all upstream changes to other sections; keep our fork additions.
+#### 4.4 Hand-merge the overlap files in `/tmp/M_merge.txt`
 
-#### 4b. `gulpHelpers.js` conflicts
+For each source/config file (handle `package-lock.json` via `npm i` in 4.6, not here),
+do a real 3-way merge. **`git merge-file` needs *seekable* files** — process substitution
+(`<(...)`) gives non-seekable pipes and silently produces EMPTY output while exiting 0.
+Always write the three versions to real temp files first (ours = fork `main`,
+base = PREV_TAG, theirs = NEW_TAG):
+```bash
+for f in $(cat /tmp/M_merge.txt); do
+  [ "$f" = package-lock.json ] && continue
+  b=/tmp/m3/$(echo "$f" | tr / _); mkdir -p /tmp/m3
+  git show HEAD:"$f"     > "$b.ours"
+  git show PREV_TAG:"$f" > "$b.base"
+  git show NEW_TAG:"$f"  > "$b.theirs"
+  git merge-file -p "$b.ours" "$b.base" "$b.theirs" > "$f"   # rc>0 ⇒ conflict hunks remain
+done
+git grep -lE '^<<<<<<< |^>>>>>>> ' -- . ':(exclude)package-lock.json'   # find leftover conflicts
+```
+Resolve any remaining `<<<<<<<` hunks by hand using the **file-specific rules below**
+(keep fork edits, take upstream's non-conflicting bumps), then `git add` each file.
 
-Ensure the module aliasing block is present inside `getArgModules()`, immediately after the single-JSON-file loading block (around line 65):
+#### 4.5 Strip upstream CI (make `.github` match `main`)
 
+The fork runs no upstream CI. **New upstream CI files added since PREV_TAG won't be in
+`/tmp/D_files.txt`** (that list predates them), so removing the D list is not enough.
+Force `.github` to exactly match fork `main` (usually empty):
+```bash
+git ls-tree -r --name-only HEAD -- .github | sort > /tmp/github_head.txt
+comm -13 /tmp/github_head.txt <(git ls-files -- .github | sort) > /tmp/github_remove.txt
+[ -s /tmp/github_remove.txt ] && tr '\n' '\0' < /tmp/github_remove.txt | xargs -0 git rm -f
+diff <(git ls-files -- .github | sort) /tmp/github_head.txt && echo "MATCH"
+```
+
+#### 4.6 Regenerate the lockfile and stage everything
+```bash
+npm i                       # rebuilds package-lock.json from the merged package.json
+git add -A
+```
+
+#### 4.7 Verify the footprint, then commit
+```bash
+# The staged tree vs NEW_TAG must be ONLY the fork footprint (A + D + the M overrides).
+git diff --cached --name-status NEW_TAG | awk '{print $1}' | sort | uniq -c   # ~ 64 A / ~60 D / ~12 M
+git grep -lE '^<<<<<<< |^>>>>>>> ' -- . ':(exclude)package-lock.json' || echo "no conflict markers"
+git commit --no-edit -m "Upstream merge NEW_TAG"   # MERGE_HEAD present ⇒ real 2-parent merge commit
+```
+
+### 5. Verify the build
+```bash
+npx gulp build   # clean → build-bundle-prod → setupDist; no lint step, so a broken eslint config won't block it
+```
+A successful build (no errors) confirms the merge is clean.
+
+## File-specific resolution rules (for the 4.4 overlap files)
+
+The general rule for a hand-merged overlap file: **keep the fork's edits, take upstream's
+non-conflicting changes**, then notify the user which files needed manual resolution.
+
+#### `package.json`
+Ensure these fork entries survive:
+- Top-level key (after the `"keywords"` block): `"globalVarName": "fsprebid",`
+- In `devDependencies`: `"@babel/plugin-proposal-private-methods": "^7.18.6",`
+
+Take upstream's version bumps to other dependencies.
+
+#### `gulpHelpers.js`
+Ensure the module-alias block is present inside `getArgModules()`, right after the
+single-JSON-file loading block:
 ```js
 try {
     const moduleAliases = JSON.parse(
@@ -87,98 +175,41 @@ try {
 } catch (_e) {}
 ```
 
-Accept all other upstream changes to this file.
+#### `src/constants.ts`
+Ensure `export const DEBUG_MODE = 'fspb_debug';` (upstream uses `'pbjs_debug'` — always
+replace with the fork value).
 
-#### 4c. `src/constants.ts` conflicts
-
-Ensure the debug mode constant uses the fork's custom value:
-
-```ts
-export const DEBUG_MODE = 'fspb_debug';
-```
-
-Upstream uses `'pbjs_debug'` — always replace with `'fspb_debug'`.
-
-#### 4d. `AUCTION_DEBUG` emission guard (logging helpers)
-
-The fork only emits the `AUCTION_DEBUG` event when debug is on; upstream emits it
-unconditionally from `logWarn()` / `logError()`. Ensure that emission is wrapped in
-a `debugTurnedOn()` guard.
-
-**As of upstream 11.18.0 the logging helpers were moved out of `src/utils.js` into
-`src/utils/logging.ts`** (`src/utils.js` now just re-exports `debugTurnedOn`). The
-helpers are built by a shared `makeLogger()` factory, so the guard lives there:
-
+#### `AUCTION_DEBUG` emission guard (logging helpers)
+The fork emits `AUCTION_DEBUG` only when debug is on; upstream emits it unconditionally.
+As of upstream 11.18.0 the helpers live in `src/utils/logging.ts`, built by a shared
+`makeLogger()` factory, so the guard lives there:
 ```ts
 // src/utils/logging.ts — inside makeLogger()'s returned function:
 if (emit && debugTurnedOn()) {
   emitEvent(EVENTS.AUCTION_DEBUG, { type: LEVELS[level] as DebugEvent['type'], arguments: args });
 }
 ```
+If a future release relocates these helpers, find the emitter
+(`git grep AUCTION_DEBUG -- 'src/*'`) and apply the same `debugTurnedOn()` guard. In
+older layouts (≤ 11.13.0) they lived directly in `src/utils.js`. **If the file moved,
+`logging.ts` will appear in `/tmp/M_merge.txt` or the leftover-conflict list — always
+check where the guarded code moved to.**
 
-If a future release relocates these helpers again, find the file emitting
-`AUCTION_DEBUG` (`git grep AUCTION_DEBUG -- 'src/*'`) and apply the same
-`debugTurnedOn()` guard there. In older layouts (≤ 11.13.0) the functions lived
-directly in `src/utils.js`:
-
-```js
-// In logWarn() / logError():
-if (debugTurnedOn()) {
-  emitEvent(EVENTS.AUCTION_DEBUG, { type: 'WARNING' /* or 'ERROR' */, arguments: arguments });
-}
-```
-
-Accept all other upstream changes to these files.
-
-#### 4e. Remove all upstream GitHub Actions / CI
-
-This fork runs no upstream CI (no env vars / secrets are provided). Every upstream
-merge re-introduces whatever workflows the new release added, so they must be
-removed each time. **Run this even if the merge had no conflicts** — a clean merge
-still pulls in new upstream workflow files.
-
-```bash
-git rm -r --ignore-unmatch .github/workflows .github/actions .github/codeql
-```
-
-Then confirm nothing CI-related remains:
-
-```bash
-find .github -type f 2>/dev/null   # expect no output (or only non-CI files the fork keeps)
-```
-
-#### 4f. Install dependencies and stage package-lock.json
-
-Run `npm i` **before** completing the merge commit so that `package-lock.json` is included in the merge commit:
-
-```bash
-npm i
-git add .
-```
-
-#### 4g. Complete the merge
-```bash
-git merge --continue
-```
-
-Or if `--continue` is not applicable (all conflicts already staged):
-```bash
-git commit -m "chore: merge upstream TAG_NAME"
-```
-
-### 5. Verify the build
-```bash
-npx gulp build
-```
-
-A successful build (no errors) confirms the merge is clean.
+#### Root docs (`AGENTS.md`, `PR_REVIEW.md`, `CLAUDE.md`)
+These aren't fork customizations — the fork has historically tracked upstream for them.
+They usually aren't in `/tmp/M_merge.txt` (not fork-modified), so the rebuild leaves them
+at NEW_TAG automatically. If a merge run pulls them into the footprint, confirm with the
+user whether to take upstream's version (default) or freeze the fork's.
 
 ## Verification checklist
 
-- [ ] `package.json` contains `"globalVarName": "fsprebid"`
-- [ ] `package.json` contains `"@babel/plugin-proposal-private-methods": "^7.18.6"` in `devDependencies`
+- [ ] `git rev-parse MERGE_HEAD` was valid before committing (result is a 2-parent merge commit)
+- [ ] `git diff --cached --name-status NEW_TAG` shows **only** the fork footprint (~135 files: A + D + ~12 M)
+- [ ] No conflict markers remain (`git grep -lE '^<<<<<<< |^>>>>>>> '`, excluding `package-lock.json`)
+- [ ] `package.json` contains `"globalVarName": "fsprebid"` and `"@babel/plugin-proposal-private-methods": "^7.18.6"`
 - [ ] `gulpHelpers.js` contains the `module-alias.json` aliasing block
 - [ ] `src/constants.ts` has `DEBUG_MODE = 'fspb_debug'`
 - [ ] `AUCTION_DEBUG` emission is guarded by `debugTurnedOn()` (in `src/utils/logging.ts` as of 11.18.0; was `src/utils.js` ≤ 11.13.0)
-- [ ] No upstream GitHub Actions remain (`.github/workflows`, `.github/actions`, `.github/codeql` removed)
+- [ ] `.github` matches fork `main` (no upstream workflows/actions/codeql remain)
+- [ ] `npm i` ran so `package-lock.json` reflects the merged `package.json`
 - [ ] `npx gulp build` exits with no errors
