@@ -38,6 +38,12 @@ module.exports = function (options = {}) {
         [useLocal('@babel/plugin-transform-runtime')],
         [useLocal('@babel/plugin-proposal-private-methods')],
       ];
+      if (options.polyfills) {
+        plugins.push([path.resolve(__dirname, './plugins/polyfills.js'), {
+          ...options,
+          output: path.resolve(__dirname, './build/dist/polyfills.json'),
+        }])
+      }
       return plugins;
     })(),
   }
