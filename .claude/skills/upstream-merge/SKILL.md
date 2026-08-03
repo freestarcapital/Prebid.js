@@ -195,6 +195,23 @@ older layouts (≤ 11.13.0) they lived directly in `src/utils.js`. **If the file
 `logging.ts` will appear in `/tmp/M_merge.txt` or the leftover-conflict list — always
 check where the guarded code moved to.**
 
+#### `modules/prebidServerBidAdapter/ortbConverter.js`
+The dual-PBS fan-out (`PFG-assertive-yield-dual-pbs`) tags bidWon analytics by the winning
+PBS cluster. The `bidResponse` hook must stamp the cluster's s2sConfig name onto each bid,
+immediately after `bidResponse.requestBidder = ...`:
+
+```js
+// [FREESTAR fork patch — PFG-assertive-yield-dual-pbs]
+bidResponse.s2sConfigName = context.s2sBidRequest?.s2sConfig?.name;
+```
+
+Upstream never annotates a response bid with its s2sConfig. If upstream didn't touch this
+file it lands in `/tmp/M_safe.txt` and the rebuild restores it from `main` automatically; if
+it shows up in `/tmp/M_merge.txt`, hand-merge it and re-locate the anchor with
+`git grep 'bidResponse.requestBidder = ' -- modules/prebidServerBidAdapter`. Covered by
+`test/spec/modules/prebidServerBidAdapter_spec.js` →
+`'stamps the winning bid with its s2sConfig name'`.
+
 #### Root docs (`AGENTS.md`, `PR_REVIEW.md`, `CLAUDE.md`)
 These aren't fork customizations — the fork has historically tracked upstream for them.
 They usually aren't in `/tmp/M_merge.txt` (not fork-modified), so the rebuild leaves them
@@ -209,6 +226,7 @@ user whether to take upstream's version (default) or freeze the fork's.
 - [ ] `package.json` contains `"globalVarName": "fsprebid"` and `"@babel/plugin-proposal-private-methods": "^7.18.6"`
 - [ ] `gulpHelpers.js` contains the `module-alias.json` aliasing block
 - [ ] `src/constants.ts` has `DEBUG_MODE = 'fspb_debug'`
+- [ ] `prebidServerBidAdapter/ortbConverter.js` `bidResponse` hook sets `bidResponse.s2sConfigName = context.s2sBidRequest?.s2sConfig?.name` (dual-PBS cluster tag; marked `[FREESTAR fork patch]`)
 - [ ] `AUCTION_DEBUG` emission is guarded by `debugTurnedOn()` (in `src/utils/logging.ts` as of 11.18.0; was `src/utils.js` ≤ 11.13.0)
 - [ ] `.github` matches fork `main` (no upstream workflows/actions/codeql remain)
 - [ ] `npm i` ran so `package-lock.json` reflects the merged `package.json`

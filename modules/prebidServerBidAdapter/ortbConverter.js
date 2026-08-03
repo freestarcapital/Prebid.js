@@ -99,6 +99,12 @@ const PBS_CONVERTER = ortbConverter({
 
     const bidResponse = buildBidResponse(bid, context);
     bidResponse.requestBidder = bidRequest?.bidder;
+    // [FREESTAR fork patch — PFG-assertive-yield-dual-pbs] Stamp the winning PBS cluster name
+    // so bidWon analytics can tag stored-request/null-bidder bids that return with a real
+    // (un-aliased) server bidderCode. Upstream never annotates a bid with its s2sConfig; this
+    // is the only place with s2sConfig.name in the response scope. Read-only on response bids
+    // (never fed back into request routing), so it does not affect Prebid's s2sConfigName hint.
+    bidResponse.s2sConfigName = context.s2sBidRequest?.s2sConfig?.name;
 
     if (bidResponse.native?.ortb) {
       // TODO: do we need to set bidResponse.adm here?
