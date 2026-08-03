@@ -826,6 +826,32 @@ describe('ttdBidAdapter', function () {
       expect(request.options.endpointCompression).to.equal(false);
       expect(request.options.gzipViaHeader).to.equal(true);
     });
+
+    it('parses string "true" as enabled', function () {
+      bidderConfigStub.returns({ ttd: { gzipEnabled: 'true' } });
+      const request = testBuildRequests(baseBannerBidRequests, baseBidderRequest);
+      expect(request.options.endpointCompression).to.equal(true);
+    });
+
+    it('parses string "false" as disabled', function () {
+      bidderConfigStub.returns({ ttd: { gzipEnabled: 'false' } });
+      const request = testBuildRequests(baseBannerBidRequests, baseBidderRequest);
+      expect(request.options.endpointCompression).to.equal(false);
+    });
+
+    it('defaults to false for an invalid gzipEnabled value', function () {
+      bidderConfigStub.returns({ ttd: { gzipEnabled: 'nope' } });
+      const request = testBuildRequests(baseBannerBidRequests, baseBidderRequest);
+      expect(request.options.endpointCompression).to.equal(false);
+    });
+
+    it('honors config set against the thetradedesk alias', function () {
+      bidderConfigStub.returns({ thetradedesk: { gzipEnabled: true } });
+      const aliasBidRequests = baseBannerBidRequests.map(bid => ({ ...bid, bidder: 'thetradedesk' }));
+      const aliasBidderRequest = { ...baseBidderRequest, bidderCode: 'thetradedesk' };
+      const request = testBuildRequests(aliasBidRequests, aliasBidderRequest);
+      expect(request.options.endpointCompression).to.equal(true);
+    });
   });
 
   describe('buildRequests-banner-multiple', function () {
