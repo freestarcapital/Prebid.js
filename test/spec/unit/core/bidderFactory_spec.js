@@ -1928,5 +1928,44 @@ describe('bidderFactory', () => {
       expect(ajaxStub.firstCall.args[2]).to.equal(compressedPayload);
       expect(ajaxStub.firstCall.args[3].customHeaders['Content-Encoding']).to.equal('gzip');
     });
+
+    it('should preserve existing customHeaders when adding Content-Encoding in header mode', async function () {
+      isGzipSupportedStub.returns(true);
+      gzipStub.resolves('compressedData');
+      getParameterByNameStub.withArgs(DEBUG_MODE).returns('false');
+      debugTurnedOnStub.returns(false);
+      gzipViaHeader = true;
+
+      await runRequest({ customHeaders: { 'X-Foo': '1' } });
+      const headers = ajaxStub.firstCall.args[3].customHeaders;
+      expect(headers['X-Foo']).to.equal('1');
+      expect(headers['Content-Encoding']).to.equal('gzip');
+    });
+
+    it('should not add Content-Encoding or a gzip param in header mode when gzip is unsupported', async function () {
+      isGzipSupportedStub.returns(false);
+      getParameterByNameStub.withArgs(DEBUG_MODE).returns('false');
+      debugTurnedOnStub.returns(false);
+      gzipViaHeader = true;
+
+      await runRequest();
+      expect(gzipStub.called).to.be.false;
+      expect(ajaxStub.firstCall.args[0]).to.not.include('gzip=1');
+      const headers = ajaxStub.firstCall.args[3].customHeaders;
+      expect(headers && headers['Content-Encoding']).to.not.equal('gzip');
+    });
+
+    it('should keep using the gzip query param and no Content-Encoding header when gzipViaHeader is not set', async function () {
+      isGzipSupportedStub.returns(true);
+      gzipStub.resolves('compressedData');
+      getParameterByNameStub.withArgs(DEBUG_MODE).returns('false');
+      debugTurnedOnStub.returns(false);
+      // gzipViaHeader stays false (default)
+
+      await runRequest();
+      expect(ajaxStub.firstCall.args[0]).to.include('gzip=1');
+      const headers = ajaxStub.firstCall.args[3].customHeaders;
+      expect(headers && headers['Content-Encoding']).to.not.equal('gzip');
+    });
   });
 });
