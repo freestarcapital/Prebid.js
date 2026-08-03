@@ -104,7 +104,7 @@ export interface AdapterRequest {
   url: string;
   data: any;
   method?: 'GET' | 'POST';
-  options?: Omit<AjaxOptions, 'method'> & { endpointCompression?: boolean };
+  options?: Omit<AjaxOptions, 'method'> & { endpointCompression?: boolean; gzipViaHeader?: boolean };
 }
 
 export interface ServerResponse {
@@ -542,7 +542,15 @@ export const processBidderRequests = hook('async', function<B extends BidderCode
         break;
       case 'POST':
         const enableGZipCompression = request.options?.endpointCompression;
-        const callAjax = ({ url, payload }) => {
+        const callAjax = ({ url, payload, gzipHeader = false }) => {
+          const opts = getOptions({
+            method: 'POST',
+            contentType: 'text/plain',
+            withCredentials: true
+          });
+          if (gzipHeader) {
+            opts.customHeaders = { ...(opts.customHeaders || {}), 'Content-Encoding': 'gzip' };
+          }
           ajax(
             url,
             {
@@ -550,11 +558,7 @@ export const processBidderRequests = hook('async', function<B extends BidderCode
               error: onFailure
             },
             payload,
-            getOptions({
-              method: 'POST',
-              contentType: 'text/plain',
-              withCredentials: true
-            })
+            opts
           );
         };
 
@@ -564,11 +568,16 @@ export const processBidderRequests = hook('async', function<B extends BidderCode
 
         if (enableGZipCompression && !debugMode && isGzipCompressionSupported()) {
           compressDataWithGZip(request.data).then(compressedPayload => {
-            const url = new URL(request.url);
-            if (!url.searchParams.has('gzip')) {
-              url.searchParams.set('gzip', '1');
+            if (request.options?.gzipViaHeader) {
+              // Signal compression via the Content-Encoding header; no gzip query param.
+              callAjax({ url: request.url, payload: compressedPayload, gzipHeader: true });
+            } else {
+              const url = new URL(request.url);
+              if (!url.searchParams.has('gzip')) {
+                url.searchParams.set('gzip', '1');
+              }
+              callAjax({ url: url.href, payload: compressedPayload });
             }
-            callAjax({ url: url.href, payload: compressedPayload });
           });
         } else {
           callAjax({ url: request.url, payload: typeof request.data === 'string' ? request.data : JSON.stringify(request.data) });
