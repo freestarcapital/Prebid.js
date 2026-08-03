@@ -852,6 +852,13 @@ describe('ttdBidAdapter', function () {
       const request = testBuildRequests(aliasBidRequests, aliasBidderRequest);
       expect(request.options.endpointCompression).to.equal(true);
     });
+
+    it('defaults to false when reading bidder config throws', function () {
+      bidderConfigStub.throws(new Error('boom'));
+      const request = testBuildRequests(baseBannerBidRequests, baseBidderRequest);
+      expect(request.options.endpointCompression).to.equal(false);
+      expect(request.options.gzipViaHeader).to.equal(true);
+    });
   });
 
   describe('buildRequests-banner-multiple', function () {
