@@ -756,6 +756,111 @@ describe('ttdBidAdapter', function () {
     });
   });
 
+  describe('gzip compression (endpointCompression + gzipViaHeader)', function () {
+    let sandbox;
+    let bidderConfigStub;
+
+    const baseBannerBidRequests = [{
+      'bidder': 'ttd',
+      'params': {
+        'supplySourceId': 'supplier',
+        'publisherId': '13144370',
+        'placementId': '1gaa015'
+      },
+      'mediaTypes': {
+        'banner': {
+          'sizes': [[300, 250], [300, 600]]
+        }
+      },
+      'ortb2Imp': {
+        'ext': {
+          'tid': '8651474f-58b1-4368-b812-84f8c937a099',
+        }
+      },
+      'sizes': [[300, 250], [300, 600]],
+      'transactionId': '1111474f-58b1-4368-b812-84f8c937a099',
+      'adUnitCode': 'div-gpt-ad-1460505748561-0',
+      'bidId': '243310435309b5',
+      'bidderRequestId': '18084284054531',
+      'auctionId': 'e7b34fa3-8654-424e-8c49-03e509e53d8c',
+      'src': 'client',
+      'bidRequestsCount': 1
+    }];
+
+    const testWindow = buildWindowTree(['https://www.example.com/test', 'https://www.example.com/other/page', 'https://www.example.com/third/page'], 'https://othersite.com/', 'https://example.com/canonical/page');
+    const baseBidderRequestReferer = detectReferer(testWindow)();
+    const baseBidderRequest = {
+      'bidderCode': 'ttd',
+      ortb2: {
+        source: {
+          tid: 'e7b34fa3-8654-424e-8c49-03e509e53d8c',
+        }
+      },
+      'bidderRequestId': '18084284054531',
+      'auctionStart': 1540945362095,
+      'timeout': 3000,
+      'refererInfo': baseBidderRequestReferer,
+      'start': 1540945362099,
+      'doneCbCallCount': 0
+    };
+
+    beforeEach(function () {
+      sandbox = sinon.createSandbox();
+      bidderConfigStub = sandbox.stub(config, 'getBidderConfig');
+    });
+
+    afterEach(function () {
+      sandbox.restore();
+    });
+
+    it('sets gzipViaHeader true and endpointCompression true when gzipEnabled is configured', function () {
+      bidderConfigStub.returns({ ttd: { gzipEnabled: true } });
+      const request = testBuildRequests(baseBannerBidRequests, baseBidderRequest);
+      expect(request.options.endpointCompression).to.equal(true);
+      expect(request.options.gzipViaHeader).to.equal(true);
+    });
+
+    it('defaults endpointCompression to false (still sets gzipViaHeader) when unconfigured', function () {
+      bidderConfigStub.returns({});
+      const request = testBuildRequests(baseBannerBidRequests, baseBidderRequest);
+      expect(request.options.endpointCompression).to.equal(false);
+      expect(request.options.gzipViaHeader).to.equal(true);
+    });
+
+    it('parses string "true" as enabled', function () {
+      bidderConfigStub.returns({ ttd: { gzipEnabled: 'true' } });
+      const request = testBuildRequests(baseBannerBidRequests, baseBidderRequest);
+      expect(request.options.endpointCompression).to.equal(true);
+    });
+
+    it('parses string "false" as disabled', function () {
+      bidderConfigStub.returns({ ttd: { gzipEnabled: 'false' } });
+      const request = testBuildRequests(baseBannerBidRequests, baseBidderRequest);
+      expect(request.options.endpointCompression).to.equal(false);
+    });
+
+    it('defaults to false for an invalid gzipEnabled value', function () {
+      bidderConfigStub.returns({ ttd: { gzipEnabled: 'nope' } });
+      const request = testBuildRequests(baseBannerBidRequests, baseBidderRequest);
+      expect(request.options.endpointCompression).to.equal(false);
+    });
+
+    it('honors config set against the thetradedesk alias', function () {
+      bidderConfigStub.returns({ thetradedesk: { gzipEnabled: true } });
+      const aliasBidRequests = baseBannerBidRequests.map(bid => ({ ...bid, bidder: 'thetradedesk' }));
+      const aliasBidderRequest = { ...baseBidderRequest, bidderCode: 'thetradedesk' };
+      const request = testBuildRequests(aliasBidRequests, aliasBidderRequest);
+      expect(request.options.endpointCompression).to.equal(true);
+    });
+
+    it('defaults to false when reading bidder config throws', function () {
+      bidderConfigStub.throws(new Error('boom'));
+      const request = testBuildRequests(baseBannerBidRequests, baseBidderRequest);
+      expect(request.options.endpointCompression).to.equal(false);
+      expect(request.options.gzipViaHeader).to.equal(true);
+    });
+  });
+
   describe('buildRequests-banner-multiple', function () {
     const baseBannerMultipleBidRequests = [{
       'bidder': 'ttd',

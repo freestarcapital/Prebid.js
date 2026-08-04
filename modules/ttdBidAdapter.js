@@ -21,6 +21,7 @@ const BIDDER_CODE_LONG = 'thetradedesk';
 const BIDDER_ENDPOINT = 'https://direct.adsrvr.org/bid/bidder/';
 const USER_SYNC_ENDPOINT = 'https://match.adsrvr.org';
 const TTL = 360;
+const DEFAULT_GZIP_ENABLED = false;
 
 const MEDIA_TYPE = {
   BANNER: 1,
@@ -36,6 +37,27 @@ function getExt(firstPartyData) {
   return {
     ttdprebid: ext
   };
+}
+
+function getGzipSetting(bidderCode) {
+  try {
+    const bidderConfig = config.getBidderConfig();
+    // Honor config set against the active bidder code (e.g. the `thetradedesk`
+    // alias), falling back to the canonical `ttd` code.
+    const gzipSetting = utils.deepAccess(bidderConfig, `${bidderCode}.gzipEnabled`) ??
+      utils.deepAccess(bidderConfig, `${BIDDER_CODE}.gzipEnabled`);
+
+    if (gzipSetting !== undefined) {
+      const gzipValue = String(gzipSetting).toLowerCase().trim();
+      if (gzipValue === 'true' || gzipValue === 'false') {
+        return gzipValue === 'true';
+      }
+      utils.logWarn('TTD: Invalid gzipEnabled value in bidder config:', gzipSetting);
+    }
+  } catch (e) {
+    utils.logWarn('TTD: Error accessing bidder config:', e);
+  }
+  return DEFAULT_GZIP_ENABLED;
 }
 
 function getRegs(bidderRequest) {
@@ -422,12 +444,17 @@ export const spec = {
 
     const url = selectEndpoint(bidderRequest.bids[0].params) + bidderRequest.bids[0].params.supplySourceId;
 
+    const gzipEnabled = getGzipSetting(bidderRequest.bidderCode);
+
     const serverRequest = {
       method: 'POST',
       url: url,
       data: topLevel,
       options: {
         withCredentials: true,
+        endpointCompression: gzipEnabled,
+        // TTD signals compression via the Content-Encoding header, not the ?gzip query param.
+        gzipViaHeader: true,
       }
     };
 
