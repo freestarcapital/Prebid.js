@@ -591,8 +591,7 @@ export const processBidderRequests = hook('async', function<B extends BidderCode
                 }
                 callAjax({ url: url.href, payload: compressedPayload });
               }
-            })
-            .catch(err => {
+            }, err => {
               logWarn(`GZIP compression failed for ${spec.code}; sending uncompressed`, err);
               sendUncompressed();
             });

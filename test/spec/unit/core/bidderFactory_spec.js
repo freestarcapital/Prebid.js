@@ -1929,6 +1929,22 @@ describe('bidderFactory', () => {
       expect(ajaxStub.firstCall.args[3].customHeaders['Content-Encoding']).to.equal('gzip');
     });
 
+    it('strips the Content-Encoding header when compression fails in header mode', async function () {
+      isGzipSupportedStub.returns(true);
+      gzipStub.rejects(new Error('boom'));
+      getParameterByNameStub.withArgs(DEBUG_MODE).returns('false');
+      debugTurnedOnStub.returns(false);
+      gzipViaHeader = true;
+      sandbox.stub(utils, 'logWarn');
+
+      await runRequest();
+      expect(ajaxStub.calledOnce).to.be.true;
+      expect(ajaxStub.firstCall.args[0]).to.not.include('gzip=1');
+      expect(ajaxStub.firstCall.args[2]).to.equal(JSON.stringify(data));
+      const headers = ajaxStub.firstCall.args[3].customHeaders;
+      expect(headers && headers['Content-Encoding']).to.not.equal('gzip');
+    });
+
     it('should preserve existing customHeaders when adding Content-Encoding in header mode', async function () {
       isGzipSupportedStub.returns(true);
       gzipStub.resolves('compressedData');
