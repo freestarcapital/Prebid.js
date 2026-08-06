@@ -87,3 +87,6 @@ typings/
 # Webpack cache
 .cache/
 .eslintcache
+
+# Superpowers brainstorming/spec docs (local only)
+docs/superpowers/
