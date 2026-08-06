@@ -566,21 +566,38 @@ export const processBidderRequests = hook('async', function<B extends BidderCode
           logWarn(`Skipping GZIP compression for ${spec.code} as debug mode is enabled`);
         }
 
+        const sendUncompressed = () => callAjax({
+          url: request.url,
+          payload: typeof request.data === 'string' ? request.data : JSON.stringify(request.data)
+        });
+
         if (enableGZipCompression && !debugMode && isGzipCompressionSupported()) {
-          compressDataWithGZip(request.data).then(compressedPayload => {
-            if (request.options?.gzipViaHeader) {
-              // Signal compression via the Content-Encoding header; no gzip query param.
-              callAjax({ url: request.url, payload: compressedPayload, gzipHeader: true });
-            } else {
-              const url = new URL(request.url);
-              if (!url.searchParams.has('gzip')) {
-                url.searchParams.set('gzip', '1');
+          compressDataWithGZip(request.data)
+            .then(compressedPayload => {
+              if (!compressedPayload || compressedPayload.length === 0) {
+                // Engine reported gzip support but produced no output — never send a
+                // gzip-signaled request with an empty/invalid body.
+                logWarn(`Empty GZIP output for ${spec.code}; sending uncompressed`);
+                sendUncompressed();
+                return;
               }
-              callAjax({ url: url.href, payload: compressedPayload });
-            }
-          });
+              if (request.options?.gzipViaHeader) {
+                // Signal compression via the Content-Encoding header; no gzip query param.
+                callAjax({ url: request.url, payload: compressedPayload, gzipHeader: true });
+              } else {
+                const url = new URL(request.url);
+                if (!url.searchParams.has('gzip')) {
+                  url.searchParams.set('gzip', '1');
+                }
+                callAjax({ url: url.href, payload: compressedPayload });
+              }
+            })
+            .catch(err => {
+              logWarn(`GZIP compression failed for ${spec.code}; sending uncompressed`, err);
+              sendUncompressed();
+            });
         } else {
-          callAjax({ url: request.url, payload: typeof request.data === 'string' ? request.data : JSON.stringify(request.data) });
+          sendUncompressed();
         }
         break;
       default:

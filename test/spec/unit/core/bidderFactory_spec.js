@@ -1967,5 +1967,19 @@ describe('bidderFactory', () => {
       const headers = ajaxStub.firstCall.args[3].customHeaders;
       expect(headers && headers['Content-Encoding']).to.not.equal('gzip');
     });
+
+    it('sends an uncompressed request (no gzip param) when compression yields empty output', async function () {
+      isGzipSupportedStub.returns(true);
+      gzipStub.resolves(new Uint8Array(0)); // engine reported support but produced nothing
+      getParameterByNameStub.withArgs(DEBUG_MODE).returns('false');
+      debugTurnedOnStub.returns(false);
+      const warnStub = sandbox.stub(utils, 'logWarn');
+
+      await runRequest();
+      expect(ajaxStub.calledOnce).to.be.true;
+      expect(ajaxStub.firstCall.args[0]).to.not.include('gzip=1');
+      expect(ajaxStub.firstCall.args[2]).to.equal(JSON.stringify(data));
+      expect(warnStub.called).to.be.true;
+    });
   });
 });
