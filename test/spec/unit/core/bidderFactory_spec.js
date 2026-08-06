@@ -1981,5 +1981,42 @@ describe('bidderFactory', () => {
       expect(ajaxStub.firstCall.args[2]).to.equal(JSON.stringify(data));
       expect(warnStub.called).to.be.true;
     });
+
+    it('sends an uncompressed request (no gzip param) when compression rejects', async function () {
+      isGzipSupportedStub.returns(true);
+      gzipStub.rejects(new Error('compression boom'));
+      getParameterByNameStub.withArgs(DEBUG_MODE).returns('false');
+      debugTurnedOnStub.returns(false);
+      const warnStub = sandbox.stub(utils, 'logWarn');
+
+      await runRequest();
+      expect(ajaxStub.calledOnce).to.be.true;
+      expect(ajaxStub.firstCall.args[0]).to.not.include('gzip=1');
+      expect(ajaxStub.firstCall.args[2]).to.equal(JSON.stringify(data));
+      expect(warnStub.called).to.be.true;
+    });
+
+    it('still compresses and adds the gzip param on valid output (regression)', async function () {
+      isGzipSupportedStub.returns(true);
+      gzipStub.resolves('compressedData');
+      getParameterByNameStub.withArgs(DEBUG_MODE).returns('false');
+      debugTurnedOnStub.returns(false);
+
+      await runRequest();
+      expect(ajaxStub.calledOnce).to.be.true;
+      expect(ajaxStub.firstCall.args[0]).to.include('gzip=1');
+      expect(ajaxStub.firstCall.args[2]).to.equal('compressedData');
+    });
+
+    it('sends exactly one request when compression rejects (no drop, no double-send)', async function () {
+      isGzipSupportedStub.returns(true);
+      gzipStub.rejects(new Error('boom'));
+      getParameterByNameStub.withArgs(DEBUG_MODE).returns('false');
+      debugTurnedOnStub.returns(false);
+      sandbox.stub(utils, 'logWarn');
+
+      await runRequest();
+      expect(ajaxStub.callCount).to.equal(1);
+    });
   });
 });
