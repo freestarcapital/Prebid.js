@@ -195,6 +195,42 @@ older layouts (≤ 11.13.0) they lived directly in `src/utils.js`. **If the file
 `logging.ts` will appear in `/tmp/M_merge.txt` or the leftover-conflict list — always
 check where the guarded code moved to.**
 
+#### `src/adapters/bidderFactory.ts` — TTD gzip signaling + GZIP fail-safe fallback
+Two fork changes live in the POST branch of `processBidderRequests`. This file is heavily
+churned by upstream — expect it in `/tmp/M_merge.txt` most releases; re-apply **by intent,
+not by line**:
+
+1. **`gzipViaHeader` opt-in.** The `AdapterRequest.options` type carries
+   `gzipViaHeader?: boolean`. When set, core signals compression with a
+   `Content-Encoding: gzip` request header (added in the `callAjax` closure via
+   `opts.customHeaders`) and **omits** the `?gzip=1` query param. Every other adapter
+   (flag unset) keeps `?gzip=1`. Consumed by the TTD adapter (below).
+
+2. **GZIP fail-safe fallback.** The compress branch must never send a gzip-signaled
+   request with a bad body. Keep: a `sendUncompressed()` helper (original body, **no**
+   gzip signal); the empty-output guard
+   (`!compressedPayload || compressedPayload.length === 0`); and the **two-arg**
+   `compressDataWithGZip(request.data).then(onFulfilled, onRejected)` form — NOT
+   `.then().catch()` (two-arg prevents a double-send if the success callback throws). On
+   rejection OR empty output, `logWarn` then `sendUncompressed()`. The no-compression
+   `else` also uses `sendUncompressed()`.
+
+Tests: `test/spec/unit/core/bidderFactory_spec.js` → `describe('gzip compression')`.
+
+#### `modules/ttdBidAdapter.js` — TTD gzip enablement (publisher opt-in)
+The fork enables gzip compression on TTD, signaled via the header hook above. Keep:
+- `DEFAULT_GZIP_ENABLED = false` and `getGzipSetting(bidderCode)` — reads `gzipEnabled`
+  from `config.getBidderConfig()` for the active bidder code (honors the `thetradedesk`
+  alias via `??`, falls back to canonical `ttd`, parses boolean/string, try/catch →
+  default false).
+- In `buildRequests`, request `options`: `endpointCompression: getGzipSetting(bidderRequest.bidderCode)`
+  and `gzipViaHeader: true`.
+
+The adapter does **NOT** reference `isGzipCompressionSupported`, debug mode, or
+`customHeaders` — core owns all of that. (This supersedes any older TTD-gzip note that had
+the adapter set `customHeaders`/`isGzipCompressionSupported`.) Tests:
+`test/spec/modules/ttdBidAdapter_spec.js` → `describe('gzip compression ...')`.
+
 #### Root docs (`AGENTS.md`, `PR_REVIEW.md`, `CLAUDE.md`)
 These aren't fork customizations — the fork has historically tracked upstream for them.
 They usually aren't in `/tmp/M_merge.txt` (not fork-modified), so the rebuild leaves them
@@ -210,6 +246,8 @@ user whether to take upstream's version (default) or freeze the fork's.
 - [ ] `gulpHelpers.js` contains the `module-alias.json` aliasing block
 - [ ] `src/constants.ts` has `DEBUG_MODE = 'fspb_debug'`
 - [ ] `AUCTION_DEBUG` emission is guarded by `debugTurnedOn()` (in `src/utils/logging.ts` as of 11.18.0; was `src/utils.js` ≤ 11.13.0)
+- [ ] `src/adapters/bidderFactory.ts` keeps the `gzipViaHeader` header signaling AND the GZIP fail-safe fallback (`sendUncompressed`, empty-output guard, two-arg `.then(onFulfilled, onRejected)`)
+- [ ] `modules/ttdBidAdapter.js` keeps `getGzipSetting`/`DEFAULT_GZIP_ENABLED` and sets `endpointCompression` + `gzipViaHeader: true` (no adapter-side `customHeaders`/`isGzipCompressionSupported`)
 - [ ] `.github` matches fork `main` (no upstream workflows/actions/codeql remain)
 - [ ] `npm i` ran so `package-lock.json` reflects the merged `package.json`
 - [ ] `npx gulp build` exits with no errors
