@@ -428,6 +428,7 @@ export const spec = {
       data: topLevel,
       options: {
         withCredentials: true,
+        endpointCompression: true,
       }
     };
 
