@@ -26,6 +26,8 @@ import { outstreamRenderer } from '../libraries/magniteUtils/outstream.js';
 
 /**
  * @typedef {import('../src/adapters/bidderFactory.js').BidRequest} BidRequest
+ * @typedef {import('./rubiconBidAdapter.d.ts').RubiconBidderParams} RubiconBidderParams
+ * @typedef {BidRequest & {params: RubiconBidderParams}} RubiconBidRequest
  */
 
 const DEFAULT_INTEGRATION = 'pbjs_lite';
@@ -259,7 +261,7 @@ export const spec = {
   gvlid: GVLID,
   supportedMediaTypes: [BANNER, VIDEO, NATIVE],
   /**
-   * @param {object} bid
+   * @param {RubiconBidRequest} bid
    * @return boolean
    */
   isBidRequestValid: function (bid) {
@@ -604,7 +606,7 @@ export const spec = {
 
     applyFPD(bidRequest, BANNER, data);
 
-    if (config.getConfig('coppa') === true) {
+    if (bidderRequest.ortb2?.regs?.coppa === 1) {
       data['coppa'] = 1;
     }
 
