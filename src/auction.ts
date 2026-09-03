@@ -69,6 +69,70 @@ export function resetAuctionState() {
   [outstandingRequests, sourceInfo].forEach((ob) => Object.keys(ob).forEach((k) => { delete ob[k]; }));
 }
 
+function increment(obj, prop) {
+  if (typeof obj[prop] === 'undefined') {
+    obj[prop] = 1;
+  } else {
+    obj[prop]++;
+  }
+}
+
+function originHasCapacity(call) {
+  let hasCapacity = true;
+
+  const maxRequests = config.getConfig('maxRequestsPerOrigin') || MAX_REQUESTS_PER_ORIGIN;
+
+  call.bidRequests.some(bidRequest => {
+    let requests = 1;
+    const source = (typeof bidRequest.src !== 'undefined' && bidRequest.src === S2S.SRC) ? 's2s'
+      : bidRequest.bidderCode;
+
+    // if the bidder has alwaysHasCapacity flag set and forceMaxRequestsPerOrigin is false, don't check capacity
+    if (bidRequest.alwaysHasCapacity && !config.getConfig('forceMaxRequestsPerOrigin')) {
+      return false;
+    }
+
+    // if we have no previous info on this source just let them through
+    if (sourceInfo[source]) {
+      if (sourceInfo[source].SRA === false) {
+        // some bidders might use more than the MAX_REQUESTS_PER_ORIGIN in a single auction.  In those cases
+        // set their request count to MAX_REQUESTS_PER_ORIGIN so the auction isn't permanently queued waiting
+        // for capacity for that bidder
+        requests = Math.min(bidRequest.bids.length, maxRequests);
+      }
+      if (outstandingRequests[sourceInfo[source].origin] + requests > maxRequests) {
+        hasCapacity = false;
+      }
+    }
+    // return only used for terminating this .some() iteration early if it is determined we don't have capacity
+    return !hasCapacity;
+  });
+
+  return hasCapacity;
+}
+
+function runIfOriginHasCapacity(call) {
+  const hasCapacity = originHasCapacity(call);
+
+  if (hasCapacity) {
+    call.run();
+  }
+
+  return hasCapacity;
+}
+
+/**
+ * Give one request slot on `origin` back, then start every queued auction that now fits.
+ * Queued calls are removed from the queue before they run, so an auction that takes and
+ * releases capacity from within `run` cannot start the same call twice.
+ */
+function releaseOrigin(origin) {
+  outstandingRequests[origin]--;
+  while (queuedCalls.length > 0 && originHasCapacity(queuedCalls[0])) {
+    queuedCalls.shift().run();
+  }
+}
+
 type AuctionOptions = {
   adUnits: AdUnit[],
   adUnitCodes: AdUnitCode[],
@@ -196,6 +260,8 @@ export function newAuction({ adUnits, adUnitCodes, callback, cbTimeout, labels, 
   const _auctionId: Identifier = auctionId || generateUUID();
   const _timeout = cbTimeout;
   const _timelyRequests = new Set();
+  // origin -> number of request slots this auction still holds
+  const _heldOrigins: { [origin: string]: number } = {};
   const done = defer<void>();
   const requestsDone = defer<void>();
   let _bidsRejected: Partial<Bid>[] = [];
@@ -248,6 +314,16 @@ export function newAuction({ adUnits, adUnitCodes, callback, cbTimeout, labels, 
     _timeoutTimer = setTimeout(() => executeCallback(true), _timeout);
   }
 
+  function releaseHeldOrigins() {
+    Object.keys(_heldOrigins).forEach((origin) => {
+      const held = _heldOrigins[origin];
+      _heldOrigins[origin] = 0;
+      for (let i = 0; i < held; i++) {
+        releaseOrigin(origin);
+      }
+    });
+  }
+
   function executeCallback(timedOut) {
     if (!timedOut) {
       clearTimeout(_timeoutTimer);
@@ -272,6 +348,11 @@ export function newAuction({ adUnits, adUnitCodes, callback, cbTimeout, labels, 
       done.resolve();
 
       events.emit(EVENTS.AUCTION_END, getProperties());
+      // The auction is over, so it no longer needs the origin capacity it took. Requests that have
+      // not settled yet are left alone - they keep running, and their responses are still cached -
+      // but they must not keep later auctions queued. Released after AUCTION_END so that an auction
+      // admitted from the queue here cannot emit AUCTION_INIT before this auction has ended.
+      releaseHeldOrigins();
       bidsBackCallback(_adUnits, auctionId, function () {
         try {
           if (_callback != null) {
@@ -356,6 +437,7 @@ export function newAuction({ adUnits, adUnitCodes, callback, cbTimeout, labels, 
         adapterManager.callBids(_adUnits, bidRequests, callbacks.addBidResponse, callbacks.adapterDone, {
           request(source, origin) {
             increment(outstandingRequests, origin);
+            increment(_heldOrigins, origin);
             increment(requests, source);
 
             if (!sourceInfo[source]) {
@@ -369,12 +451,11 @@ export function newAuction({ adUnits, adUnitCodes, callback, cbTimeout, labels, 
             }
           },
           done(origin) {
-            outstandingRequests[origin]--;
-            if (queuedCalls[0]) {
-              if (runIfOriginHasCapacity(queuedCalls[0])) {
-                queuedCalls.shift();
-              }
-            }
+            // capacity already given back when the auction ended; releasing again would let
+            // outstandingRequests drift below zero and silently disable the cap
+            if (!_heldOrigins[origin]) return;
+            _heldOrigins[origin]--;
+            releaseOrigin(origin);
           }
         }, _timeout, onTimelyResponse, ortb2Fragments);
         requestsDone.resolve();
@@ -384,52 +465,6 @@ export function newAuction({ adUnits, adUnitCodes, callback, cbTimeout, labels, 
     if (!runIfOriginHasCapacity(call)) {
       logWarn('queueing auction due to limited endpoint capacity');
       queuedCalls.push(call);
-    }
-
-    function runIfOriginHasCapacity(call) {
-      let hasCapacity = true;
-
-      const maxRequests = config.getConfig('maxRequestsPerOrigin') || MAX_REQUESTS_PER_ORIGIN;
-
-      call.bidRequests.some(bidRequest => {
-        let requests = 1;
-        const source = (typeof bidRequest.src !== 'undefined' && bidRequest.src === S2S.SRC) ? 's2s'
-          : bidRequest.bidderCode;
-
-        // if the bidder has alwaysHasCapacity flag set and forceMaxRequestsPerOrigin is false, don't check capacity
-        if (bidRequest.alwaysHasCapacity && !config.getConfig('forceMaxRequestsPerOrigin')) {
-          return false;
-        }
-
-        // if we have no previous info on this source just let them through
-        if (sourceInfo[source]) {
-          if (sourceInfo[source].SRA === false) {
-            // some bidders might use more than the MAX_REQUESTS_PER_ORIGIN in a single auction.  In those cases
-            // set their request count to MAX_REQUESTS_PER_ORIGIN so the auction isn't permanently queued waiting
-            // for capacity for that bidder
-            requests = Math.min(bidRequest.bids.length, maxRequests);
-          }
-          if (outstandingRequests[sourceInfo[source].origin] + requests > maxRequests) {
-            hasCapacity = false;
-          }
-        }
-        // return only used for terminating this .some() iteration early if it is determined we don't have capacity
-        return !hasCapacity;
-      });
-
-      if (hasCapacity) {
-        call.run();
-      }
-
-      return hasCapacity;
-    }
-
-    function increment(obj, prop) {
-      if (typeof obj[prop] === 'undefined') {
-        obj[prop] = 1;
-      } else {
-        obj[prop]++;
-      }
     }
   }
 
