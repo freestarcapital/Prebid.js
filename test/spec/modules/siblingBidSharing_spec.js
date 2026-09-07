@@ -224,6 +224,22 @@ describe('siblingBidSharing module', () => {
     expect(store.get('a1').state).to.equal('available');
   });
 
+  it('falls back to the ad unit for the group and regime the bid does not carry', () => {
+    const stub = sinon.stub(auctionManager.index, 'getAdUnit')
+      .returns({ code: 'medrec1', siblingGroupId: 'medrec', requestRegime: 'eager' });
+    try {
+      const bid = {
+        adId: 'c1', adUnitCode: 'medrec1', adUnitId: 'au-1', ttl: 300, responseTimestamp: Date.now(),
+      };
+      events.emit(EVENTS.BID_RESPONSE, bid);
+      expect(store.get('c1').siblingGroupId).to.equal('medrec');
+      expect(bid.siblingGroupId).to.equal('medrec');
+      expect(bid.requestRegime).to.equal('eager');
+    } finally {
+      stub.restore();
+    }
+  });
+
   it('ignores a bid with no siblingGroupId', () => {
     events.emit(EVENTS.BID_RESPONSE, { adId: 'a2', adUnitCode: 'x', ttl: 300 });
     expect(store.get('a2')).to.equal(undefined);

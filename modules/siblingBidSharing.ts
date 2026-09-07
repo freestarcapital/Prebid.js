@@ -38,12 +38,14 @@ config.getConfig(
 export function getActiveConfig() { return active; }
 
 events.on(EVENTS.BID_RESPONSE, (bid: any) => {
-  const req = auctionManager.index.getBidderRequest(bid);
-  const siblingGroupId = bid?.siblingGroupId ?? req?.siblingGroupId;
+  // The group and the regime are attached to the AD UNIT by pubfig's format_pbjs; a bidderRequest
+  // never carries either.
+  const adUnit: any = auctionManager.index.getAdUnit(bid);
+  const siblingGroupId = bid?.siblingGroupId ?? adUnit?.siblingGroupId;
   if (!siblingGroupId || !bid?.adId) return;
 
   bid.siblingGroupId = siblingGroupId;
-  bid.requestRegime = bid?.requestRegime ?? req?.requestRegime;
+  bid.requestRegime = bid?.requestRegime ?? adUnit?.requestRegime;
   const deposited = store.deposit({
     adId: bid.adId,
     siblingGroupId,
