@@ -8,6 +8,8 @@ import * as events from '../src/events.ts';
 import { EVENTS } from '../src/constants.ts';
 import { auctionManager } from '../src/auctionManager.js';
 import { logInfo, logWarn } from '../src/utils.js';
+import { getGlobal } from '../src/prebidGlobal.ts';
+import { wrapInBids } from '../src/utils/wrapsInBids.ts';
 
 export interface SiblingBidSharingConfig {
   enabled?: boolean;
@@ -151,3 +153,65 @@ declare module '../src/prebidGlobal' {
 }
 
 addApiMethod('getSiblingGroupState', getSiblingGroupState, false);
+
+// The destination's regime lives on its ad unit (attached in format_pbjs next to siblingGroupId).
+function regimeOf(adUnitCode: string) {
+  return (getGlobal().adUnits as any[])?.find((u: any) => u.code === adUnitCode)?.requestRegime;
+}
+
+function getBids(adUnitCode: string) {
+  const now = Date.now();
+
+  // Drives the read-time expiry sweep. Without this nothing ever transitions to 'expired',
+  // so R2's claim-time TTL enforcement would silently never happen — and with render-time
+  // suppression deliberately off, this is the only place TTL is enforced at all.
+  const groups = new Set<string>();
+  auctionManager.getBidsReceived().forEach((b: any) => {
+    const e = store.get(b.adId);
+    if (e) groups.add(e.siblingGroupId);
+  });
+  groups.forEach((g) => store.claimable(g, now));
+
+  const all: any[] = auctionManager.getBidsReceived().filter((b: any) => {
+    const e = store.get(b.adId);
+    if (!e) return b.adUnitCode === adUnitCode;
+    if (e.state === 'rendered' || e.state === 'expired') return false;
+    if (e.state === 'reserved' && e.reservedBy !== adUnitCode) return false;
+    return b.adUnitCode === adUnitCode ||
+      isClaimable(b, adUnitCode, active, e.siblingGroupId, regimeOf(adUnitCode)).ok;
+  });
+  return wrapInBids(all);
+}
+
+function claimBid(adUnitCode: string, opts: any = {}) {
+  const channel = opts.channel ?? 'backfill';
+  const candidates = getBids(adUnitCode)
+    .filter((b: any) => !(opts.exclude?.adIds ?? []).includes(b.adId))
+    .filter((b: any) => !(opts.exclude?.bidders ?? []).includes(b.bidderCode))
+    .filter((b: any) => (opts.floor == null ? true : b.cpm >= opts.floor))
+    .sort((a: any, b: any) => Number(b.cpm) - Number(a.cpm));
+
+  for (const bid of candidates) {
+    if (store.reserve(bid.adId, adUnitCode, channel)) {
+      scheduleReleaseTimeout(bid.adId);
+      logInfo(`[siblingBidSharing] claim granted adId=${bid.adId} dst=${adUnitCode} channel=${channel}`);
+      return bid;
+    }
+  }
+  logInfo(`[siblingBidSharing] claim denied dst=${adUnitCode} channel=${channel} reason=${candidates.length ? 'all-reserved' : 'no-candidates'}`);
+  return null;
+}
+
+declare module '../src/prebidGlobal' {
+  interface PrebidJS {
+    getBids: typeof getBids;
+    claimBid: typeof claimBid;
+    release: (adId: string, reason: any) => boolean;
+    consume: (adId: string, adUnitCode: string) => boolean;
+  }
+}
+
+addApiMethod('getBids', getBids, false);
+addApiMethod('claimBid', claimBid, false);
+addApiMethod('release', (adId: string, reason: any) => store.release(adId, reason), false);
+addApiMethod('consume', (adId: string, code: string) => store.consume(adId, code), false);

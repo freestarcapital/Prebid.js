@@ -5,6 +5,7 @@ import adapterManager from 'src/adapterManager.js';
 import * as events from 'src/events.js';
 import { EVENTS } from 'src/constants.js';
 import { SiblingGroupStore } from 'libraries/siblingBidSharing/store.js';
+import { auctionManager } from 'src/auctionManager.js';
 import { store, scheduleReleaseTimeout, RESERVE_TIMEOUT_MS } from 'modules/siblingBidSharing.js';
 import { isClaimable } from 'libraries/siblingBidSharing/eligibility.js';
 import { getHighestCpmBidsFromBidPool, targeting } from 'src/targeting.js';
@@ -329,6 +330,77 @@ describe('siblingBidSharing module', () => {
       expect(store.get('a1').state).to.equal('rendered');
     } finally {
       clock.restore();
+    }
+  });
+
+  it('getBids returns the dual shape wrapInBids produces', () => {
+    const r = getGlobal().getBids('medrec1');
+    expect(Array.isArray(r)).to.equal(true);
+    expect(r.bids).to.equal(r);
+  });
+
+  it('getBids shows a unit the bid it reserved itself', () => {
+    store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
+    store.reserve('a1', 'medrec1', 'gam');
+    sinon.stub(auctionManager, 'getBidsReceived').returns([
+      { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', bidderCode: 'ix', adapterCode: 'ix', cpm: 2, requestRegime: 'eager' },
+    ]);
+    try {
+      expect(getGlobal().getBids('medrec1').some((b) => b.adId === 'a1')).to.equal(true);
+    } finally {
+      auctionManager.getBidsReceived.restore();
+    }
+  });
+
+  it('getBids hides a bid reserved by a different sibling', () => {
+    store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
+    store.reserve('a1', 'medrec2', 'gam');
+    sinon.stub(auctionManager, 'getBidsReceived').returns([
+      { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', bidderCode: 'ix', adapterCode: 'ix', cpm: 2, requestRegime: 'eager' },
+    ]);
+    try {
+      expect(getGlobal().getBids('medrec1').some((b) => b.adId === 'a1')).to.equal(false);
+    } finally {
+      auctionManager.getBidsReceived.restore();
+    }
+  });
+
+  it('getBids does not reserve anything', () => {
+    store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
+    sinon.stub(auctionManager, 'getBidsReceived').returns([
+      { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', bidderCode: 'ix', adapterCode: 'ix', cpm: 2, requestRegime: 'eager' },
+    ]);
+    try {
+      getGlobal().getBids('medrec1');
+      expect(store.get('a1').state).to.equal('available');
+    } finally {
+      auctionManager.getBidsReceived.restore();
+    }
+  });
+
+  it('getBids expires a lapsed bid on read', () => {
+    store.deposit({ adId: 'old', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() - 1 });
+    sinon.stub(auctionManager, 'getBidsReceived').returns([
+      { adId: 'old', adUnitCode: 'medrec1', siblingGroupId: 'medrec', bidderCode: 'ix', adapterCode: 'ix', cpm: 2, requestRegime: 'eager' },
+    ]);
+    try {
+      getGlobal().getBids('medrec1');
+      expect(store.get('old').state).to.equal('expired');
+    } finally {
+      auctionManager.getBidsReceived.restore();
+    }
+  });
+
+  it('claimBid returns null rather than throwing when another sibling won the race', () => {
+    store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
+    store.reserve('a1', 'medrec2', 'gam');
+    sinon.stub(auctionManager, 'getBidsReceived').returns([
+      { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', bidderCode: 'ix', adapterCode: 'ix', cpm: 2, requestRegime: 'eager' },
+    ]);
+    try {
+      expect(getGlobal().claimBid('medrec3', { channel: 'backfill' })).to.equal(null);
+    } finally {
+      auctionManager.getBidsReceived.restore();
     }
   });
 });
