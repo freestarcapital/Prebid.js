@@ -466,6 +466,20 @@ describe('isClaimable', () => {
     expect(isClaimable(aliased, 'medrec2', cfg, 'medrec').reason).to.equal('denylisted');
   });
 
+  it('fails closed when alias resolution throws', () => {
+    const stub = sinon.stub(adapterManager, 'resolveAlias').throws(new Error('boom'));
+    try {
+      expect(isClaimable(bid(), 'medrec2', cfg, 'medrec').reason).to.equal('denylisted');
+    } finally {
+      stub.restore();
+    }
+  });
+
+  it('denies cross-unit reuse when sharing is disabled', () => {
+    expect(isClaimable(bid(), 'medrec2', { enabled: false }, 'medrec').reason).to.equal('disabled');
+    expect(isClaimable(bid(), 'medrec1', { enabled: false }, 'medrec').ok).to.equal(true);
+  });
+
   it('denies deal bids cross-unit', () => {
     expect(isClaimable(bid({ dealId: 'PMP-1' }), 'medrec2', cfg).reason).to.equal('deal-excluded');
   });

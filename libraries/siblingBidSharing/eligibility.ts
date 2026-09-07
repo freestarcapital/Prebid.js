@@ -1,6 +1,6 @@
 import adapterManager from '../../src/adapterManager.js';
 
-export type DenyReason = 'denylisted' | 'deal-excluded' | 'wrong-group' | 'regime';
+export type DenyReason = 'denylisted' | 'deal-excluded' | 'wrong-group' | 'regime' | 'disabled';
 export type RequestRegime = 'eager' | 'lazy';
 export interface Verdict { ok: boolean; reason?: DenyReason }
 
@@ -13,11 +13,18 @@ interface Cfg { enabled: boolean }
  */
 export const BID_SHARING_DENYLIST = ['kargo', 'teads'];
 
+// adapterCode first, and unaliased: pubfig aliases the concurrent client leg (*FsClientAux),
+// so a raw-string check silently misses the aliased adapter.
+export function resolveBidderCode(bid: any): string {
+  return adapterManager.resolveAlias(bid?.adapterCode ?? bid?.bidderCode ?? '');
+}
+
 export function isDenylisted(bid: any): boolean {
-  // adapterCode first, and unaliased: pubfig aliases the concurrent client leg (*FsClientAux),
-  // so a raw-string check silently misses the aliased adapter.
-  const key = adapterManager.resolveAlias(bid?.adapterCode ?? bid?.bidderCode ?? '');
-  return BID_SHARING_DENYLIST.includes(key);
+  try {
+    return BID_SHARING_DENYLIST.includes(resolveBidderCode(bid));
+  } catch {
+    return true;
+  }
 }
 
 export function isClaimable(
@@ -27,6 +34,7 @@ export function isClaimable(
   // A bid serving the unit it was requested for is not cross-unit reuse and is never gated.
   if (bid?.adUnitCode === destinationAdUnitCode) return { ok: true };
 
+  if (!cfg?.enabled) return { ok: false, reason: 'disabled' };
   if (siblingGroupId != null && bid?.siblingGroupId !== siblingGroupId) {
     return { ok: false, reason: 'wrong-group' };
   }
