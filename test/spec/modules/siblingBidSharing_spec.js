@@ -11,6 +11,7 @@ import { store, scheduleReleaseTimeout, RESERVE_TIMEOUT_MS } from 'modules/sibli
 import { isClaimable } from 'libraries/siblingBidSharing/eligibility.js';
 import { getHighestCpmBidsFromBidPool, targeting } from 'src/targeting.js';
 import { getHighestCpm } from 'src/utils/reducers.js';
+import { capFor, perUnitFor, selectEvictions } from 'libraries/siblingBidSharing/cap.js';
 
 describe('SiblingGroupStore', () => {
   let store;
@@ -791,5 +792,64 @@ describe('isClaimable', () => {
   it('never applies the regime clause to a bid on its own unit', () => {
     expect(isClaimable(bid({ requestRegime: 'lazy' }), 'medrec1', cfg, 'medrec', 'eager').ok)
       .to.equal(true);
+  });
+});
+
+describe('retention cap', () => {
+  it('steps perUnit by live group size', () => {
+    expect(perUnitFor(2)).to.equal(4);
+    expect(perUnitFor(20)).to.equal(4);
+    expect(perUnitFor(21)).to.equal(3);
+    expect(perUnitFor(40)).to.equal(3);
+    expect(perUnitFor(41)).to.equal(2);
+    expect(perUnitFor(70)).to.equal(2);
+  });
+
+  it('never drops below 2, so starvation is impossible at any size', () => {
+    [1, 50, 500, 5000].forEach((n) => expect(perUnitFor(n)).to.be.at.least(2));
+  });
+
+  it('does not apply to single-member groups', () => {
+    expect(capFor(1)).to.equal(Infinity);
+  });
+
+  it('computes keep as members x perUnit', () => {
+    expect(capFor(10)).to.equal(40);
+    expect(capFor(15)).to.equal(60);
+    expect(capFor(70)).to.equal(140);
+  });
+
+  it('always evicts rendered bids regardless of the cap', () => {
+    const entries = [
+      { adId: 'r1', state: 'rendered', cpm: 9 },
+      { adId: 'a1', state: 'available', cpm: 1 },
+    ];
+    expect(selectEvictions(entries, 10)).to.deep.equal(['r1']);
+  });
+
+  it('never evicts or counts reserved bids', () => {
+    const entries = [
+      { adId: 'res', state: 'reserved', cpm: 0.1 },
+      { adId: 'a1', state: 'available', cpm: 5 },
+      { adId: 'a2', state: 'available', cpm: 4 },
+    ];
+    expect(selectEvictions(entries, 1)).to.deep.equal(['a2']);
+  });
+
+  it('evicts lowest cpm first', () => {
+    const entries = [
+      { adId: 'lo', state: 'available', cpm: 1 },
+      { adId: 'mid', state: 'available', cpm: 5 },
+      { adId: 'hi', state: 'available', cpm: 9 },
+    ];
+    expect(selectEvictions(entries, 1)).to.deep.equal(['lo', 'mid']);
+  });
+
+  it('coerces string cpm before ordering', () => {
+    const entries = [
+      { adId: 'a', state: 'available', cpm: '9.50' },
+      { adId: 'b', state: 'available', cpm: '10.00' },
+    ];
+    expect(selectEvictions(entries, 1)).to.deep.equal(['a']);
   });
 });
