@@ -7,7 +7,9 @@ import * as utils from 'src/utils.js';
 import { BID_STATUS, EVENTS } from 'src/constants.js';
 import { SiblingGroupStore } from 'libraries/siblingBidSharing/store.js';
 import { auctionManager } from 'src/auctionManager.js';
-import { store, scheduleReleaseTimeout, RESERVE_TIMEOUT_MS } from 'modules/siblingBidSharing.js';
+import {
+  store, scheduleReleaseTimeout, RESERVE_TIMEOUT_MS, sweepGroup, scheduleSweep,
+} from 'modules/siblingBidSharing.js';
 import { isClaimable } from 'libraries/siblingBidSharing/eligibility.js';
 import { getHighestCpmBidsFromBidPool, targeting } from 'src/targeting.js';
 import { getHighestCpm } from 'src/utils/reducers.js';
@@ -693,6 +695,108 @@ describe('siblingBidSharing module', () => {
       restoreUnits();
       clock.restore();
       delete window.googletag;
+    }
+  });
+
+  it('evicts past the cap and calls through to auctionManager.removeBid', () => {
+    enable();
+    const removed = [];
+    sinon.stub(auctionManager, 'removeBid').callsFake((b) => { removed.push(b.adId); return true; });
+    sinon.stub(auctionManager, 'findBidByAdId').callsFake((adId) => ({ adId, cpm: Number(adId.slice(1)) }));
+    try {
+      // 2 members, cap = 8; deposit 10 available bids
+      for (let i = 0; i < 10; i++) {
+        store.deposit({ adId: `a${i}`, siblingGroupId: 'g', sourceAdUnitCode: i % 2 ? 'u1' : 'u2', expiresAt: Date.now() + 60_000 });
+      }
+      sweepGroup('g');
+      expect(removed.length).to.equal(2);
+      expect(removed.sort()).to.deep.equal(['a0', 'a1']);
+    } finally {
+      auctionManager.removeBid.restore();
+      auctionManager.findBidByAdId.restore();
+    }
+  });
+
+  it('fires even under a continuous deposit stream, via maxWait', () => {
+    const clock = sinon.useFakeTimers();
+    const spy = sinon.spy();
+    for (let i = 0; i < 50; i++) { scheduleSweep('g', spy); clock.tick(10); }
+    expect(spy.called).to.equal(true); // a plain debounce would still be waiting
+    clock.restore();
+  });
+
+  it('does nothing for a single-member group', () => {
+    enable();
+    const removed = [];
+    sinon.stub(auctionManager, 'removeBid').callsFake((b) => { removed.push(b.adId); return true; });
+    try {
+      for (let i = 0; i < 10; i++) {
+        store.deposit({ adId: `s${i}`, siblingGroupId: 'solo', sourceAdUnitCode: 'u1', expiresAt: Date.now() + 60_000 });
+      }
+      sweepGroup('solo');
+      expect(removed).to.deep.equal([]);
+    } finally {
+      auctionManager.removeBid.restore();
+    }
+  });
+
+  it('removes evicted adIds from the store, so a swept sweep does not re-select them', () => {
+    enable();
+    sinon.stub(auctionManager, 'removeBid').returns(true);
+    sinon.stub(auctionManager, 'findBidByAdId').callsFake((adId) => ({ adId, cpm: Number(adId.slice(1)) }));
+    try {
+      for (let i = 0; i < 10; i++) {
+        store.deposit({ adId: `c${i}`, siblingGroupId: 'g2', sourceAdUnitCode: i % 2 ? 'u1' : 'u2', expiresAt: Date.now() + 60_000 });
+      }
+      sweepGroup('g2');
+      const remainingIds = store.membersOf('g2').map((e) => e.adId);
+      expect(remainingIds).to.not.include('c0');
+      expect(remainingIds).to.not.include('c1');
+      expect(remainingIds.length).to.equal(8);
+    } finally {
+      auctionManager.removeBid.restore();
+      auctionManager.findBidByAdId.restore();
+    }
+  });
+
+  it('drops a store entry without calling removeBid when Prebid no longer knows the bid', () => {
+    enable();
+    const removeBid = sinon.stub(auctionManager, 'removeBid');
+    sinon.stub(auctionManager, 'findBidByAdId').returns(undefined);
+    try {
+      for (let i = 0; i < 10; i++) {
+        store.deposit({ adId: `d${i}`, siblingGroupId: 'g3', sourceAdUnitCode: i % 2 ? 'u1' : 'u2', expiresAt: Date.now() + 60_000 });
+      }
+      sweepGroup('g3');
+      expect(removeBid.called).to.equal(false);
+      expect(store.membersOf('g3').length).to.equal(8);
+    } finally {
+      auctionManager.removeBid.restore();
+      auctionManager.findBidByAdId.restore();
+    }
+  });
+
+  it('counts live membership from getGlobal().adUnits when it is non-zero, before falling back to the proxy', () => {
+    enable();
+    const restoreUnits = useAdUnits([
+      { code: 'u1', siblingGroupId: 'g4' },
+      { code: 'u2', siblingGroupId: 'g4' },
+      { code: 'u3', siblingGroupId: 'g4' },
+    ]);
+    const removeBid = sinon.stub(auctionManager, 'removeBid').returns(true);
+    sinon.stub(auctionManager, 'findBidByAdId').callsFake((adId) => ({ adId, cpm: 1 }));
+    try {
+      // 10 available bids from 2 source codes; 3 live ad units -> cap = 12, nothing evicted.
+      for (let i = 0; i < 10; i++) {
+        store.deposit({ adId: `e${i}`, siblingGroupId: 'g4', sourceAdUnitCode: i % 2 ? 'u1' : 'u2', expiresAt: Date.now() + 60_000 });
+      }
+      sweepGroup('g4');
+      expect(removeBid.called).to.equal(false);
+      expect(store.membersOf('g4').length).to.equal(10);
+    } finally {
+      restoreUnits();
+      auctionManager.removeBid.restore();
+      auctionManager.findBidByAdId.restore();
     }
   });
 });

@@ -5,6 +5,7 @@ import { getHighestCpmBidsFromBidPool, targeting } from '../src/targeting.ts';
 import { isBidUsable } from '../src/targeting/filters.ts';
 import { SiblingGroupStore } from '../libraries/siblingBidSharing/store.ts';
 import { isClaimable, resolveBidderCode, type RequestRegime } from '../libraries/siblingBidSharing/eligibility.ts';
+import { capFor, selectEvictions } from '../libraries/siblingBidSharing/cap.ts';
 import * as events from '../src/events.ts';
 import { EVENTS } from '../src/constants.ts';
 import { auctionManager } from '../src/auctionManager.js';
@@ -55,6 +56,7 @@ events.on(EVENTS.BID_RESPONSE, (bid: any) => {
   });
   if (deposited) {
     logInfo(`[siblingBidSharing] deposit adId=${bid.adId} group=${siblingGroupId} src=${bid.adUnitCode} bidder=${bid.bidderCode} cpm=${bid.cpm}`);
+    scheduleSweep(siblingGroupId);
   }
 });
 
@@ -144,6 +146,57 @@ export function scheduleReleaseTimeout(adId: string) {
   }, RESERVE_TIMEOUT_MS));
 }
 
+export const SWEEP_DEBOUNCE_MS = 30;
+export const SWEEP_MAX_WAIT_MS = 250;
+const sweepTimers = new Map<string, { timer: any; firstQueuedAt: number }>();
+
+export function sweepGroup(siblingGroupId: string) {
+  if (!active.enabled) return;
+
+  const entries = store.membersOf(siblingGroupId);
+  const fromAdUnits = ((getGlobal().adUnits ?? []) as any[])
+    .filter((u: any) => u?.siblingGroupId === siblingGroupId).length;
+  // No ad unit registered (as in most tests): proxy live membership from outstanding entries.
+  const liveMembers = fromAdUnits || new Set(
+    entries.filter((e) => e.state === 'available' || e.state === 'reserved').map((e) => e.sourceAdUnitCode),
+  ).size;
+  const cap = capFor(liveMembers);
+
+  const withCpm = entries.map((e) => ({
+    ...e,
+    cpm: auctionManager.findBidByAdId(e.adId)?.cpm ?? 0,
+  }));
+
+  selectEvictions(withCpm, cap).forEach((adId) => {
+    const bid = auctionManager.findBidByAdId(adId);
+    if (!bid) { store.remove(adId); return; }
+    if (auctionManager.removeBid(bid)) {
+      logInfo(`[siblingBidSharing] evict adId=${adId} group=${siblingGroupId} cap=${cap} members=${liveMembers}`);
+      store.remove(adId);
+    }
+  });
+}
+
+export function scheduleSweep(siblingGroupId: string, fn = sweepGroup) {
+  const now = Date.now();
+  const pending = sweepTimers.get(siblingGroupId);
+  const firstQueuedAt = pending?.firstQueuedAt ?? now;
+
+  // maxWait: without it a deposit stream at scroll rate defers the sweep indefinitely.
+  if (now - firstQueuedAt >= SWEEP_MAX_WAIT_MS) {
+    clearTimeout(pending?.timer);
+    sweepTimers.delete(siblingGroupId);
+    fn(siblingGroupId);
+    return;
+  }
+
+  clearTimeout(pending?.timer);
+  sweepTimers.set(siblingGroupId, {
+    firstQueuedAt,
+    timer: setTimeout(() => { sweepTimers.delete(siblingGroupId); fn(siblingGroupId); }, SWEEP_DEBOUNCE_MS),
+  });
+}
+
 function reserveFromTargeting(map: any) {
   Object.entries(map ?? {}).forEach(([code, kv]: [string, any]) => {
     const adId = kv?.hb_adid;
@@ -188,6 +241,9 @@ events.on(EVENTS.BID_WON, (bid: any) => {
 
   if (store.consume(bid.adId, destination)) {
     logInfo(`[siblingBidSharing] consume adId=${bid.adId} src=${entry?.sourceAdUnitCode} dst=${destination}`);
+  }
+  if (entry) {
+    scheduleSweep(entry.siblingGroupId);
   }
 });
 
