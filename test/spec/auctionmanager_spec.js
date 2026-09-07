@@ -790,6 +790,104 @@ describe('auctionmanager.js', function () {
     });
   });
 
+  describe('origin capacity', () => {
+    const ORIGIN = 'https://bidder.example.com';
+    let adUnits, calls, bidsPerRequest, stubMakeBidRequests, stubCallAdapters;
+
+    // The fake adapter takes one origin slot per bid and never gives it back unless a test asks it
+    // to, standing in for a bidder fetch that is still open when the auction ends.
+    function startAuction() {
+      const auction = auctionManager.createAuction({ adUnits });
+      auction.callBids();
+      return auction;
+    }
+
+    function endAuction(auction, call) {
+      call.reqs.forEach(req => call.adapterDone.call(req));
+      return auction.end;
+    }
+
+    function settleRequest(call) {
+      call.requestCallbacks.done(ORIGIN);
+    }
+
+    beforeEach(() => {
+      calls = [];
+      bidsPerRequest = 1;
+      adUnits = [{
+        code: ADUNIT_CODE,
+        adUnitId: ADUNIT_CODE,
+        bids: [{ bidder: BIDDER_CODE }]
+      }];
+      stubMakeBidRequests = sinon.stub(adapterManager, 'makeBidRequests').callsFake(() => [{
+        bidderCode: BIDDER_CODE,
+        bids: Array.from({ length: bidsPerRequest }, () => ({ bidder: BIDDER_CODE }))
+      }]);
+      stubCallAdapters = sinon.stub(adapterManager, 'callBids').callsFake((au, reqs, addBid, adapterDone, requestCallbacks) => {
+        calls.push({ reqs, adapterDone, requestCallbacks });
+        reqs.forEach(req => req.bids.forEach(() => requestCallbacks.request(BIDDER_CODE, ORIGIN)));
+      });
+    });
+
+    afterEach(() => {
+      stubMakeBidRequests.restore();
+      stubCallAdapters.restore();
+      config.resetConfig();
+      auctionManager.clearAllAuctions();
+    });
+
+    it('releases capacity when an auction ends with a request still in flight', async () => {
+      config.setConfig({ maxRequestsPerOrigin: 1 });
+      const first = startAuction();
+      startAuction();
+      expect(calls.length).to.equal(1);
+
+      await endAuction(first, calls[0]);
+
+      expect(calls.length).to.equal(2);
+    });
+
+    it('releases every slot an auction holds on the same origin', async () => {
+      config.setConfig({ maxRequestsPerOrigin: 3 });
+      bidsPerRequest = 3;
+      const first = startAuction();
+      startAuction();
+      expect(calls.length).to.equal(1);
+
+      await endAuction(first, calls[0]);
+
+      expect(calls.length).to.equal(2);
+    });
+
+    it('does not release again when a request settles after its auction ended', async () => {
+      config.setConfig({ maxRequestsPerOrigin: 1 });
+      const first = startAuction();
+      startAuction();
+      await endAuction(first, calls[0]);
+      expect(calls.length).to.equal(2);
+
+      settleRequest(calls[0]);
+      startAuction();
+
+      // the second auction still holds the only slot, so the third has to stay queued
+      expect(calls.length).to.equal(2);
+    });
+
+    it('does not release again at auction end when the request already settled', async () => {
+      config.setConfig({ maxRequestsPerOrigin: 1 });
+      const first = startAuction();
+      startAuction();
+      settleRequest(calls[0]);
+      expect(calls.length).to.equal(2);
+
+      await endAuction(first, calls[0]);
+      startAuction();
+
+      // the second auction still holds the only slot, so the third has to stay queued
+      expect(calls.length).to.equal(2);
+    });
+  });
+
   describe('createAuction', () => {
     let adUnits, stubMakeBidRequests, stubCallAdapters, bids;
 
