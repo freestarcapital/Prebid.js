@@ -1,5 +1,8 @@
 import { expect } from 'chai';
+import { config } from 'src/config.js';
+import { getGlobal } from 'src/prebidGlobal.js';
 import { SiblingGroupStore } from 'libraries/siblingBidSharing/store.js';
+import 'modules/siblingBidSharing.js';
 
 describe('SiblingGroupStore', () => {
   let store;
@@ -102,5 +105,29 @@ describe('SiblingGroupStore', () => {
     store.release('a1', 'gam-loss');
     expect(store.claimable('g', now + 100)).to.deep.equal([]);
     expect(store.get('a1').state).to.equal('expired');
+  });
+});
+
+describe('siblingBidSharing module', () => {
+  afterEach(() => { config.resetConfig(); });
+
+  it('registers itself as an installed module', () => {
+    expect(getGlobal().installedModules).to.include('siblingBidSharing');
+  });
+
+  it('exposes a pure getSiblingGroupState read', () => {
+    expect(typeof getGlobal().getSiblingGroupState).to.equal('function');
+    const before = getGlobal().getSiblingGroupState();
+    getGlobal().getSiblingGroupState();
+    expect(getGlobal().getSiblingGroupState()).to.deep.equal(before);
+  });
+
+  it('reads bidSharing config, defaulting to disabled', () => {
+    expect(getGlobal().getSiblingGroupState().config).to.deep.equal({ enabled: false });
+  });
+
+  it('picks up config set before the module subscribed', () => {
+    config.setConfig({ bidSharing: { enabled: true } });
+    expect(getGlobal().getSiblingGroupState().config.enabled).to.equal(true);
   });
 });
