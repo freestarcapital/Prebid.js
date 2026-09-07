@@ -1,8 +1,10 @@
 import { expect } from 'chai';
 import { config } from 'src/config.js';
 import { getGlobal } from 'src/prebidGlobal.js';
+import adapterManager from 'src/adapterManager.js';
 import { SiblingGroupStore } from 'libraries/siblingBidSharing/store.js';
 import { store } from 'modules/siblingBidSharing.js';
+import { isClaimable } from 'libraries/siblingBidSharing/eligibility.js';
 
 describe('SiblingGroupStore', () => {
   let store;
@@ -198,5 +200,89 @@ describe('siblingBidSharing module', () => {
   it('picks up config set before the module subscribed', () => {
     config.setConfig({ bidSharing: { enabled: true } });
     expect(getGlobal().getSiblingGroupState().config.enabled).to.equal(true);
+  });
+});
+
+describe('isClaimable', () => {
+  const cfg = { enabled: true };
+  const bid = (o = {}) => ({
+    adUnitCode: 'medrec1',
+    siblingGroupId: 'medrec',
+    bidderCode: 'appnexus',
+    adapterCode: 'appnexus',
+    source: 'client',
+    requestRegime: 'eager',
+    ...o,
+  });
+
+  it('allows a bid on its own unit even when the bidder is denylisted', () => {
+    expect(isClaimable(bid({ bidderCode: 'teads', adapterCode: 'teads' }), 'medrec1', cfg).ok)
+      .to.equal(true);
+  });
+
+  it('denies a denylisted bidder cross-unit', () => {
+    expect(isClaimable(bid({ bidderCode: 'teads', adapterCode: 'teads' }), 'medrec2', cfg).reason)
+      .to.equal('denylisted');
+    expect(isClaimable(bid({ bidderCode: 'kargo', adapterCode: 'kargo' }), 'medrec2', cfg).reason)
+      .to.equal('denylisted');
+  });
+
+  it('allows a bidder that is not on the list', () => {
+    expect(isClaimable(bid(), 'medrec2', cfg, 'medrec').ok).to.equal(true);
+  });
+
+  it('matches unaliased, so the aliased client leg is not missed', () => {
+    const aliased = bid({ bidderCode: 'kargoFsClientAux', adapterCode: 'kargo' });
+    expect(isClaimable(aliased, 'medrec2', cfg, 'medrec').reason).to.equal('denylisted');
+  });
+
+  it('consults the alias registry, not just adapterCode', () => {
+    adapterManager.aliasRegistry['teadsAlias'] = 'teads';
+    try {
+      const aliased = bid({ bidderCode: 'teadsAlias', adapterCode: undefined });
+      expect(isClaimable(aliased, 'medrec2', cfg, 'medrec').reason).to.equal('denylisted');
+    } finally {
+      delete adapterManager.aliasRegistry['teadsAlias'];
+    }
+  });
+
+  it('prefers adapterCode over bidderCode', () => {
+    const aliased = bid({ bidderCode: 'somethingElse', adapterCode: 'teads' });
+    expect(isClaimable(aliased, 'medrec2', cfg, 'medrec').reason).to.equal('denylisted');
+  });
+
+  it('denies deal bids cross-unit', () => {
+    expect(isClaimable(bid({ dealId: 'PMP-1' }), 'medrec2', cfg).reason).to.equal('deal-excluded');
+  });
+
+  it('denies a bid from another group', () => {
+    expect(isClaimable(bid({ siblingGroupId: 'other' }), 'medrec2', cfg, 'medrec').reason)
+      .to.equal('wrong-group');
+  });
+
+  it('allows an eager bid on a lazy destination', () => {
+    expect(isClaimable(bid(), 'medrec2', cfg, 'medrec', 'lazy').ok).to.equal(true);
+  });
+
+  it('allows a lazy bid on a lazy destination', () => {
+    expect(isClaimable(bid({ requestRegime: 'lazy' }), 'medrec2', cfg, 'medrec', 'lazy').ok)
+      .to.equal(true);
+  });
+
+  it('denies a lazy bid on an eager destination', () => {
+    expect(isClaimable(bid({ requestRegime: 'lazy' }), 'medrec2', cfg, 'medrec', 'eager').reason)
+      .to.equal('regime');
+  });
+
+  it('treats a missing regime conservatively on both sides', () => {
+    expect(isClaimable(bid({ requestRegime: undefined }), 'medrec2', cfg, 'medrec', 'eager').reason)
+      .to.equal('regime');
+    expect(isClaimable(bid({ requestRegime: 'lazy' }), 'medrec2', cfg, 'medrec', undefined).reason)
+      .to.equal('regime');
+  });
+
+  it('never applies the regime clause to a bid on its own unit', () => {
+    expect(isClaimable(bid({ requestRegime: 'lazy' }), 'medrec1', cfg, 'medrec', 'eager').ok)
+      .to.equal(true);
   });
 });
