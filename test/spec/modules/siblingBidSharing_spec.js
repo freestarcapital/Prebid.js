@@ -2,7 +2,7 @@ import { expect } from 'chai';
 import { config } from 'src/config.js';
 import { getGlobal } from 'src/prebidGlobal.js';
 import { SiblingGroupStore } from 'libraries/siblingBidSharing/store.js';
-import 'modules/siblingBidSharing.js';
+import { store } from 'modules/siblingBidSharing.js';
 
 describe('SiblingGroupStore', () => {
   let store;
@@ -106,10 +106,68 @@ describe('SiblingGroupStore', () => {
     expect(store.claimable('g', now + 100)).to.deep.equal([]);
     expect(store.get('a1').state).to.equal('expired');
   });
+
+  it('snapshot counts entries per group and per state', () => {
+    store.deposit(entry('a1'));
+    store.deposit(entry('a2'));
+    store.deposit({ ...entry('b1'), siblingGroupId: 'other' });
+    store.reserve('a1', 'medrec2', 'gam');
+    store.consume('b1', 'other2');
+
+    expect(store.snapshot()).to.deep.equal({
+      groups: {
+        medrec: { available: 1, reserved: 1, rendered: 0, expired: 0 },
+        other: { available: 0, reserved: 0, rendered: 1, expired: 0 },
+      },
+      total: 3,
+    });
+  });
+
+  it('consume from available without a prior reservation renders and records the destination', () => {
+    store.deposit(entry('a1'));
+    expect(store.consume('a1', 'medrec2')).to.equal(true);
+    const e = store.get('a1');
+    expect(e.state).to.equal('rendered');
+    expect(e.reservedBy).to.equal('medrec2');
+  });
+
+  it('consume by a unit that does not hold the reservation is refused', () => {
+    store.deposit(entry('a1'));
+    store.reserve('a1', 'medrec2', 'gam');
+    expect(store.consume('a1', 'medrec3')).to.equal(false);
+    let e = store.get('a1');
+    expect(e.state).to.equal('reserved');
+    expect(e.reservedBy).to.equal('medrec2');
+
+    expect(store.consume('a1', 'medrec2')).to.equal(true);
+    e = store.get('a1');
+    expect(e.state).to.equal('rendered');
+    expect(e.reservedBy).to.equal('medrec2');
+  });
+
+  it('remove deletes the entry and its group membership', () => {
+    store.deposit(entry('a1'));
+    expect(store.remove('a1')).to.equal(true);
+    expect(store.get('a1')).to.equal(undefined);
+    expect(store.membersOf('medrec')).to.deep.equal([]);
+    expect(store.remove('nope')).to.equal(false);
+  });
+
+  it('clear empties the store', () => {
+    store.deposit(entry('a1'));
+    store.deposit(entry('a2'));
+    store.clear();
+    expect(store.snapshot().total).to.equal(0);
+    expect(store.get('a1')).to.equal(undefined);
+  });
 });
 
 describe('siblingBidSharing module', () => {
-  afterEach(() => { config.resetConfig(); });
+  beforeEach(() => { store.clear(); });
+  afterEach(() => {
+    config.resetConfig();
+    store.clear();
+  });
 
   it('registers itself as an installed module', () => {
     expect(getGlobal().installedModules).to.include('siblingBidSharing');
@@ -117,9 +175,20 @@ describe('siblingBidSharing module', () => {
 
   it('exposes a pure getSiblingGroupState read', () => {
     expect(typeof getGlobal().getSiblingGroupState).to.equal('function');
-    const before = getGlobal().getSiblingGroupState();
-    getGlobal().getSiblingGroupState();
-    expect(getGlobal().getSiblingGroupState()).to.deep.equal(before);
+    store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 300_000 });
+    store.deposit({ adId: 'a2', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 300_000 });
+    store.reserve('a2', 'medrec2', 'gam');
+
+    const result = getGlobal().getSiblingGroupState();
+    expect(result.groups.medrec).to.deep.equal({ available: 1, reserved: 1, rendered: 0, expired: 0 });
+    expect(result.total).to.equal(2);
+
+    result.groups.medrec.available = 99;
+    result.total = 99;
+
+    const again = getGlobal().getSiblingGroupState();
+    expect(again.groups.medrec).to.deep.equal({ available: 1, reserved: 1, rendered: 0, expired: 0 });
+    expect(again.total).to.equal(2);
   });
 
   it('reads bidSharing config, defaulting to disabled', () => {

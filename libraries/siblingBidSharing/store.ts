@@ -60,8 +60,21 @@ export class SiblingGroupStore {
   consume(adId: string, destinationAdUnitCode: string): boolean {
     const e = this.entries.get(adId);
     if (!e || e.state === 'expired' || e.state === 'rendered') return false;
+    if (e.state === 'reserved' && e.reservedBy !== destinationAdUnitCode) return false;
     e.state = 'rendered';
     e.reservedBy = destinationAdUnitCode;
+    return true;
+  }
+
+  remove(adId: string): boolean {
+    const e = this.entries.get(adId);
+    if (!e) return false;
+    this.entries.delete(adId);
+    const group = this.byGroup.get(e.siblingGroupId);
+    if (group) {
+      group.delete(adId);
+      if (group.size === 0) this.byGroup.delete(e.siblingGroupId);
+    }
     return true;
   }
 
@@ -101,5 +114,10 @@ export class SiblingGroupStore {
       g[e.state] += 1;
     });
     return { groups, total: this.entries.size };
+  }
+
+  clear(): void {
+    this.entries.clear();
+    this.byGroup.clear();
   }
 }
