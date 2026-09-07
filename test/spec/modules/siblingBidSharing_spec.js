@@ -5,9 +5,9 @@ import adapterManager from 'src/adapterManager.js';
 import * as events from 'src/events.js';
 import { EVENTS } from 'src/constants.js';
 import { SiblingGroupStore } from 'libraries/siblingBidSharing/store.js';
-import { store } from 'modules/siblingBidSharing.js';
+import { store, scheduleReleaseTimeout, RESERVE_TIMEOUT_MS } from 'modules/siblingBidSharing.js';
 import { isClaimable } from 'libraries/siblingBidSharing/eligibility.js';
-import { getHighestCpmBidsFromBidPool } from 'src/targeting.js';
+import { getHighestCpmBidsFromBidPool, targeting } from 'src/targeting.js';
 import { getHighestCpm } from 'src/utils/reducers.js';
 
 describe('SiblingGroupStore', () => {
@@ -283,6 +283,53 @@ describe('siblingBidSharing module', () => {
     ];
     const out = getHighestCpmBidsFromBidPool(bids, getHighestCpm, undefined, false);
     expect(out.filter((b) => b.adUnitCode === 'medrec2' && b.adId === 'a1')).to.deep.equal([]);
+  });
+
+  it('reserves the bid bound to each slot at targeting time', () => {
+    config.setConfig({ bidSharing: { enabled: true } });
+    store.deposit({ adId: 'a1', siblingGroupId: 'g', sourceAdUnitCode: 'u1', expiresAt: Date.now() + 60_000 });
+    sinon.stub(targeting, 'getAllTargeting').returns({ u2: { hb_adid: 'a1' } });
+    window.googletag = { pubads: () => ({ getSlots: () => [] }) };
+    // Reserving here also schedules a real release timer; run under a fake clock so it
+    // never escapes into the runner as a live native timeout.
+    const clock = sinon.useFakeTimers();
+    try {
+      targeting.setTargetingForGPT();
+      expect(store.get('a1').state).to.equal('reserved');
+      expect(store.get('a1').reservedBy).to.equal('u2');
+    } finally {
+      clock.restore();
+      targeting.getAllTargeting.restore();
+      delete window.googletag;
+    }
+  });
+
+  it('auto-releases a reservation that never rendered, after the timeout', () => {
+    const clock = sinon.useFakeTimers();
+    try {
+      store.deposit({ adId: 'a1', siblingGroupId: 'g', sourceAdUnitCode: 'u1', expiresAt: Date.now() + 60_000 });
+      store.reserve('a1', 'u2', 'gam');
+      scheduleReleaseTimeout('a1');
+      clock.tick(RESERVE_TIMEOUT_MS + 1);
+      expect(store.get('a1').state).to.equal('available');
+      expect(store.get('a1').lastReason).to.equal('timeout');
+    } finally {
+      clock.restore();
+    }
+  });
+
+  it('does not release a bid that rendered before the timeout', () => {
+    const clock = sinon.useFakeTimers();
+    try {
+      store.deposit({ adId: 'a1', siblingGroupId: 'g', sourceAdUnitCode: 'u1', expiresAt: Date.now() + 60_000 });
+      store.reserve('a1', 'u2', 'gam');
+      scheduleReleaseTimeout('a1');
+      store.consume('a1', 'u2');
+      clock.tick(RESERVE_TIMEOUT_MS + 1);
+      expect(store.get('a1').state).to.equal('rendered');
+    } finally {
+      clock.restore();
+    }
   });
 });
 

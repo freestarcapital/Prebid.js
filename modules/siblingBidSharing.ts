@@ -1,13 +1,13 @@
 import { config } from '../src/config.ts';
 import { addApiMethod } from '../src/prebid.ts';
 import { setupBeforeHookFnOnce } from '../src/hook.ts';
-import { getHighestCpmBidsFromBidPool } from '../src/targeting.ts';
+import { getHighestCpmBidsFromBidPool, targeting } from '../src/targeting.ts';
 import { SiblingGroupStore } from '../libraries/siblingBidSharing/store.ts';
 import { isClaimable, type RequestRegime } from '../libraries/siblingBidSharing/eligibility.ts';
 import * as events from '../src/events.ts';
 import { EVENTS } from '../src/constants.ts';
 import { auctionManager } from '../src/auctionManager.js';
-import { logInfo } from '../src/utils.js';
+import { logInfo, logWarn } from '../src/utils.js';
 
 export interface SiblingBidSharingConfig {
   enabled?: boolean;
@@ -89,6 +89,56 @@ function redistributeAcrossSiblings(
 }
 
 setupBeforeHookFnOnce(getHighestCpmBidsFromBidPool, redistributeAcrossSiblings);
+
+export const RESERVE_TIMEOUT_MS = 2000;
+const timers = new Map<string, ReturnType<typeof setTimeout>>();
+
+export function scheduleReleaseTimeout(adId: string) {
+  clearTimeout(timers.get(adId));
+  timers.set(adId, setTimeout(() => {
+    timers.delete(adId);
+    if (store.release(adId, 'timeout')) {
+      logWarn(`[siblingBidSharing] release adId=${adId} reason=timeout`);
+    }
+  }, RESERVE_TIMEOUT_MS));
+}
+
+function reserveTargetedBids(fn: any, adUnit: any) {
+  if (!active.enabled) return fn.call(this, adUnit);
+  const map = targeting.getAllTargeting(adUnit);
+  Object.entries(map ?? {}).forEach(([code, kv]: any) => {
+    const adId = kv?.hb_adid;
+    if (!adId) return;
+    if (store.reserve(adId, code, 'gam')) {
+      scheduleReleaseTimeout(adId);
+      const e = store.get(adId);
+      logInfo(`[siblingBidSharing] claim granted adId=${adId} group=${e?.siblingGroupId} src=${e?.sourceAdUnitCode} dst=${code} channel=gam`);
+    }
+  });
+  return fn.call(this, adUnit);
+}
+
+setupBeforeHookFnOnce(targeting.setTargetingForGPT, reserveTargetedBids);
+
+events.on(EVENTS.BID_WON, (bid: any) => {
+  if (!bid?.adId) return;
+  clearTimeout(timers.get(bid.adId));
+  timers.delete(bid.adId);
+
+  // Stamp attribution here rather than at either render site: this handler runs for BOTH
+  // channels, and the store already knows the destination. `bid.adUnitCode` stays the source.
+  const entry = store.get(bid.adId);
+  const destination = entry?.reservedBy ?? bid.adUnitCode;
+  if (entry) {
+    bid.renderAdUnitCode = destination;
+    bid.siblingGroupId = entry.siblingGroupId;
+    bid.isSiblingFill = destination !== entry.sourceAdUnitCode;
+  }
+
+  if (store.consume(bid.adId, destination)) {
+    logInfo(`[siblingBidSharing] consume adId=${bid.adId} src=${entry?.sourceAdUnitCode} dst=${destination}`);
+  }
+});
 
 function getSiblingGroupState() {
   return { ...store.snapshot(), config: { ...active } };
