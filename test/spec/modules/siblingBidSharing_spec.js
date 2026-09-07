@@ -287,13 +287,13 @@ describe('siblingBidSharing module', () => {
 
   it('reserves the bid bound to each slot at targeting time', () => {
     config.setConfig({ bidSharing: { enabled: true } });
-    store.deposit({ adId: 'a1', siblingGroupId: 'g', sourceAdUnitCode: 'u1', expiresAt: Date.now() + 60_000 });
-    sinon.stub(targeting, 'getAllTargeting').returns({ u2: { hb_adid: 'a1' } });
-    window.googletag = { pubads: () => ({ getSlots: () => [] }) };
     // Reserving here also schedules a real release timer; run under a fake clock so it
     // never escapes into the runner as a live native timeout.
     const clock = sinon.useFakeTimers();
     try {
+      store.deposit({ adId: 'a1', siblingGroupId: 'g', sourceAdUnitCode: 'u1', expiresAt: Date.now() + 60_000 });
+      sinon.stub(targeting, 'getAllTargeting').returns({ u2: { hb_adid: 'a1' } });
+      window.googletag = { pubads: () => ({ getSlots: () => [] }) };
       targeting.setTargetingForGPT();
       expect(store.get('a1').state).to.equal('reserved');
       expect(store.get('a1').reservedBy).to.equal('u2');
