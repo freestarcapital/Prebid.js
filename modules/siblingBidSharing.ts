@@ -64,32 +64,63 @@ function redistributeAcrossSiblings(
 
   const codesByGroup = new Map<string, Set<string>>();
   const regimeByCode = new Map<string, RequestRegime>();
-  bidsReceived.forEach((b) => {
-    if (!b?.siblingGroupId) return;
-    let set = codesByGroup.get(b.siblingGroupId);
-    if (!set) { set = new Set(); codesByGroup.set(b.siblingGroupId, set); }
-    set.add(b.adUnitCode);
-    if (b.requestRegime) regimeByCode.set(b.adUnitCode, b.requestRegime);
+  const addCode = (group: string, code: string, regime?: RequestRegime) => {
+    let set = codesByGroup.get(group);
+    if (!set) { set = new Set(); codesByGroup.set(group, set); }
+    set.add(code);
+    if (regime && !regimeByCode.has(code)) regimeByCode.set(code, regime);
+  };
+
+  // Destinations come from the ad units first, so a sibling with no bid of its own can still
+  // receive one; the pool only widens that set.
+  ((getGlobal().adUnits ?? []) as any[]).forEach((u: any) => {
+    if (u?.code && u?.siblingGroupId) addCode(u.siblingGroupId, u.code, u.requestRegime);
+  });
+  bidsReceived.forEach((b: any) => {
+    if (b?.siblingGroupId && !b.isSiblingFill) addCode(b.siblingGroupId, b.adUnitCode, b.requestRegime);
   });
 
-  const pool = [...bidsReceived];
-  bidsReceived.forEach((b) => {
-    const codes = b?.siblingGroupId ? codesByGroup.get(b.siblingGroupId) : undefined;
-    if (!codes) return;
+  const seen = new Set<string>();
+  const pool: any[] = [];
+  const add = (b: any) => {
+    const key = `${b.adId}|${b.adUnitCode}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    pool.push(b);
+  };
+
+  bidsReceived.forEach((b: any) => {
+    const entry = store.get(b?.adId);
+    // A reserved bid is in the pool for its holder and for nobody else. The reservation already
+    // cleared eligibility, so redirecting it onto the holder is not re-checked.
+    if (entry?.state === 'reserved') {
+      if (entry.reservedBy === b.adUnitCode) {
+        add(b);
+      } else if (entry.reservedBy != null && !b.isSiblingFill) {
+        add({ ...b, adUnitCode: entry.reservedBy, sourceAdUnitCode: b.adUnitCode, isSiblingFill: true });
+      }
+      return;
+    }
+    add(b);
+  });
+
+  bidsReceived.forEach((b: any) => {
+    if (!b?.siblingGroupId || b.isSiblingFill) return;
     const entry = store.get(b.adId);
     if (entry && entry.state !== 'available') return;
+    const codes = codesByGroup.get(b.siblingGroupId);
+    if (!codes) return;
 
     codes.forEach((code) => {
       if (code === b.adUnitCode) return;
-      const verdict = isClaimable(b, code, active, b.siblingGroupId, regimeByCode.get(code));
-      if (!verdict.ok) return;
+      if (!isClaimable(b, code, active, b.siblingGroupId, regimeByCode.get(code)).ok) return;
       // A shallow clone, not a copy of state: the store stays authoritative and this object
       // exists only for core's per-bidder reduce.
-      pool.push({ ...b, adUnitCode: code, sourceAdUnitCode: b.adUnitCode, isSiblingFill: true });
+      add({ ...b, adUnitCode: code, sourceAdUnitCode: b.adUnitCode, isSiblingFill: true });
     });
   });
 
-  return fn.call(this, pool, winReducer, adUnitBidLimit, true, winSorter);
+  return fn.call(this, pool, winReducer, adUnitBidLimit, hasModified, winSorter);
 }
 
 setupBeforeHookFnOnce(getHighestCpmBidsFromBidPool, redistributeAcrossSiblings);
@@ -97,8 +128,13 @@ setupBeforeHookFnOnce(getHighestCpmBidsFromBidPool, redistributeAcrossSiblings);
 export const RESERVE_TIMEOUT_MS = 2000;
 const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
-export function scheduleReleaseTimeout(adId: string) {
+function clearReleaseTimeout(adId: string) {
   clearTimeout(timers.get(adId));
+  timers.delete(adId);
+}
+
+export function scheduleReleaseTimeout(adId: string) {
+  clearReleaseTimeout(adId);
   timers.set(adId, setTimeout(() => {
     timers.delete(adId);
     if (store.release(adId, 'timeout')) {
@@ -107,27 +143,37 @@ export function scheduleReleaseTimeout(adId: string) {
   }, RESERVE_TIMEOUT_MS));
 }
 
-function reserveTargetedBids(fn: any, adUnit: any) {
-  if (!active.enabled) return fn.call(this, adUnit);
-  const map = targeting.getAllTargeting(adUnit);
-  Object.entries(map ?? {}).forEach(([code, kv]: any) => {
+function reserveFromTargeting(map: any) {
+  Object.entries(map ?? {}).forEach(([code, kv]: [string, any]) => {
     const adId = kv?.hb_adid;
-    if (!adId) return;
+    if (typeof adId !== 'string' || !adId) return;
     if (store.reserve(adId, code, 'gam')) {
       scheduleReleaseTimeout(adId);
       const e = store.get(adId);
       logInfo(`[siblingBidSharing] claim granted adId=${adId} group=${e?.siblingGroupId} src=${e?.sourceAdUnitCode} dst=${code} channel=gam`);
     }
   });
+}
+
+// First-write-wins within one targeting pass, so one adId cannot be bound to two slots.
+function reserveTargetedBids(fn: any, adUnit: any) {
+  if (active.enabled) reserveFromTargeting(targeting.getAllTargeting(adUnit));
   return fn.call(this, adUnit);
 }
 
 setupBeforeHookFnOnce(targeting.setTargetingForGPT, reserveTargetedBids);
 
+// The map core actually applied, which is recomputed after the pass above.
+function reserveAppliedTargeting(fn: any, targetingSet: any) {
+  if (active.enabled) reserveFromTargeting(targetingSet);
+  return fn.call(this, targetingSet);
+}
+
+setupBeforeHookFnOnce(targeting.targetingDone, reserveAppliedTargeting);
+
 events.on(EVENTS.BID_WON, (bid: any) => {
   if (!bid?.adId) return;
-  clearTimeout(timers.get(bid.adId));
-  timers.delete(bid.adId);
+  clearReleaseTimeout(bid.adId);
 
   // Stamp attribution here rather than at either render site: this handler runs for BOTH
   // channels, and the store already knows the destination. `bid.adUnitCode` stays the source.

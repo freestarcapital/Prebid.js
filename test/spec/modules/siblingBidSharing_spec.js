@@ -175,6 +175,30 @@ describe('SiblingGroupStore', () => {
 });
 
 describe('siblingBidSharing module', () => {
+  // Every bid handed to getBids/claimBid now runs through core's isBidUsable, which needs a
+  // response timestamp and a ttl.
+  const usable = (o = {}) => ({
+    adId: 'a1',
+    adUnitCode: 'medrec1',
+    siblingGroupId: 'medrec',
+    bidderCode: 'ix',
+    adapterCode: 'ix',
+    cpm: 2,
+    requestRegime: 'eager',
+    ttl: 300,
+    responseTimestamp: Date.now(),
+    adserverTargeting: {},
+    ...o,
+  });
+
+  const enable = () => config.setConfig({ bidSharing: { enabled: true } });
+
+  function useAdUnits(units) {
+    const saved = getGlobal().adUnits;
+    getGlobal().adUnits = units;
+    return () => { getGlobal().adUnits = saved; };
+  }
+
   beforeEach(() => { store.clear(); });
   afterEach(() => {
     config.resetConfig();
@@ -290,16 +314,70 @@ describe('siblingBidSharing module', () => {
     expect(out.some((b) => b.isSiblingFill)).to.equal(false);
   });
 
-  it('never offers a reserved bid to another sibling', () => {
+  it('offers a reserved bid to its holder and to nobody else', () => {
     config.setConfig({ bidSharing: { enabled: true } });
     store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
     store.reserve('a1', 'medrec2', 'gam');
     const bids = [
       { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', cpm: 2, bidderCode: 'ix', adapterCode: 'ix', requestRegime: 'eager' },
-      { adId: 'a2', adUnitCode: 'medrec2', siblingGroupId: 'medrec', cpm: 1, bidderCode: 'ix', adapterCode: 'ix', requestRegime: 'lazy' },
+      { adId: 'a2', adUnitCode: 'medrec2', siblingGroupId: 'medrec', cpm: 1, bidderCode: 'appnexus', adapterCode: 'appnexus', requestRegime: 'lazy' },
     ];
     const out = getHighestCpmBidsFromBidPool(bids, getHighestCpm, undefined, false);
-    expect(out.filter((b) => b.adUnitCode === 'medrec2' && b.adId === 'a1')).to.deep.equal([]);
+    expect(out.filter((b) => b.adId === 'a1' && b.adUnitCode === 'medrec1')).to.deep.equal([]);
+    expect(out.some((b) => b.adId === 'a1' && b.adUnitCode === 'medrec2')).to.equal(true);
+  });
+
+  it('keeps a bid its own unit reserved and clones it nowhere', () => {
+    config.setConfig({ bidSharing: { enabled: true } });
+    store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
+    store.reserve('a1', 'medrec1', 'gam');
+    const bids = [
+      { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', cpm: 2, bidderCode: 'ix', adapterCode: 'ix', requestRegime: 'eager' },
+      { adId: 'a2', adUnitCode: 'medrec2', siblingGroupId: 'medrec', cpm: 1, bidderCode: 'appnexus', adapterCode: 'appnexus', requestRegime: 'lazy' },
+    ];
+    const out = getHighestCpmBidsFromBidPool(bids, getHighestCpm, undefined, false);
+    expect(out.some((b) => b.adId === 'a1' && b.adUnitCode === 'medrec1')).to.equal(true);
+    expect(out.filter((b) => b.adId === 'a1' && b.adUnitCode === 'medrec2')).to.deep.equal([]);
+  });
+
+  it('leaves core to bucket the enlarged pool per ad unit and bidder', () => {
+    config.setConfig({ bidSharing: { enabled: true } });
+    const bids = [
+      { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', cpm: 2, bidderCode: 'ix', adapterCode: 'ix', requestRegime: 'eager' },
+      { adId: 'a2', adUnitCode: 'medrec1', siblingGroupId: 'medrec', cpm: 1, bidderCode: 'ix', adapterCode: 'ix', requestRegime: 'eager' },
+    ];
+    const out = getHighestCpmBidsFromBidPool(bids, getHighestCpm, undefined, false);
+    expect(out.filter((b) => b.adUnitCode === 'medrec1').map((b) => b.adId)).to.deep.equal(['a1']);
+  });
+
+  it('clones onto a sibling ad unit that has no bid of its own', () => {
+    config.setConfig({ bidSharing: { enabled: true } });
+    const restoreUnits = useAdUnits([
+      { code: 'medrec1', siblingGroupId: 'medrec', requestRegime: 'eager' },
+      { code: 'medrec2', siblingGroupId: 'medrec', requestRegime: 'lazy' },
+    ]);
+    try {
+      const bids = [
+        { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', cpm: 2, bidderCode: 'ix', adapterCode: 'ix', requestRegime: 'eager' },
+      ];
+      const out = getHighestCpmBidsFromBidPool(bids, getHighestCpm, undefined, false);
+      expect(out.some((b) => b.adId === 'a1' && b.adUnitCode === 'medrec2' && b.isSiblingFill)).to.equal(true);
+    } finally {
+      restoreUnits();
+    }
+  });
+
+  it('is idempotent when its own output is fed back in', () => {
+    config.setConfig({ bidSharing: { enabled: true } });
+    const key = (b) => `${b.adId}|${b.adUnitCode}`;
+    const bids = [
+      { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', cpm: 2, bidderCode: 'ix', adapterCode: 'ix', requestRegime: 'eager' },
+      { adId: 'a2', adUnitCode: 'medrec2', siblingGroupId: 'medrec', cpm: 1, bidderCode: 'appnexus', adapterCode: 'appnexus', requestRegime: 'lazy' },
+    ];
+    const first = getHighestCpmBidsFromBidPool(bids, getHighestCpm, undefined, false);
+    const second = getHighestCpmBidsFromBidPool(first, getHighestCpm, undefined, false);
+    expect(second.length).to.equal(first.length);
+    expect(second.map(key).sort()).to.deep.equal(first.map(key).sort());
   });
 
   it('reserves the bid bound to each slot at targeting time', () => {
@@ -318,6 +396,32 @@ describe('siblingBidSharing module', () => {
       clock.restore();
       targeting.getAllTargeting.restore();
       delete window.googletag;
+    }
+  });
+
+  it('reserves from the targeting map core actually applied', () => {
+    enable();
+    const clock = sinon.useFakeTimers();
+    try {
+      store.deposit({ adId: 'a1', siblingGroupId: 'g', sourceAdUnitCode: 'u1', expiresAt: Date.now() + 60_000 });
+      targeting.targetingDone({ u2: { hb_adid: 'a1' } });
+      expect(store.get('a1').state).to.equal('reserved');
+      expect(store.get('a1').reservedBy).to.equal('u2');
+    } finally {
+      clock.restore();
+    }
+  });
+
+  it('leaves a bid another unit already holds alone when core applies its targeting', () => {
+    enable();
+    const clock = sinon.useFakeTimers();
+    try {
+      store.deposit({ adId: 'a1', siblingGroupId: 'g', sourceAdUnitCode: 'u1', expiresAt: Date.now() + 60_000 });
+      store.reserve('a1', 'u2', 'gam');
+      targeting.targetingDone({ u3: { hb_adid: 'a1' } });
+      expect(store.get('a1').reservedBy).to.equal('u2');
+    } finally {
+      clock.restore();
     }
   });
 
@@ -430,6 +534,36 @@ describe('siblingBidSharing module', () => {
       expect(getGlobal().claimBid('medrec1', { floor: '9.00' })).to.have.property('adId', 'a1');
     } finally {
       auctionManager.getBidsReceived.restore();
+    }
+  });
+  it('binds a shared bid to one slot only, through the real targeting path', () => {
+    config.setConfig({ bidSharing: { enabled: true }, useBidCache: true });
+    const clock = sinon.useFakeTimers();
+    const restoreUnits = useAdUnits([
+      { code: 'medrec1', siblingGroupId: 'medrec', requestRegime: 'eager' },
+      { code: 'medrec2', siblingGroupId: 'medrec', requestRegime: 'lazy' },
+    ]);
+    sinon.stub(auctionManager, 'getBidsReceived').returns([
+      usable({ adserverTargeting: { hb_adid: 'a1', hb_pb: '2.00', hb_bidder: 'ix' } }),
+    ]);
+    window.googletag = { pubads: () => ({ getSlots: () => [] }) };
+    try {
+      store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
+      targeting.setTargetingForGPT(['medrec1', 'medrec2']);
+
+      const entry = store.get('a1');
+      expect(entry.state).to.equal('reserved');
+      expect(['medrec1', 'medrec2']).to.include(entry.reservedBy);
+
+      const other = entry.reservedBy === 'medrec1' ? 'medrec2' : 'medrec1';
+      const map = targeting.getAllTargeting(['medrec1', 'medrec2']);
+      expect(map[entry.reservedBy].hb_adid).to.equal('a1');
+      expect(map[other].hb_adid).to.equal(undefined);
+    } finally {
+      auctionManager.getBidsReceived.restore();
+      restoreUnits();
+      clock.restore();
+      delete window.googletag;
     }
   });
 });
