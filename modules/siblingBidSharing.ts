@@ -1,5 +1,6 @@
 import { config } from '../src/config.ts';
 import { addApiMethod } from '../src/prebid.ts';
+import { setupBeforeHookFnOnce } from '../src/hook.ts';
 import { getHighestCpmBidsFromBidPool } from '../src/targeting.ts';
 import { SiblingGroupStore } from '../libraries/siblingBidSharing/store.ts';
 import { isClaimable, type RequestRegime } from '../libraries/siblingBidSharing/eligibility.ts';
@@ -52,7 +53,7 @@ events.on(EVENTS.BID_RESPONSE, (bid: any) => {
   }
 });
 
-getHighestCpmBidsFromBidPool.before(function (
+function redistributeAcrossSiblings(
   fn: any, bidsReceived: any[], winReducer: any, adUnitBidLimit: any, hasModified: boolean, winSorter: any,
 ) {
   if (!active.enabled) return fn.call(this, bidsReceived, winReducer, adUnitBidLimit, hasModified, winSorter);
@@ -85,7 +86,9 @@ getHighestCpmBidsFromBidPool.before(function (
   });
 
   return fn.call(this, pool, winReducer, adUnitBidLimit, true, winSorter);
-});
+}
+
+setupBeforeHookFnOnce(getHighestCpmBidsFromBidPool, redistributeAcrossSiblings);
 
 function getSiblingGroupState() {
   return { ...store.snapshot(), config: { ...active } };
