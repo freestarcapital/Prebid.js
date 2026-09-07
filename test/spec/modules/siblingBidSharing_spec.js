@@ -2,6 +2,8 @@ import { expect } from 'chai';
 import { config } from 'src/config.js';
 import { getGlobal } from 'src/prebidGlobal.js';
 import adapterManager from 'src/adapterManager.js';
+import * as events from 'src/events.js';
+import { EVENTS } from 'src/constants.js';
 import { SiblingGroupStore } from 'libraries/siblingBidSharing/store.js';
 import { store } from 'modules/siblingBidSharing.js';
 import { isClaimable } from 'libraries/siblingBidSharing/eligibility.js';
@@ -200,6 +202,31 @@ describe('siblingBidSharing module', () => {
   it('picks up config set before the module subscribed', () => {
     config.setConfig({ bidSharing: { enabled: true } });
     expect(getGlobal().getSiblingGroupState().config.enabled).to.equal(true);
+  });
+
+  it('deposits a bid carrying a siblingGroupId, keyed by adId', () => {
+    events.emit(EVENTS.BID_RESPONSE, {
+      adId: 'a1',
+      adUnitCode: 'medrec1',
+      siblingGroupId: 'medrec',
+      ttl: 300,
+      responseTimestamp: Date.now(),
+    });
+    expect(store.get('a1').siblingGroupId).to.equal('medrec');
+    expect(store.get('a1').state).to.equal('available');
+  });
+
+  it('ignores a bid with no siblingGroupId', () => {
+    events.emit(EVENTS.BID_RESPONSE, { adId: 'a2', adUnitCode: 'x', ttl: 300 });
+    expect(store.get('a2')).to.equal(undefined);
+  });
+
+  it('derives expiresAt from responseTimestamp and ttl', () => {
+    const t = Date.now();
+    events.emit(EVENTS.BID_RESPONSE, {
+      adId: 'a3', adUnitCode: 'medrec1', siblingGroupId: 'medrec', ttl: 300, responseTimestamp: t,
+    });
+    expect(store.get('a3').expiresAt).to.equal(t + 300_000);
   });
 });
 

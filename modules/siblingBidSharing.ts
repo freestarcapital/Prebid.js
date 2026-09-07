@@ -1,6 +1,10 @@
 import { config } from '../src/config.ts';
 import { addApiMethod } from '../src/prebid.ts';
 import { SiblingGroupStore } from '../libraries/siblingBidSharing/store.ts';
+import * as events from '../src/events.ts';
+import { EVENTS } from '../src/constants.ts';
+import { auctionManager } from '../src/auctionManager.js';
+import { logInfo } from '../src/utils.js';
 
 export interface SiblingBidSharingConfig {
   enabled?: boolean;
@@ -27,6 +31,22 @@ config.getConfig(
 );
 
 export function getActiveConfig() { return active; }
+
+events.on(EVENTS.BID_RESPONSE, (bid: any) => {
+  const req = auctionManager.index.getBidderRequest(bid);
+  const siblingGroupId = bid?.siblingGroupId ?? req?.siblingGroupId;
+  if (!siblingGroupId || !bid?.adId) return;
+
+  bid.siblingGroupId = siblingGroupId;
+  bid.requestRegime = bid?.requestRegime ?? req?.requestRegime;
+  store.deposit({
+    adId: bid.adId,
+    siblingGroupId,
+    sourceAdUnitCode: bid.adUnitCode,
+    expiresAt: Number(bid.responseTimestamp ?? Date.now()) + Number(bid.ttl ?? 0) * 1000,
+  });
+  logInfo(`[siblingBidSharing] deposit adId=${bid.adId} group=${siblingGroupId} src=${bid.adUnitCode} bidder=${bid.bidderCode} cpm=${bid.cpm}`);
+});
 
 function getSiblingGroupState() {
   return { ...store.snapshot(), config: { ...active } };
