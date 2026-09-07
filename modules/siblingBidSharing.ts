@@ -39,13 +39,15 @@ events.on(EVENTS.BID_RESPONSE, (bid: any) => {
 
   bid.siblingGroupId = siblingGroupId;
   bid.requestRegime = bid?.requestRegime ?? req?.requestRegime;
-  store.deposit({
+  const deposited = store.deposit({
     adId: bid.adId,
     siblingGroupId,
     sourceAdUnitCode: bid.adUnitCode,
     expiresAt: Number(bid.responseTimestamp ?? Date.now()) + Number(bid.ttl ?? 0) * 1000,
   });
-  logInfo(`[siblingBidSharing] deposit adId=${bid.adId} group=${siblingGroupId} src=${bid.adUnitCode} bidder=${bid.bidderCode} cpm=${bid.cpm}`);
+  if (deposited) {
+    logInfo(`[siblingBidSharing] deposit adId=${bid.adId} group=${siblingGroupId} src=${bid.adUnitCode} bidder=${bid.bidderCode} cpm=${bid.cpm}`);
+  }
 });
 
 function getSiblingGroupState() {

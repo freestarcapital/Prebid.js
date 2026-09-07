@@ -18,12 +18,13 @@ export class SiblingGroupStore {
   private entries = new Map<string, StoreEntry>();
   private byGroup = new Map<string, Set<string>>();
 
-  deposit(e: Omit<StoreEntry, 'state'>): void {
-    if (this.entries.has(e.adId)) return;
+  deposit(e: Omit<StoreEntry, 'state'>): boolean {
+    if (this.entries.has(e.adId)) return false;
     this.entries.set(e.adId, { ...e, state: 'available' });
     let group = this.byGroup.get(e.siblingGroupId);
     if (!group) { group = new Set(); this.byGroup.set(e.siblingGroupId, group); }
     group.add(e.adId);
+    return true;
   }
 
   get(adId: string): StoreEntry | undefined { return this.entries.get(adId); }

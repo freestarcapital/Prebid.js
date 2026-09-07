@@ -24,6 +24,11 @@ describe('SiblingGroupStore', () => {
     expect(store.get('a1').state).to.equal('available');
   });
 
+  it('deposit returns true on the first deposit and false for a duplicate adId', () => {
+    expect(store.deposit(entry('a1'))).to.equal(true);
+    expect(store.deposit(entry('a1'))).to.equal(false);
+  });
+
   it('reserves an available bid and records the holder and channel', () => {
     store.deposit(entry('a1'));
     expect(store.reserve('a1', 'medrec2', 'gam')).to.equal(true);
@@ -227,6 +232,19 @@ describe('siblingBidSharing module', () => {
       adId: 'a3', adUnitCode: 'medrec1', siblingGroupId: 'medrec', ttl: 300, responseTimestamp: t,
     });
     expect(store.get('a3').expiresAt).to.equal(t + 300_000);
+  });
+
+  it('a duplicate BID_RESPONSE for the same adId leaves the original entry unchanged', () => {
+    const t = Date.now();
+    events.emit(EVENTS.BID_RESPONSE, {
+      adId: 'a4', adUnitCode: 'medrec1', siblingGroupId: 'medrec', ttl: 300, responseTimestamp: t,
+    });
+    events.emit(EVENTS.BID_RESPONSE, {
+      adId: 'a4', adUnitCode: 'medrec2', siblingGroupId: 'medrec', ttl: 600, responseTimestamp: t + 1000,
+    });
+    const e = store.get('a4');
+    expect(e.sourceAdUnitCode).to.equal('medrec1');
+    expect(e.expiresAt).to.equal(t + 300_000);
   });
 });
 
