@@ -8,7 +8,8 @@ import { BID_STATUS, EVENTS } from 'src/constants.js';
 import { SiblingGroupStore } from 'libraries/siblingBidSharing/store.js';
 import { auctionManager } from 'src/auctionManager.js';
 import {
-  store, scheduleReleaseTimeout, RESERVE_TIMEOUT_MS, sweepGroup, scheduleSweep,
+  store, scheduleReleaseTimeout, RESERVE_TIMEOUT_MS, sweepGroup, scheduleSweep, cancelScheduledSweeps,
+  SWEEP_MAX_WAIT_MS,
 } from 'modules/siblingBidSharing.js';
 import { isClaimable } from 'libraries/siblingBidSharing/eligibility.js';
 import { getHighestCpmBidsFromBidPool, targeting } from 'src/targeting.js';
@@ -207,6 +208,7 @@ describe('siblingBidSharing module', () => {
   afterEach(() => {
     config.resetConfig();
     store.clear();
+    cancelScheduledSweeps();
   });
 
   it('registers itself as an installed module', () => {
@@ -718,6 +720,7 @@ describe('siblingBidSharing module', () => {
   });
 
   it('fires even under a continuous deposit stream, via maxWait', () => {
+    enable();
     const clock = sinon.useFakeTimers();
     const spy = sinon.spy();
     for (let i = 0; i < 50; i++) { scheduleSweep('g', spy); clock.tick(10); }
@@ -795,6 +798,39 @@ describe('siblingBidSharing module', () => {
       expect(store.membersOf('g4').length).to.equal(10);
     } finally {
       restoreUnits();
+      auctionManager.removeBid.restore();
+      auctionManager.findBidByAdId.restore();
+    }
+  });
+
+  it('schedules no sweep when sharing is disabled, so a stray deposit timer never fires', () => {
+    const clock = sinon.useFakeTimers();
+    const removeBid = sinon.stub(auctionManager, 'removeBid');
+    try {
+      events.emit(EVENTS.BID_RESPONSE, {
+        adId: 'f1', adUnitCode: 'medrec1', siblingGroupId: 'g5', ttl: 300, responseTimestamp: Date.now(),
+      });
+      clock.tick(SWEEP_MAX_WAIT_MS + 1);
+      expect(removeBid.called).to.equal(false);
+      expect(store.get('f1')).to.not.equal(undefined);
+    } finally {
+      removeBid.restore();
+      clock.restore();
+    }
+  });
+
+  it('leaves the entry in the store when removeBid refuses to remove a bid that still exists', () => {
+    enable();
+    const removeBid = sinon.stub(auctionManager, 'removeBid').returns(false);
+    sinon.stub(auctionManager, 'findBidByAdId').callsFake((adId) => ({ adId, cpm: Number(adId.slice(1)) }));
+    try {
+      for (let i = 0; i < 10; i++) {
+        store.deposit({ adId: `g${i}`, siblingGroupId: 'g6', sourceAdUnitCode: i % 2 ? 'u1' : 'u2', expiresAt: Date.now() + 60_000 });
+      }
+      sweepGroup('g6');
+      expect(removeBid.called).to.equal(true);
+      expect(store.membersOf('g6').length).to.equal(10);
+    } finally {
       auctionManager.removeBid.restore();
       auctionManager.findBidByAdId.restore();
     }

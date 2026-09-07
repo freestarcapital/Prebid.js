@@ -169,7 +169,11 @@ export function sweepGroup(siblingGroupId: string) {
 
   selectEvictions(withCpm, cap).forEach((adId) => {
     const bid = auctionManager.findBidByAdId(adId);
-    if (!bid) { store.remove(adId); return; }
+    if (!bid) {
+      logInfo(`[siblingBidSharing] prune adId=${adId} group=${siblingGroupId} reason=bid-gone`);
+      store.remove(adId);
+      return;
+    }
     if (auctionManager.removeBid(bid)) {
       logInfo(`[siblingBidSharing] evict adId=${adId} group=${siblingGroupId} cap=${cap} members=${liveMembers}`);
       store.remove(adId);
@@ -178,6 +182,8 @@ export function sweepGroup(siblingGroupId: string) {
 }
 
 export function scheduleSweep(siblingGroupId: string, fn = sweepGroup) {
+  if (!active.enabled) return;
+
   const now = Date.now();
   const pending = sweepTimers.get(siblingGroupId);
   const firstQueuedAt = pending?.firstQueuedAt ?? now;
@@ -195,6 +201,11 @@ export function scheduleSweep(siblingGroupId: string, fn = sweepGroup) {
     firstQueuedAt,
     timer: setTimeout(() => { sweepTimers.delete(siblingGroupId); fn(siblingGroupId); }, SWEEP_DEBOUNCE_MS),
   });
+}
+
+export function cancelScheduledSweeps() {
+  sweepTimers.forEach(({ timer }) => clearTimeout(timer));
+  sweepTimers.clear();
 }
 
 function reserveFromTargeting(map: any) {
