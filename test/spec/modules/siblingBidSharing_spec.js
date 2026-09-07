@@ -403,6 +403,19 @@ describe('siblingBidSharing module', () => {
       auctionManager.getBidsReceived.restore();
     }
   });
+
+  it('claimBid compares string floors numerically, not lexicographically', () => {
+    store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
+    sinon.stub(auctionManager, 'getBidsReceived').returns([
+      { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', bidderCode: 'ix', adapterCode: 'ix', cpm: '9.50', requestRegime: 'eager' },
+    ]);
+    try {
+      expect(getGlobal().claimBid('medrec1', { floor: '10.00' })).to.equal(null);
+      expect(getGlobal().claimBid('medrec1', { floor: '9.00' })).to.have.property('adId', 'a1');
+    } finally {
+      auctionManager.getBidsReceived.restore();
+    }
+  });
 });
 
 describe('isClaimable', () => {

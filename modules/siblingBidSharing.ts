@@ -188,7 +188,7 @@ function claimBid(adUnitCode: string, opts: any = {}) {
   const candidates = getBids(adUnitCode)
     .filter((b: any) => !(opts.exclude?.adIds ?? []).includes(b.adId))
     .filter((b: any) => !(opts.exclude?.bidders ?? []).includes(b.bidderCode))
-    .filter((b: any) => (opts.floor == null ? true : b.cpm >= opts.floor))
+    .filter((b: any) => (opts.floor == null ? true : Number(b.cpm) >= Number(opts.floor)))
     .sort((a: any, b: any) => Number(b.cpm) - Number(a.cpm));
 
   for (const bid of candidates) {
