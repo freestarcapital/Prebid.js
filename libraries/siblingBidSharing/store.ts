@@ -84,6 +84,16 @@ export class SiblingGroupStore {
     return released;
   }
 
+  claimable(siblingGroupId: string, now: number): StoreEntry[] {
+    return this.membersOf(siblingGroupId).filter((e) => {
+      if (e.state !== 'available') return false;
+      // Swept on read rather than on a timer: a corpse must never be returned, and a
+      // read-driven sweep costs nothing on groups nobody is claiming from.
+      if (e.expiresAt <= now) { this.expire(e.adId); return false; }
+      return true;
+    });
+  }
+
   snapshot() {
     const groups: Record<string, Record<BidState, number>> = {};
     this.entries.forEach((e) => {

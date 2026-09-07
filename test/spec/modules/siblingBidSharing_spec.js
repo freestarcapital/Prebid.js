@@ -78,4 +78,29 @@ describe('SiblingGroupStore', () => {
     store.deposit({ ...entry('b1'), siblingGroupId: 'other' });
     expect(store.membersOf('medrec').map((e) => e.adId)).to.deep.equal(['a1']);
   });
+
+  it('claimable excludes expired entries and sweeps them', () => {
+    const now = Date.now();
+    store.deposit({ adId: 'fresh', siblingGroupId: 'g', sourceAdUnitCode: 'u1', expiresAt: now + 1000 });
+    store.deposit({ adId: 'stale', siblingGroupId: 'g', sourceAdUnitCode: 'u1', expiresAt: now - 1 });
+
+    expect(store.claimable('g', now).map((e) => e.adId)).to.deep.equal(['fresh']);
+    expect(store.get('stale').state).to.equal('expired');
+  });
+
+  it('claimable excludes reserved entries', () => {
+    const now = Date.now();
+    store.deposit({ adId: 'a1', siblingGroupId: 'g', sourceAdUnitCode: 'u1', expiresAt: now + 1000 });
+    store.reserve('a1', 'u2', 'gam');
+    expect(store.claimable('g', now)).to.deep.equal([]);
+  });
+
+  it('a released bid is re-checked for expiry before becoming claimable again', () => {
+    const now = Date.now();
+    store.deposit({ adId: 'a1', siblingGroupId: 'g', sourceAdUnitCode: 'u1', expiresAt: now + 50 });
+    store.reserve('a1', 'u2', 'gam');
+    store.release('a1', 'gam-loss');
+    expect(store.claimable('g', now + 100)).to.deep.equal([]);
+    expect(store.get('a1').state).to.equal('expired');
+  });
 });
