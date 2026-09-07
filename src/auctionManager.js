@@ -84,6 +84,11 @@ export function newAuctionManager() {
     }
   };
 
+  auctionManager.removeBid = function (bid) {
+    const auction = getAuction(bid.auctionId);
+    return auction ? auction.removeBidReceived(bid) : false;
+  };
+
   Object.entries({
     getAllWinningBids: {
       name: 'getWinningBids',
