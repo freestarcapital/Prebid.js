@@ -3,7 +3,8 @@ import { config } from 'src/config.js';
 import { getGlobal } from 'src/prebidGlobal.js';
 import adapterManager from 'src/adapterManager.js';
 import * as events from 'src/events.js';
-import { EVENTS } from 'src/constants.js';
+import * as utils from 'src/utils.js';
+import { BID_STATUS, EVENTS } from 'src/constants.js';
 import { SiblingGroupStore } from 'libraries/siblingBidSharing/store.js';
 import { auctionManager } from 'src/auctionManager.js';
 import { store, scheduleReleaseTimeout, RESERVE_TIMEOUT_MS } from 'modules/siblingBidSharing.js';
@@ -460,11 +461,10 @@ describe('siblingBidSharing module', () => {
   });
 
   it('getBids shows a unit the bid it reserved itself', () => {
+    enable();
     store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
     store.reserve('a1', 'medrec1', 'gam');
-    sinon.stub(auctionManager, 'getBidsReceived').returns([
-      { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', bidderCode: 'ix', adapterCode: 'ix', cpm: 2, requestRegime: 'eager' },
-    ]);
+    sinon.stub(auctionManager, 'getBidsReceived').returns([usable()]);
     try {
       expect(getGlobal().getBids('medrec1').some((b) => b.adId === 'a1')).to.equal(true);
     } finally {
@@ -473,11 +473,10 @@ describe('siblingBidSharing module', () => {
   });
 
   it('getBids hides a bid reserved by a different sibling', () => {
+    enable();
     store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
     store.reserve('a1', 'medrec2', 'gam');
-    sinon.stub(auctionManager, 'getBidsReceived').returns([
-      { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', bidderCode: 'ix', adapterCode: 'ix', cpm: 2, requestRegime: 'eager' },
-    ]);
+    sinon.stub(auctionManager, 'getBidsReceived').returns([usable()]);
     try {
       expect(getGlobal().getBids('medrec1').some((b) => b.adId === 'a1')).to.equal(false);
     } finally {
@@ -486,10 +485,9 @@ describe('siblingBidSharing module', () => {
   });
 
   it('getBids does not reserve anything', () => {
+    enable();
     store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
-    sinon.stub(auctionManager, 'getBidsReceived').returns([
-      { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', bidderCode: 'ix', adapterCode: 'ix', cpm: 2, requestRegime: 'eager' },
-    ]);
+    sinon.stub(auctionManager, 'getBidsReceived').returns([usable()]);
     try {
       getGlobal().getBids('medrec1');
       expect(store.get('a1').state).to.equal('available');
@@ -499,10 +497,9 @@ describe('siblingBidSharing module', () => {
   });
 
   it('getBids expires a lapsed bid on read', () => {
+    enable();
     store.deposit({ adId: 'old', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() - 1 });
-    sinon.stub(auctionManager, 'getBidsReceived').returns([
-      { adId: 'old', adUnitCode: 'medrec1', siblingGroupId: 'medrec', bidderCode: 'ix', adapterCode: 'ix', cpm: 2, requestRegime: 'eager' },
-    ]);
+    sinon.stub(auctionManager, 'getBidsReceived').returns([usable({ adId: 'old' })]);
     try {
       getGlobal().getBids('medrec1');
       expect(store.get('old').state).to.equal('expired');
@@ -511,12 +508,61 @@ describe('siblingBidSharing module', () => {
     }
   });
 
+  it('getBids drops a bid core would not consider usable', () => {
+    enable();
+    store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
+    sinon.stub(auctionManager, 'getBidsReceived').returns([usable({ status: BID_STATUS.RENDERED })]);
+    try {
+      expect(getGlobal().getBids('medrec1').length).to.equal(0);
+    } finally {
+      auctionManager.getBidsReceived.restore();
+    }
+  });
+
+  it('getBids gates a sibling bid on the destination unit group, not the bid own group', () => {
+    enable();
+    const restoreUnits = useAdUnits([
+      { code: 'medrec1', siblingGroupId: 'medrec', requestRegime: 'eager' },
+      { code: 'medrec2', siblingGroupId: 'medrec', requestRegime: 'lazy' },
+      { code: 'leader1', siblingGroupId: 'leader', requestRegime: 'eager' },
+    ]);
+    store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
+    store.deposit({ adId: 'l1', siblingGroupId: 'leader', sourceAdUnitCode: 'leader1', expiresAt: Date.now() + 60_000 });
+    sinon.stub(auctionManager, 'getBidsReceived').returns([
+      usable(),
+      usable({ adId: 'l1', adUnitCode: 'leader1', siblingGroupId: 'leader' }),
+    ]);
+    try {
+      const ids = getGlobal().getBids('medrec2').map((b) => b.adId);
+      expect(ids).to.include('a1');
+      expect(ids).to.not.include('l1');
+    } finally {
+      auctionManager.getBidsReceived.restore();
+      restoreUnits();
+    }
+  });
+
+  it('getBids hides a sibling bid when sharing is disabled', () => {
+    const restoreUnits = useAdUnits([
+      { code: 'medrec1', siblingGroupId: 'medrec', requestRegime: 'eager' },
+      { code: 'medrec2', siblingGroupId: 'medrec', requestRegime: 'lazy' },
+    ]);
+    store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
+    sinon.stub(auctionManager, 'getBidsReceived').returns([usable()]);
+    try {
+      expect(getGlobal().getBids('medrec2').length).to.equal(0);
+      expect(getGlobal().getBids('medrec1').map((b) => b.adId)).to.deep.equal(['a1']);
+    } finally {
+      auctionManager.getBidsReceived.restore();
+      restoreUnits();
+    }
+  });
+
   it('claimBid returns null rather than throwing when another sibling won the race', () => {
+    enable();
     store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
     store.reserve('a1', 'medrec2', 'gam');
-    sinon.stub(auctionManager, 'getBidsReceived').returns([
-      { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', bidderCode: 'ix', adapterCode: 'ix', cpm: 2, requestRegime: 'eager' },
-    ]);
+    sinon.stub(auctionManager, 'getBidsReceived').returns([usable()]);
     try {
       expect(getGlobal().claimBid('medrec3', { channel: 'backfill' })).to.equal(null);
     } finally {
@@ -525,17 +571,99 @@ describe('siblingBidSharing module', () => {
   });
 
   it('claimBid compares string floors numerically, not lexicographically', () => {
+    const clock = sinon.useFakeTimers();
+    enable();
     store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
-    sinon.stub(auctionManager, 'getBidsReceived').returns([
-      { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', bidderCode: 'ix', adapterCode: 'ix', cpm: '9.50', requestRegime: 'eager' },
-    ]);
+    sinon.stub(auctionManager, 'getBidsReceived').returns([usable({ cpm: '9.50' })]);
     try {
       expect(getGlobal().claimBid('medrec1', { floor: '10.00' })).to.equal(null);
       expect(getGlobal().claimBid('medrec1', { floor: '9.00' })).to.have.property('adId', 'a1');
     } finally {
       auctionManager.getBidsReceived.restore();
+      clock.restore();
     }
   });
+
+  it('claimBid returns a bid that has no store entry without reserving it', () => {
+    enable();
+    sinon.stub(auctionManager, 'getBidsReceived').returns([usable({ adId: 'n1', siblingGroupId: undefined })]);
+    try {
+      expect(getGlobal().claimBid('medrec1')).to.have.property('adId', 'n1');
+      expect(store.get('n1')).to.equal(undefined);
+    } finally {
+      auctionManager.getBidsReceived.restore();
+    }
+  });
+
+  it('claimBid resolves an excluded bidder through the alias registry', () => {
+    enable();
+    adapterManager.aliasRegistry['ixFsClientAux'] = 'ix';
+    sinon.stub(auctionManager, 'getBidsReceived').returns([
+      usable({ bidderCode: 'ixFsClientAux', adapterCode: undefined }),
+    ]);
+    try {
+      expect(getGlobal().claimBid('medrec1', { exclude: { bidders: ['ix'] } })).to.equal(null);
+    } finally {
+      auctionManager.getBidsReceived.restore();
+      delete adapterManager.aliasRegistry['ixFsClientAux'];
+    }
+  });
+
+  it('claimBid keeps only bids matching a requested size', () => {
+    enable();
+    sinon.stub(auctionManager, 'getBidsReceived').returns([usable({ width: 300, height: 250 })]);
+    try {
+      expect(getGlobal().claimBid('medrec1', { sizes: [[728, 90]] })).to.equal(null);
+      expect(getGlobal().claimBid('medrec1', { sizes: [[300, 250]] })).to.have.property('adId', 'a1');
+    } finally {
+      auctionManager.getBidsReceived.restore();
+    }
+  });
+
+  it('claimBid returns the own-unit bid without reserving when sharing is disabled', () => {
+    store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
+    sinon.stub(auctionManager, 'getBidsReceived').returns([usable()]);
+    try {
+      expect(getGlobal().claimBid('medrec1')).to.have.property('adId', 'a1');
+      expect(store.get('a1').state).to.equal('available');
+      expect(store.get('a1').reservedBy).to.equal(undefined);
+    } finally {
+      auctionManager.getBidsReceived.restore();
+    }
+  });
+
+  it('claimBid reports below-floor separately from no-candidates', () => {
+    enable();
+    const logInfo = sinon.stub(utils, 'logInfo');
+    sinon.stub(auctionManager, 'getBidsReceived').returns([usable({ cpm: 1 })]);
+    try {
+      getGlobal().claimBid('medrec1', { floor: 5 });
+      expect(logInfo.getCalls().some((c) => String(c.args[0]).includes('reason=below-floor'))).to.equal(true);
+      logInfo.resetHistory();
+      getGlobal().claimBid('other1');
+      expect(logInfo.getCalls().some((c) => String(c.args[0]).includes('reason=no-candidates'))).to.equal(true);
+    } finally {
+      auctionManager.getBidsReceived.restore();
+      logInfo.restore();
+    }
+  });
+
+  it('release clears the pending auto-release timer', () => {
+    const clock = sinon.useFakeTimers();
+    try {
+      store.deposit({ adId: 'a1', siblingGroupId: 'g', sourceAdUnitCode: 'u1', expiresAt: Date.now() + 60_000 });
+      store.reserve('a1', 'u2', 'gam');
+      scheduleReleaseTimeout('a1');
+      expect(getGlobal().release('a1', 'gam-loss')).to.equal(true);
+      store.reserve('a1', 'u3', 'gam');
+      clock.tick(RESERVE_TIMEOUT_MS + 1);
+      expect(store.get('a1').state).to.equal('reserved');
+      expect(store.get('a1').reservedBy).to.equal('u3');
+    } finally {
+      clock.restore();
+    }
+  });
+
   it('binds a shared bid to one slot only, through the real targeting path', () => {
     config.setConfig({ bidSharing: { enabled: true }, useBidCache: true });
     const clock = sinon.useFakeTimers();

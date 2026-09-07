@@ -2,8 +2,9 @@ import { config } from '../src/config.ts';
 import { addApiMethod } from '../src/prebid.ts';
 import { setupBeforeHookFnOnce } from '../src/hook.ts';
 import { getHighestCpmBidsFromBidPool, targeting } from '../src/targeting.ts';
+import { isBidUsable } from '../src/targeting/filters.ts';
 import { SiblingGroupStore } from '../libraries/siblingBidSharing/store.ts';
-import { isClaimable, type RequestRegime } from '../libraries/siblingBidSharing/eligibility.ts';
+import { isClaimable, resolveBidderCode, type RequestRegime } from '../libraries/siblingBidSharing/eligibility.ts';
 import * as events from '../src/events.ts';
 import { EVENTS } from '../src/constants.ts';
 import { auctionManager } from '../src/auctionManager.js';
@@ -202,51 +203,88 @@ declare module '../src/prebidGlobal' {
 
 addApiMethod('getSiblingGroupState', getSiblingGroupState, false);
 
-// The destination's regime lives on its ad unit (attached in format_pbjs next to siblingGroupId).
+// The destination's group and regime live on its ad unit (attached in format_pbjs).
+function adUnitOf(adUnitCode: string): any {
+  return (getGlobal().adUnits as any[])?.find((u: any) => u.code === adUnitCode);
+}
+
 function regimeOf(adUnitCode: string) {
-  return (getGlobal().adUnits as any[])?.find((u: any) => u.code === adUnitCode)?.requestRegime;
+  return adUnitOf(adUnitCode)?.requestRegime;
+}
+
+function groupOf(adUnitCode: string) {
+  return adUnitOf(adUnitCode)?.siblingGroupId;
 }
 
 function getBids(adUnitCode: string) {
+  const received: any[] = auctionManager.getBidsReceived();
+  if (!active.enabled) {
+    return wrapInBids(received.filter((b: any) => b.adUnitCode === adUnitCode && isBidUsable(b)));
+  }
+
   const now = Date.now();
 
   // Drives the read-time expiry sweep. Without this nothing ever transitions to 'expired',
   // so R2's claim-time TTL enforcement would silently never happen — and with render-time
   // suppression deliberately off, this is the only place TTL is enforced at all.
   const groups = new Set<string>();
-  auctionManager.getBidsReceived().forEach((b: any) => {
+  received.forEach((b: any) => {
     const e = store.get(b.adId);
     if (e) groups.add(e.siblingGroupId);
   });
   groups.forEach((g) => store.claimable(g, now));
 
-  const all: any[] = auctionManager.getBidsReceived().filter((b: any) => {
+  const destinationGroup = groupOf(adUnitCode);
+  const destinationRegime = regimeOf(adUnitCode);
+
+  const all: any[] = received.filter((b: any) => {
+    if (!isBidUsable(b)) return false;
     const e = store.get(b.adId);
     if (!e) return b.adUnitCode === adUnitCode;
     if (e.state === 'rendered' || e.state === 'expired') return false;
-    if (e.state === 'reserved' && e.reservedBy !== adUnitCode) return false;
+    if (e.state === 'reserved') return e.reservedBy === adUnitCode;
     return b.adUnitCode === adUnitCode ||
-      isClaimable(b, adUnitCode, active, e.siblingGroupId, regimeOf(adUnitCode)).ok;
+      isClaimable(b, adUnitCode, active, destinationGroup, destinationRegime).ok;
   });
   return wrapInBids(all);
 }
 
+function matchesSize(bid: any, sizes: any[]): boolean {
+  return sizes.some((s: any) => Number(s?.[0]) === Number(bid.width) && Number(s?.[1]) === Number(bid.height));
+}
+
 function claimBid(adUnitCode: string, opts: any = {}) {
   const channel = opts.channel ?? 'backfill';
-  const candidates = getBids(adUnitCode)
-    .filter((b: any) => !(opts.exclude?.adIds ?? []).includes(b.adId))
-    .filter((b: any) => !(opts.exclude?.bidders ?? []).includes(b.bidderCode))
+  const excludedAdIds: string[] = opts.exclude?.adIds ?? [];
+  const excludedBidders: string[] = opts.exclude?.bidders ?? [];
+  const sizes: any[] | null = Array.isArray(opts.sizes) && opts.sizes.length ? opts.sizes : null;
+
+  const eligible = getBids(adUnitCode).filter((b: any) => {
+    if (excludedAdIds.includes(b.adId)) return false;
+    if (excludedBidders.includes(resolveBidderCode(b))) return false;
+    return sizes == null || matchesSize(b, sizes);
+  });
+  const candidates = eligible
     .filter((b: any) => (opts.floor == null ? true : Number(b.cpm) >= Number(opts.floor)))
     .sort((a: any, b: any) => Number(b.cpm) - Number(a.cpm));
 
   for (const bid of candidates) {
+    const entry = store.get(bid.adId);
+    // Ungrouped inventory and a disabled module both hand the bid back unreserved: there is no
+    // store entry to reserve, or no sharing to protect.
+    if (!active.enabled || entry == null) {
+      logInfo(`[siblingBidSharing] claim granted adId=${bid.adId} dst=${adUnitCode} channel=${channel} store=${entry == null ? 'none' : 'disabled'}`);
+      return bid;
+    }
     if (store.reserve(bid.adId, adUnitCode, channel)) {
       scheduleReleaseTimeout(bid.adId);
-      logInfo(`[siblingBidSharing] claim granted adId=${bid.adId} dst=${adUnitCode} channel=${channel}`);
+      logInfo(`[siblingBidSharing] claim granted adId=${bid.adId} dst=${adUnitCode} channel=${channel} store=reserved`);
       return bid;
     }
   }
-  logInfo(`[siblingBidSharing] claim denied dst=${adUnitCode} channel=${channel} reason=${candidates.length ? 'all-reserved' : 'no-candidates'}`);
+
+  const reason = candidates.length ? 'all-reserved' : (eligible.length ? 'below-floor' : 'no-candidates');
+  logInfo(`[siblingBidSharing] claim denied dst=${adUnitCode} channel=${channel} reason=${reason}`);
   return null;
 }
 
@@ -261,5 +299,8 @@ declare module '../src/prebidGlobal' {
 
 addApiMethod('getBids', getBids, false);
 addApiMethod('claimBid', claimBid, false);
-addApiMethod('release', (adId: string, reason: any) => store.release(adId, reason), false);
+addApiMethod('release', (adId: string, reason: any) => {
+  clearReleaseTimeout(adId);
+  return store.release(adId, reason);
+}, false);
 addApiMethod('consume', (adId: string, code: string) => store.consume(adId, code), false);
