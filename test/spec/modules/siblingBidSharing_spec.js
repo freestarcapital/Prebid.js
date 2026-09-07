@@ -7,6 +7,8 @@ import { EVENTS } from 'src/constants.js';
 import { SiblingGroupStore } from 'libraries/siblingBidSharing/store.js';
 import { store } from 'modules/siblingBidSharing.js';
 import { isClaimable } from 'libraries/siblingBidSharing/eligibility.js';
+import { getHighestCpmBidsFromBidPool } from 'src/targeting.js';
+import { getHighestCpm } from 'src/utils/reducers.js';
 
 describe('SiblingGroupStore', () => {
   let store;
@@ -245,6 +247,42 @@ describe('siblingBidSharing module', () => {
     const e = store.get('a4');
     expect(e.sourceAdUnitCode).to.equal('medrec1');
     expect(e.expiresAt).to.equal(t + 300_000);
+  });
+
+  it('offers an eligible sibling bid to the other codes in its group', () => {
+    config.setConfig({ bidSharing: { enabled: true } });
+    const bids = [
+      { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', cpm: 2, bidderCode: 'ix', adapterCode: 'ix', requestRegime: 'eager' },
+      { adId: 'a2', adUnitCode: 'medrec2', siblingGroupId: 'medrec', cpm: 1, bidderCode: 'ix', adapterCode: 'ix', requestRegime: 'lazy' },
+    ];
+    const out = getHighestCpmBidsFromBidPool(bids, getHighestCpm, undefined, false);
+
+    const clone = out.find((b) => b.adUnitCode === 'medrec2' && b.adId === 'a1');
+    expect(clone).to.include({ sourceAdUnitCode: 'medrec1', isSiblingFill: true });
+    expect(out.filter((b) => b.adUnitCode === 'medrec1' && b.adId === 'a2')).to.deep.equal([]);
+  });
+
+  it('does nothing when disabled', () => {
+    config.setConfig({ bidSharing: { enabled: false } });
+    const bids = [
+      { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', cpm: 2, bidderCode: 'ix', adapterCode: 'ix', requestRegime: 'eager' },
+      { adId: 'a2', adUnitCode: 'medrec2', siblingGroupId: 'medrec', cpm: 1, bidderCode: 'ix', adapterCode: 'ix', requestRegime: 'lazy' },
+    ];
+    const out = getHighestCpmBidsFromBidPool(bids, getHighestCpm, undefined, false);
+    expect(out.length).to.equal(2);
+    expect(out.some((b) => b.isSiblingFill)).to.equal(false);
+  });
+
+  it('never offers a reserved bid to another sibling', () => {
+    config.setConfig({ bidSharing: { enabled: true } });
+    store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
+    store.reserve('a1', 'medrec2', 'gam');
+    const bids = [
+      { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', cpm: 2, bidderCode: 'ix', adapterCode: 'ix', requestRegime: 'eager' },
+      { adId: 'a2', adUnitCode: 'medrec2', siblingGroupId: 'medrec', cpm: 1, bidderCode: 'ix', adapterCode: 'ix', requestRegime: 'lazy' },
+    ];
+    const out = getHighestCpmBidsFromBidPool(bids, getHighestCpm, undefined, false);
+    expect(out.filter((b) => b.adUnitCode === 'medrec2' && b.adId === 'a1')).to.deep.equal([]);
   });
 });
 

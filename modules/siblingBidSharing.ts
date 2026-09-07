@@ -1,6 +1,8 @@
 import { config } from '../src/config.ts';
 import { addApiMethod } from '../src/prebid.ts';
+import { getHighestCpmBidsFromBidPool } from '../src/targeting.ts';
 import { SiblingGroupStore } from '../libraries/siblingBidSharing/store.ts';
+import { isClaimable, type RequestRegime } from '../libraries/siblingBidSharing/eligibility.ts';
 import * as events from '../src/events.ts';
 import { EVENTS } from '../src/constants.ts';
 import { auctionManager } from '../src/auctionManager.js';
@@ -48,6 +50,41 @@ events.on(EVENTS.BID_RESPONSE, (bid: any) => {
   if (deposited) {
     logInfo(`[siblingBidSharing] deposit adId=${bid.adId} group=${siblingGroupId} src=${bid.adUnitCode} bidder=${bid.bidderCode} cpm=${bid.cpm}`);
   }
+});
+
+getHighestCpmBidsFromBidPool.before(function (
+  fn: any, bidsReceived: any[], winReducer: any, adUnitBidLimit: any, hasModified: boolean, winSorter: any,
+) {
+  if (!active.enabled) return fn.call(this, bidsReceived, winReducer, adUnitBidLimit, hasModified, winSorter);
+
+  const codesByGroup = new Map<string, Set<string>>();
+  const regimeByCode = new Map<string, RequestRegime>();
+  bidsReceived.forEach((b) => {
+    if (!b?.siblingGroupId) return;
+    let set = codesByGroup.get(b.siblingGroupId);
+    if (!set) { set = new Set(); codesByGroup.set(b.siblingGroupId, set); }
+    set.add(b.adUnitCode);
+    if (b.requestRegime) regimeByCode.set(b.adUnitCode, b.requestRegime);
+  });
+
+  const pool = [...bidsReceived];
+  bidsReceived.forEach((b) => {
+    const codes = b?.siblingGroupId ? codesByGroup.get(b.siblingGroupId) : undefined;
+    if (!codes) return;
+    const entry = store.get(b.adId);
+    if (entry && entry.state !== 'available') return;
+
+    codes.forEach((code) => {
+      if (code === b.adUnitCode) return;
+      const verdict = isClaimable(b, code, active, b.siblingGroupId, regimeByCode.get(code));
+      if (!verdict.ok) return;
+      // A shallow clone, not a copy of state: the store stays authoritative and this object
+      // exists only for core's per-bidder reduce.
+      pool.push({ ...b, adUnitCode: code, sourceAdUnitCode: b.adUnitCode, isSiblingFill: true });
+    });
+  });
+
+  return fn.call(this, pool, winReducer, adUnitBidLimit, true, winSorter);
 });
 
 function getSiblingGroupState() {
