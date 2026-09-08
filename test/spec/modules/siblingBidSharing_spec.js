@@ -600,8 +600,30 @@ describe('siblingBidSharing module', () => {
     sinon.stub(auctionManager, 'getBidsReceived').returns([usable()]);
     try {
       expect(getGlobal().claimBid('medrec3', { channel: 'backfill' })).to.equal(null);
+      expect(store.get('a1').reservedBy).to.equal('medrec2');
     } finally {
       auctionManager.getBidsReceived.restore();
+    }
+  });
+
+  it('claimBid grants the bid back to the unit already holding it', () => {
+    const clock = sinon.useFakeTimers();
+    enable();
+    store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
+    store.reserve('a1', 'medrec1', 'gam');
+    sinon.stub(auctionManager, 'getBidsReceived').returns([usable()]);
+    try {
+      expect(getGlobal().claimBid('medrec1', { channel: 'backfill' })).to.have.property('adId', 'a1');
+      const e = store.get('a1');
+      expect(e.state).to.equal('reserved');
+      expect(e.reservedBy).to.equal('medrec1');
+
+      // the hold is re-armed rather than left on the original timer
+      clock.tick(RESERVE_TIMEOUT_MS + 1);
+      expect(store.get('a1').state).to.equal('available');
+    } finally {
+      auctionManager.getBidsReceived.restore();
+      clock.restore();
     }
   });
 

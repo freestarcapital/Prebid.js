@@ -364,6 +364,13 @@ function claimBid(adUnitCode: string, opts: any = {}) {
       logInfo(`[siblingBidSharing] claim granted adId=${bid.adId} dst=${adUnitCode} channel=${channel} store=${entry == null ? 'none' : 'disabled'}`);
       return bid;
     }
+    // The holder re-claiming its own hold: re-arm rather than release and reserve again, which
+    // would expose the bid to the other siblings for the length of this call.
+    if (entry.state === 'reserved' && entry.reservedBy === adUnitCode) {
+      scheduleReleaseTimeout(bid.adId);
+      logInfo(`[siblingBidSharing] claim granted adId=${bid.adId} dst=${adUnitCode} channel=${channel} store=held`);
+      return bid;
+    }
     if (store.reserve(bid.adId, adUnitCode, channel)) {
       scheduleReleaseTimeout(bid.adId);
       logInfo(`[siblingBidSharing] claim granted adId=${bid.adId} dst=${adUnitCode} channel=${channel} store=reserved`);
