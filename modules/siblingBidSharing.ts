@@ -263,15 +263,25 @@ export function cancelScheduledSweeps() {
   renderGraceTimers.clear();
 }
 
+// The host can rename the ad-server targeting keys with a prefix, so the ad id arrives as
+// `hb_adid`, `fs_adid` or any other `*adid`. A send-all-bids key ends with the bidder name, and
+// requiring the value to be a known entry keeps an unrelated `*adid` key out.
+function targetedAdIds(kv: any): string[] {
+  return Object.entries(kv ?? {})
+    .filter(([key, value]) => key.toLowerCase().endsWith('adid') &&
+      typeof value === 'string' && !!value && store.get(value) != null)
+    .map(([, value]) => value as string);
+}
+
 function reserveFromTargeting(map: any) {
   Object.entries(map ?? {}).forEach(([code, kv]: [string, any]) => {
-    const adId = kv?.hb_adid;
-    if (typeof adId !== 'string' || !adId) return;
-    if (store.reserve(adId, code, 'gam')) {
-      scheduleReleaseTimeout(adId);
-      const e = store.get(adId);
-      logInfo(`[siblingBidSharing] claim granted adId=${adId} group=${e?.siblingGroupId} src=${e?.sourceAdUnitCode} dst=${code} channel=gam`);
-    }
+    targetedAdIds(kv).forEach((adId) => {
+      if (store.reserve(adId, code, 'gam')) {
+        scheduleReleaseTimeout(adId);
+        const e = store.get(adId);
+        logInfo(`[siblingBidSharing] claim granted adId=${adId} group=${e?.siblingGroupId} src=${e?.sourceAdUnitCode} dst=${code} channel=gam`);
+      }
+    });
   });
 }
 

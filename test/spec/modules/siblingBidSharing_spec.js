@@ -564,6 +564,44 @@ describe('siblingBidSharing module', () => {
     }
   });
 
+  it('reserves from a prefixed ad id targeting key', () => {
+    enable();
+    const clock = sinon.useFakeTimers();
+    try {
+      store.deposit({ adId: 'a1', siblingGroupId: 'g', sourceAdUnitCode: 'u1', expiresAt: Date.now() + 60_000 });
+      targeting.targetingDone({ u2: { fs_adid: 'a1', fs_bidder: 'ix' } });
+      expect(store.get('a1').state).to.equal('reserved');
+      expect(store.get('a1').reservedBy).to.equal('u2');
+    } finally {
+      clock.restore();
+    }
+  });
+
+  it('ignores send-all-bids ad id keys', () => {
+    enable();
+    const clock = sinon.useFakeTimers();
+    try {
+      store.deposit({ adId: 'a1', siblingGroupId: 'g', sourceAdUnitCode: 'u1', expiresAt: Date.now() + 60_000 });
+      targeting.targetingDone({ u2: { hb_adid_ix: 'a1' } });
+      expect(store.get('a1').state).to.equal('available');
+    } finally {
+      clock.restore();
+    }
+  });
+
+  it('ignores an ad id targeting value the store does not know', () => {
+    enable();
+    const clock = sinon.useFakeTimers();
+    try {
+      store.deposit({ adId: 'a1', siblingGroupId: 'g', sourceAdUnitCode: 'u1', expiresAt: Date.now() + 60_000 });
+      expect(() => targeting.targetingDone({ u2: { hb_adid: 'nosuchbid' } })).to.not.throw();
+      expect(store.get('nosuchbid')).to.equal(undefined);
+      expect(store.get('a1').state).to.equal('available');
+    } finally {
+      clock.restore();
+    }
+  });
+
   it('auto-releases a reservation that never rendered, after the timeout', () => {
     const clock = sinon.useFakeTimers();
     try {
