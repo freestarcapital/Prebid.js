@@ -9,12 +9,14 @@ import { SiblingGroupStore } from 'libraries/siblingBidSharing/store.js';
 import { auctionManager } from 'src/auctionManager.js';
 import {
   store, scheduleReleaseTimeout, RESERVE_TIMEOUT_MS, sweepGroup, scheduleSweep, cancelScheduledSweeps,
-  SWEEP_MAX_WAIT_MS,
+  SWEEP_DEBOUNCE_MS, SWEEP_MAX_WAIT_MS,
 } from 'modules/siblingBidSharing.js';
 import { isClaimable } from 'libraries/siblingBidSharing/eligibility.js';
 import { getHighestCpmBidsFromBidPool, targeting } from 'src/targeting.js';
 import { getHighestCpm } from 'src/utils/reducers.js';
-import { capFor, perUnitFor, selectEvictions } from 'libraries/siblingBidSharing/cap.js';
+import {
+  capFor, perUnitFor, selectEvictions, RENDERED_GRACE_MS, TARGETED_GRACE_MS,
+} from 'libraries/siblingBidSharing/cap.js';
 
 describe('SiblingGroupStore', () => {
   let store;
@@ -160,6 +162,29 @@ describe('SiblingGroupStore', () => {
     e = store.get('a1');
     expect(e.state).to.equal('rendered');
     expect(e.reservedBy).to.equal('medrec2');
+  });
+
+  it('consume stamps the render time', () => {
+    store.deposit(entry('a1'));
+    const before = Date.now();
+    store.consume('a1', 'medrec2');
+    expect(store.get('a1').renderedAt).to.be.at.least(before);
+  });
+
+  it('records the targeting time for a gam reservation and keeps it across a release', () => {
+    store.deposit(entry('a1'));
+    const before = Date.now();
+    store.reserve('a1', 'medrec2', 'gam');
+    const targetedAt = store.get('a1').targetedAt;
+    expect(targetedAt).to.be.at.least(before);
+    store.release('a1', 'timeout');
+    expect(store.get('a1').targetedAt).to.equal(targetedAt);
+  });
+
+  it('does not record a targeting time for a backfill reservation', () => {
+    store.deposit(entry('a1'));
+    store.reserve('a1', 'medrec2', 'backfill');
+    expect(store.get('a1').targetedAt).to.equal(undefined);
   });
 
   it('remove deletes the entry and its group membership', () => {
@@ -936,6 +961,10 @@ describe('isClaimable', () => {
 });
 
 describe('retention cap', () => {
+  const NOW = 1_700_000_000_000;
+  // The old assertions describe behaviour with no grace at all.
+  const evictNow = (entries, cap) => selectEvictions(entries, cap, NOW, 0, 0);
+
   it('steps perUnit by live group size', () => {
     expect(perUnitFor(2)).to.equal(4);
     expect(perUnitFor(20)).to.equal(4);
@@ -959,12 +988,16 @@ describe('retention cap', () => {
     expect(capFor(70)).to.equal(140);
   });
 
+  it('leaves at least one spare candidate per member at every step boundary', () => {
+    [2, 20, 21, 40, 41, 70].forEach((n) => expect(capFor(n) - n).to.be.at.least(n));
+  });
+
   it('always evicts rendered bids regardless of the cap', () => {
     const entries = [
       { adId: 'r1', state: 'rendered', cpm: 9 },
       { adId: 'a1', state: 'available', cpm: 1 },
     ];
-    expect(selectEvictions(entries, 10)).to.deep.equal(['r1']);
+    expect(evictNow(entries, 10)).to.deep.equal(['r1']);
   });
 
   it('never evicts or counts reserved bids', () => {
@@ -973,7 +1006,7 @@ describe('retention cap', () => {
       { adId: 'a1', state: 'available', cpm: 5 },
       { adId: 'a2', state: 'available', cpm: 4 },
     ];
-    expect(selectEvictions(entries, 1)).to.deep.equal(['a2']);
+    expect(evictNow(entries, 1)).to.deep.equal(['a2']);
   });
 
   it('evicts lowest cpm first', () => {
@@ -982,7 +1015,7 @@ describe('retention cap', () => {
       { adId: 'mid', state: 'available', cpm: 5 },
       { adId: 'hi', state: 'available', cpm: 9 },
     ];
-    expect(selectEvictions(entries, 1)).to.deep.equal(['lo', 'mid']);
+    expect(evictNow(entries, 1)).to.deep.equal(['lo', 'mid']);
   });
 
   it('coerces string cpm before ordering', () => {
@@ -990,6 +1023,51 @@ describe('retention cap', () => {
       { adId: 'a', state: 'available', cpm: '9.50' },
       { adId: 'b', state: 'available', cpm: '10.00' },
     ];
-    expect(selectEvictions(entries, 1)).to.deep.equal(['a']);
+    expect(evictNow(entries, 1)).to.deep.equal(['a']);
+  });
+
+  it('always evicts expired bids, grace or not', () => {
+    const entries = [{ adId: 'x1', state: 'expired', cpm: 9, renderedAt: NOW }];
+    expect(selectEvictions(entries, 10, NOW, RENDERED_GRACE_MS, TARGETED_GRACE_MS)).to.deep.equal(['x1']);
+  });
+
+  it('keeps a rendered bid inside the render grace, and neither counts it', () => {
+    const entries = [
+      { adId: 'r1', state: 'rendered', cpm: 9, renderedAt: NOW - 1000 },
+      { adId: 'a1', state: 'available', cpm: 1 },
+    ];
+    expect(selectEvictions(entries, 1, NOW, RENDERED_GRACE_MS, TARGETED_GRACE_MS)).to.deep.equal([]);
+  });
+
+  it('evicts a rendered bid once the render grace has passed', () => {
+    const entries = [{ adId: 'r1', state: 'rendered', cpm: 9, renderedAt: NOW - RENDERED_GRACE_MS }];
+    expect(selectEvictions(entries, 10, NOW, RENDERED_GRACE_MS, TARGETED_GRACE_MS)).to.deep.equal(['r1']);
+  });
+
+  it('evicts a rendered bid that carries no renderedAt', () => {
+    const entries = [{ adId: 'r1', state: 'rendered', cpm: 9 }];
+    expect(selectEvictions(entries, 10, NOW, RENDERED_GRACE_MS, TARGETED_GRACE_MS)).to.deep.equal(['r1']);
+  });
+
+  it('exempts a recently targeted bid from the cpm trim without counting it', () => {
+    const entries = [
+      { adId: 't1', state: 'available', cpm: 0.1, targetedAt: NOW - 1000 },
+      { adId: 'a1', state: 'available', cpm: 5 },
+      { adId: 'a2', state: 'available', cpm: 4 },
+    ];
+    expect(selectEvictions(entries, 1, NOW, RENDERED_GRACE_MS, TARGETED_GRACE_MS)).to.deep.equal(['a2']);
+  });
+
+  it('trims a targeted bid once its targeting grace has passed', () => {
+    const entries = [
+      { adId: 't1', state: 'available', cpm: 0.1, targetedAt: NOW - TARGETED_GRACE_MS },
+      { adId: 'a1', state: 'available', cpm: 5 },
+    ];
+    expect(selectEvictions(entries, 1, NOW, RENDERED_GRACE_MS, TARGETED_GRACE_MS)).to.deep.equal(['t1']);
+  });
+
+  it('still expires a targeted bid inside its grace', () => {
+    const entries = [{ adId: 't1', state: 'expired', cpm: 0.1, targetedAt: NOW - 1000 }];
+    expect(selectEvictions(entries, 10, NOW, RENDERED_GRACE_MS, TARGETED_GRACE_MS)).to.deep.equal(['t1']);
   });
 });

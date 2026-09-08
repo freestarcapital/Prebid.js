@@ -11,6 +11,8 @@ export interface StoreEntry {
   reservedBy?: string;
   channel?: Channel;
   reservedAt?: number;
+  renderedAt?: number;
+  targetedAt?: number;
   lastReason?: ReleaseReason;
 }
 
@@ -44,6 +46,8 @@ export class SiblingGroupStore {
     e.reservedBy = destinationAdUnitCode;
     e.channel = channel;
     e.reservedAt = Date.now();
+    // Survives the release: GAM keeps hb_adid on the slot long after the reservation lapses.
+    if (channel === 'gam') e.targetedAt = Date.now();
     return true;
   }
 
@@ -64,6 +68,7 @@ export class SiblingGroupStore {
     if (e.state === 'reserved' && e.reservedBy !== destinationAdUnitCode) return false;
     e.state = 'rendered';
     e.reservedBy = destinationAdUnitCode;
+    e.renderedAt = Date.now();
     return true;
   }
 

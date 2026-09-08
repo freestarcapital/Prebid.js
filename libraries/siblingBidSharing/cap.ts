@@ -10,15 +10,27 @@ export function capFor(members: number): number {
   return members * perUnitFor(members);
 }
 
-export function selectEvictions(entries: any[], cap: number): string[] {
+// BID_WON fires before the creative renders, and the creative then resolves its bid by adId.
+export const RENDERED_GRACE_MS = 5000;
+// hb_adid stays on the slot after the 2s reservation lapses, so GAM can still call the bid back.
+export const TARGETED_GRACE_MS = 30000;
+
+export function selectEvictions(
+  entries: any[], cap: number, now: number, renderedGraceMs: number, targetedGraceMs: number,
+): string[] {
   const evict: string[] = [];
   const candidates: any[] = [];
 
   entries.forEach((e) => {
-    if (e.state === 'rendered' || e.state === 'expired') { evict.push(e.adId); return; }
+    if (e.state === 'expired') { evict.push(e.adId); return; }
+    if (e.state === 'rendered') {
+      if (e.renderedAt == null || now - e.renderedAt >= renderedGraceMs) evict.push(e.adId);
+      return;
+    }
     // Reserved bids are neither counted nor evicted: trimming must never take a bid out from
     // under a pending render.
     if (e.state === 'reserved') return;
+    if (e.targetedAt != null && now - e.targetedAt < targetedGraceMs) return;
     candidates.push(e);
   });
 
