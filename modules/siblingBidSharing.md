@@ -54,9 +54,14 @@ caller's own usable bids, and `claimBid` returns the highest-CPM own-unit candid
    sibling ad unit code in its group, so GAM line-item targeting can consider it for any member.
 3. Reservation happens twice — a pre-pass hook on `setTargetingForGPT` (before GPT's own key-value
    read), and again on `targetingDone` against the map core actually applied. First write wins, so
-   one `adId` cannot end up reserved for two slots in the same pass.
-4. A reservation is a hold, not a commit: `RESERVE_TIMEOUT_MS` (2000ms) after it is granted, if
-   still unconsumed it is released back to `available`.
+   one `adId` cannot end up reserved for two slots in the same pass. The ad id is read from
+   whichever targeting key ends with `adid` (`hb_adid`, or `fs_adid` and any other prefix the
+   publisher configures through `bidderSettings`), skipping send-all-bids keys such as
+   `hb_adid_<bidder>` and values the store does not know.
+4. A reservation is a hold, not a commit: once it is granted, if still unconsumed it is released
+   back to `available` — after `GAM_RESERVE_TIMEOUT_MS` (10000ms) for a `gam` reservation, which
+   has to outlast GAM's own response latency, and after `RESERVE_TIMEOUT_MS` (2000ms) for a
+   `backfill` one.
 5. `BID_WON` consumes the reservation and stamps the bid with `renderAdUnitCode` (the destination),
    `siblingGroupId`, and `isSiblingFill` (`true` when the destination differs from the originating
    unit). `adUnitCode` stays unchanged — it always identifies the unit the bid was requested for.
@@ -64,10 +69,11 @@ caller's own usable bids, and `claimBid` returns the highest-CPM own-unit candid
 ### Backfill
 
 A destination unit that did not receive its own bid can call `pbjs.claimBid(adUnitCode, opts)`
-directly; it reserves the bid the same way, under the same `RESERVE_TIMEOUT_MS` backstop and
-`BID_WON` consumption. A bid the calling unit already holds — the usual case once GAM targeting has
-reserved each slot's own `hb_adid` — is granted straight back to it with its release timeout
-re-armed, rather than released and reserved again, which would expose it to the siblings mid-call.
+directly; it reserves the bid the same way, under the `RESERVE_TIMEOUT_MS` backstop and `BID_WON`
+consumption. A bid the calling unit already holds — the usual case once GAM targeting has reserved
+each slot's own ad id — is granted straight back to it with its release timeout re-armed for the
+duration of the channel it is held on, rather than released and reserved again, which would expose
+it to the siblings mid-call.
 
 ### Eligibility
 

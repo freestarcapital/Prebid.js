@@ -8,7 +8,7 @@ import { BID_STATUS, EVENTS } from 'src/constants.js';
 import { SiblingGroupStore } from 'libraries/siblingBidSharing/store.js';
 import { auctionManager } from 'src/auctionManager.js';
 import {
-  store, scheduleReleaseTimeout, RESERVE_TIMEOUT_MS, sweepGroup, scheduleSweep, cancelScheduledSweeps,
+  store, scheduleReleaseTimeout, RESERVE_TIMEOUT_MS, GAM_RESERVE_TIMEOUT_MS, sweepGroup, scheduleSweep, cancelScheduledSweeps,
   SWEEP_DEBOUNCE_MS, SWEEP_MAX_WAIT_MS,
 } from 'modules/siblingBidSharing.js';
 import { isClaimable } from 'libraries/siblingBidSharing/eligibility.js';
@@ -616,6 +616,22 @@ describe('siblingBidSharing module', () => {
     }
   });
 
+  it('holds a targeting reservation past the backfill timeout and releases it at the GAM timeout', () => {
+    enable();
+    const clock = sinon.useFakeTimers();
+    try {
+      store.deposit({ adId: 'a1', siblingGroupId: 'g', sourceAdUnitCode: 'u1', expiresAt: Date.now() + 600_000 });
+      targeting.targetingDone({ u2: { hb_adid: 'a1' } });
+      clock.tick(RESERVE_TIMEOUT_MS + 1);
+      expect(store.get('a1').state).to.equal('reserved');
+      clock.tick(GAM_RESERVE_TIMEOUT_MS - RESERVE_TIMEOUT_MS);
+      expect(store.get('a1').state).to.equal('available');
+      expect(store.get('a1').lastReason).to.equal('timeout');
+    } finally {
+      clock.restore();
+    }
+  });
+
   it('does not release a bid that rendered before the timeout', () => {
     const clock = sinon.useFakeTimers();
     try {
@@ -759,9 +775,27 @@ describe('siblingBidSharing module', () => {
       expect(e.state).to.equal('reserved');
       expect(e.reservedBy).to.equal('medrec1');
 
-      // the hold is re-armed rather than left on the original timer
+      // the hold is re-armed rather than left on the original timer, and keeps the GAM duration
+      clock.tick(RESERVE_TIMEOUT_MS + 1);
+      expect(store.get('a1').state).to.equal('reserved');
+      clock.tick(GAM_RESERVE_TIMEOUT_MS - RESERVE_TIMEOUT_MS);
+      expect(store.get('a1').state).to.equal('available');
+    } finally {
+      auctionManager.getBidsReceived.restore();
+      clock.restore();
+    }
+  });
+
+  it('releases a backfill claim after the backfill timeout', () => {
+    const clock = sinon.useFakeTimers();
+    enable();
+    store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 600_000 });
+    sinon.stub(auctionManager, 'getBidsReceived').returns([usable()]);
+    try {
+      expect(getGlobal().claimBid('medrec1', { channel: 'backfill' })).to.have.property('adId', 'a1');
       clock.tick(RESERVE_TIMEOUT_MS + 1);
       expect(store.get('a1').state).to.equal('available');
+      expect(store.get('a1').lastReason).to.equal('timeout');
     } finally {
       auctionManager.getBidsReceived.restore();
       clock.restore();

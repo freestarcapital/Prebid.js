@@ -3,7 +3,7 @@ import { addApiMethod } from '../src/prebid.ts';
 import { setupBeforeHookFnOnce } from '../src/hook.ts';
 import { getHighestCpmBidsFromBidPool, targeting } from '../src/targeting.ts';
 import { isBidUsable } from '../src/targeting/filters.ts';
-import { SiblingGroupStore, type StoreEntry } from '../libraries/siblingBidSharing/store.ts';
+import { SiblingGroupStore, type Channel, type StoreEntry } from '../libraries/siblingBidSharing/store.ts';
 import { isClaimable, resolveBidderCode, type RequestRegime } from '../libraries/siblingBidSharing/eligibility.ts';
 import {
   capFor, selectEvictions, RENDERED_GRACE_MS, TARGETED_GRACE_MS,
@@ -171,6 +171,9 @@ function redistributeAcrossSiblings(
 setupBeforeHookFnOnce(getHighestCpmBidsFromBidPool, redistributeAcrossSiblings);
 
 export const RESERVE_TIMEOUT_MS = 2000;
+// A GAM response lands seconds after targeting is applied; releasing the hold at the backfill
+// timeout lets a sibling render the same bid before GAM's creative arrives.
+export const GAM_RESERVE_TIMEOUT_MS = 10000;
 const timers = new Map<string, ReturnType<typeof setTimeout>>();
 
 function clearReleaseTimeout(adId: string) {
@@ -178,14 +181,18 @@ function clearReleaseTimeout(adId: string) {
   timers.delete(adId);
 }
 
-export function scheduleReleaseTimeout(adId: string) {
+function timeoutFor(channel: Channel | undefined): number {
+  return channel === 'gam' ? GAM_RESERVE_TIMEOUT_MS : RESERVE_TIMEOUT_MS;
+}
+
+export function scheduleReleaseTimeout(adId: string, ms = RESERVE_TIMEOUT_MS) {
   clearReleaseTimeout(adId);
   timers.set(adId, setTimeout(() => {
     timers.delete(adId);
     if (store.release(adId, 'timeout')) {
       logWarn(`[siblingBidSharing] release adId=${adId} reason=timeout`);
     }
-  }, RESERVE_TIMEOUT_MS));
+  }, ms));
 }
 
 export const SWEEP_DEBOUNCE_MS = 30;
@@ -277,7 +284,7 @@ function reserveFromTargeting(map: any) {
   Object.entries(map ?? {}).forEach(([code, kv]: [string, any]) => {
     targetedAdIds(kv).forEach((adId) => {
       if (store.reserve(adId, code, 'gam')) {
-        scheduleReleaseTimeout(adId);
+        scheduleReleaseTimeout(adId, GAM_RESERVE_TIMEOUT_MS);
         const e = store.get(adId);
         logInfo(`[siblingBidSharing] claim granted adId=${adId} group=${e?.siblingGroupId} src=${e?.sourceAdUnitCode} dst=${code} channel=gam`);
       }
@@ -437,12 +444,12 @@ function claimBid(adUnitCode: string, opts: any = {}) {
     // The holder re-claiming its own hold: re-arm rather than release and reserve again, which
     // would expose the bid to the other siblings for the length of this call.
     if (entry.state === 'reserved' && entry.reservedBy === adUnitCode) {
-      scheduleReleaseTimeout(bid.adId);
+      scheduleReleaseTimeout(bid.adId, timeoutFor(entry.channel));
       logInfo(`[siblingBidSharing] claim granted adId=${bid.adId} dst=${adUnitCode} channel=${channel} store=held`);
       return bid;
     }
     if (store.reserve(bid.adId, adUnitCode, channel)) {
-      scheduleReleaseTimeout(bid.adId);
+      scheduleReleaseTimeout(bid.adId, timeoutFor(channel));
       logInfo(`[siblingBidSharing] claim granted adId=${bid.adId} dst=${adUnitCode} channel=${channel} store=reserved`);
       return bid;
     }
