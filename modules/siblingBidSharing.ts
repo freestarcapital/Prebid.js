@@ -42,6 +42,8 @@ config.getConfig(
 export function getActiveConfig() { return active; }
 
 events.on(EVENTS.BID_RESPONSE, (bid: any) => {
+  if (!active.enabled) return;
+
   // The group and the regime are attached to the AD UNIT by pubfig's format_pbjs; a bidderRequest
   // never carries either.
   const adUnit: any = auctionManager.index.getAdUnit(bid);
@@ -199,7 +201,8 @@ export function scheduleSweep(siblingGroupId: string, fn = sweepGroup) {
   if (now - firstQueuedAt >= SWEEP_MAX_WAIT_MS) {
     clearTimeout(pending?.timer);
     sweepTimers.delete(siblingGroupId);
-    fn(siblingGroupId);
+    // Out of the emitting event: a sweep must not remove bids while core is still handling one.
+    setTimeout(() => fn(siblingGroupId), 0);
     return;
   }
 

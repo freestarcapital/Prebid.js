@@ -268,6 +268,7 @@ describe('siblingBidSharing module', () => {
   });
 
   it('deposits a bid carrying a siblingGroupId, keyed by adId', () => {
+    enable();
     events.emit(EVENTS.BID_RESPONSE, {
       adId: 'a1',
       adUnitCode: 'medrec1',
@@ -280,6 +281,7 @@ describe('siblingBidSharing module', () => {
   });
 
   it('falls back to the ad unit for the group and regime the bid does not carry', () => {
+    enable();
     const stub = sinon.stub(auctionManager.index, 'getAdUnit')
       .returns({ code: 'medrec1', siblingGroupId: 'medrec', requestRegime: 'eager' });
     try {
@@ -296,11 +298,13 @@ describe('siblingBidSharing module', () => {
   });
 
   it('ignores a bid with no siblingGroupId', () => {
+    enable();
     events.emit(EVENTS.BID_RESPONSE, { adId: 'a2', adUnitCode: 'x', ttl: 300 });
     expect(store.get('a2')).to.equal(undefined);
   });
 
   it('derives expiresAt from responseTimestamp and ttl', () => {
+    enable();
     const t = Date.now();
     events.emit(EVENTS.BID_RESPONSE, {
       adId: 'a3', adUnitCode: 'medrec1', siblingGroupId: 'medrec', ttl: 300, responseTimestamp: t,
@@ -309,6 +313,7 @@ describe('siblingBidSharing module', () => {
   });
 
   it('a duplicate BID_RESPONSE for the same adId leaves the original entry unchanged', () => {
+    enable();
     const t = Date.now();
     events.emit(EVENTS.BID_RESPONSE, {
       adId: 'a4', adUnitCode: 'medrec1', siblingGroupId: 'medrec', ttl: 300, responseTimestamp: t,
@@ -828,7 +833,7 @@ describe('siblingBidSharing module', () => {
     }
   });
 
-  it('schedules no sweep when sharing is disabled, so a stray deposit timer never fires', () => {
+  it('deposits nothing and schedules no sweep when sharing is disabled', () => {
     const clock = sinon.useFakeTimers();
     const removeBid = sinon.stub(auctionManager, 'removeBid');
     try {
