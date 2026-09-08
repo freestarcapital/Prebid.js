@@ -64,6 +64,24 @@ events.on(EVENTS.BID_RESPONSE, (bid: any) => {
   }
 });
 
+// The host writes a per-ad-unit floor map into Prebid's own priceFloors config, rewritten before
+// every auction — so it is read on each call and never cached.
+function destinationFloor(adUnitCode: string): number | null {
+  try {
+    const floor = Number((config.getConfig('floors') as any)?.data?.values?.[adUnitCode]);
+    return Number.isFinite(floor) && floor > 0 ? floor : null;
+  } catch {
+    return null;
+  }
+}
+
+// Cross-unit only: siblings carry different floors, so a bid priced against its source unit must
+// still clear the destination's. A bid on its own unit was already floored when it was requested.
+function clearsDestinationFloor(bid: any, destinationAdUnitCode: string, floor: number | null): boolean {
+  if (floor == null || bid?.adUnitCode === destinationAdUnitCode) return true;
+  return Number(bid?.cpm) >= floor;
+}
+
 function redistributeAcrossSiblings(
   fn: any, bidsReceived: any[], winReducer: any, adUnitBidLimit: any, hasModified: boolean, winSorter: any,
 ) {
@@ -121,6 +139,7 @@ function redistributeAcrossSiblings(
     codes.forEach((code) => {
       if (code === b.adUnitCode) return;
       if (!isClaimable(b, code, active, b.siblingGroupId, regimeByCode.get(code)).ok) return;
+      if (!clearsDestinationFloor(b, code, destinationFloor(code))) return;
       // A shallow clone, not a copy of state: the store stays authoritative and this object
       // exists only for core's per-bidder reduce.
       add({ ...b, adUnitCode: code, sourceAdUnitCode: b.adUnitCode, isSiblingFill: true });
@@ -352,8 +371,10 @@ function claimBid(adUnitCode: string, opts: any = {}) {
     if (excludedBidders.includes(resolveBidderCode(b))) return false;
     return sizes == null || matchesSize(b, sizes);
   });
+  const floor = destinationFloor(adUnitCode);
   const candidates = eligible
     .filter((b: any) => (opts.floor == null ? true : Number(b.cpm) >= Number(opts.floor)))
+    .filter((b: any) => clearsDestinationFloor(b, adUnitCode, floor))
     .sort((a: any, b: any) => Number(b.cpm) - Number(a.cpm));
 
   for (const bid of candidates) {

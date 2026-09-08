@@ -65,7 +65,9 @@ caller's own usable bids, and `claimBid` returns the highest-CPM own-unit candid
 
 A destination unit that did not receive its own bid can call `pbjs.claimBid(adUnitCode, opts)`
 directly; it reserves the bid the same way, under the same `RESERVE_TIMEOUT_MS` backstop and
-`BID_WON` consumption.
+`BID_WON` consumption. A bid the calling unit already holds — the usual case once GAM targeting has
+reserved each slot's own `hb_adid` — is granted straight back to it with its release timeout
+re-armed, rather than released and reserved again, which would expose it to the siblings mid-call.
 
 ### Eligibility
 
@@ -75,6 +77,14 @@ matched on the unaliased `adapterCode ?? bidderCode`; the eager/lazy regime rule
 currently reserved by a different ad unit; not expired or already rendered; passes core's own
 `isBidUsable` filter. A bid destined for the unit it was originally requested for is never gated by
 any of this — that case is not cross-unit reuse.
+
+A cross-unit candidate must also clear the destination unit's floor. It is read on every claim, in
+both channels, from Prebid's own `floors` config at `floors.data.values[<adUnitCode>]` — the flat
+per-ad-unit-code map the host rewrites before each auction — and nothing is cached between calls.
+Siblings carry different floors, so a bid priced against its source unit's floor is not offered to a
+sibling whose floor is higher. Own-unit candidates are unaffected: they were already floored when
+they were requested. A missing or non-numeric value applies no gate, and `opts.floor` on `claimBid`
+stays an explicit caller override applied to every candidate.
 
 ## Public API
 
@@ -123,5 +133,6 @@ All log lines are prefixed `[siblingBidSharing]` and mark state transitions only
 granted, claim denied, release, consume, evict, and prune (a store entry whose bid is no longer in
 `auctionManager` at sweep time). `claim denied` is logged only from `claimBid` (the backfill
 channel) and carries one of three reasons: `no-candidates` (nothing in the group was eligible at
-all), `below-floor` (eligible bids existed but none met `opts.floor`), or `all-reserved` (bids
-passed the floor but every one was already reserved by the time this call tried to reserve it).
+all), `below-floor` (eligible bids existed but none met `opts.floor` or the destination unit's
+floor), or `all-reserved` (bids passed the floor but every one was already reserved by the time
+this call tried to reserve it).
