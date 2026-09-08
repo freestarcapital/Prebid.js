@@ -79,6 +79,12 @@ module.exports = {
       }
     });
 
+    // TODO: remove once the per-publisher build trigger lists siblingBidSharing in _PREBID_MODULES.
+    // Forced in so the module ships in every tailored bundle without a pipeline change.
+    if (modules.length && !modules.includes('siblingBidSharing')) {
+      modules.push('siblingBidSharing');
+    }
+
     return modules;
   },
   getModules: _.memoize(function(externalModules) {
