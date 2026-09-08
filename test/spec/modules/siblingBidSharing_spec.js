@@ -446,6 +446,18 @@ describe('siblingBidSharing module', () => {
     }
   });
 
+  it('keeps a held bid in its holder pool even below the holder floor', () => {
+    enable();
+    setFloors({ medrec2: 10 });
+    store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
+    store.reserve('a1', 'medrec2', 'gam');
+    const bids = [
+      { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', cpm: 1.5, bidderCode: 'ix', adapterCode: 'ix', requestRegime: 'eager' },
+    ];
+    const out = getHighestCpmBidsFromBidPool(bids, getHighestCpm, undefined, false);
+    expect(out.some((b) => b.adId === 'a1' && b.adUnitCode === 'medrec2')).to.equal(true);
+  });
+
   it('is idempotent when its own output is fed back in', () => {
     config.setConfig({ bidSharing: { enabled: true } });
     const key = (b) => `${b.adId}|${b.adUnitCode}`;
@@ -803,18 +815,61 @@ describe('siblingBidSharing module', () => {
     }
   });
 
-  it('claimBid applies no gate for a non-numeric destination floor', () => {
+  ['n/a', '', null, 0].forEach((value) => {
+    it(`claimBid applies no gate for a destination floor of ${JSON.stringify(value)}`, () => {
+      const clock = sinon.useFakeTimers();
+      enable();
+      setFloors({ medrec2: value });
+      const restoreUnits = useAdUnits([
+        { code: 'medrec1', siblingGroupId: 'medrec', requestRegime: 'eager' },
+        { code: 'medrec2', siblingGroupId: 'medrec', requestRegime: 'lazy' },
+      ]);
+      store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
+      sinon.stub(auctionManager, 'getBidsReceived').returns([usable({ cpm: 0.1 })]);
+      try {
+        expect(getGlobal().claimBid('medrec2', { channel: 'backfill' })).to.have.property('adId', 'a1');
+      } finally {
+        auctionManager.getBidsReceived.restore();
+        restoreUnits();
+        clock.restore();
+      }
+    });
+  });
+
+  it('claimBid reads a destination floor written under a lower-cased key', () => {
+    enable();
+    setFloors({ medrec2: 2 });
+    const restoreUnits = useAdUnits([
+      { code: 'medrec1', siblingGroupId: 'medrec', requestRegime: 'eager' },
+      { code: 'MedRec2', siblingGroupId: 'medrec', requestRegime: 'lazy' },
+    ]);
+    store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
+    sinon.stub(auctionManager, 'getBidsReceived').returns([usable({ cpm: 1.5 })]);
+    try {
+      expect(getGlobal().claimBid('MedRec2', { channel: 'backfill' })).to.equal(null);
+      expect(store.get('a1').state).to.equal('available');
+    } finally {
+      auctionManager.getBidsReceived.restore();
+      restoreUnits();
+    }
+  });
+
+  it('claimBid grants the holder a bid the destination floor rose above during the hold', () => {
     const clock = sinon.useFakeTimers();
     enable();
-    setFloors({ medrec2: 'n/a' });
     const restoreUnits = useAdUnits([
       { code: 'medrec1', siblingGroupId: 'medrec', requestRegime: 'eager' },
       { code: 'medrec2', siblingGroupId: 'medrec', requestRegime: 'lazy' },
     ]);
     store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 60_000 });
-    sinon.stub(auctionManager, 'getBidsReceived').returns([usable({ cpm: 0.1 })]);
+    store.reserve('a1', 'medrec2', 'gam');
+    setFloors({ medrec2: 2.0 });
+    sinon.stub(auctionManager, 'getBidsReceived').returns([usable({ cpm: 1.8 })]);
     try {
       expect(getGlobal().claimBid('medrec2', { channel: 'backfill' })).to.have.property('adId', 'a1');
+      const e = store.get('a1');
+      expect(e.state).to.equal('reserved');
+      expect(e.reservedBy).to.equal('medrec2');
     } finally {
       auctionManager.getBidsReceived.restore();
       restoreUnits();

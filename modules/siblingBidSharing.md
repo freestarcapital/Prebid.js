@@ -80,11 +80,15 @@ any of this — that case is not cross-unit reuse.
 
 A cross-unit candidate must also clear the destination unit's floor. It is read on every claim, in
 both channels, from Prebid's own `floors` config at `floors.data.values[<adUnitCode>]` — the flat
-per-ad-unit-code map the host rewrites before each auction — and nothing is cached between calls.
+per-ad-unit-code map the host rewrites before each auction. A single pool pass reads each unit's
+floor once, and nothing is cached beyond that pass.
 Siblings carry different floors, so a bid priced against its source unit's floor is not offered to a
 sibling whose floor is higher. Own-unit candidates are unaffected: they were already floored when
 they were requested. A missing or non-numeric value applies no gate, and `opts.floor` on `claimBid`
-stays an explicit caller override applied to every candidate.
+stays an explicit caller override applied to every candidate. Only floors set through
+`setConfig({ floors: { data: { values } } })` are read — the data a `floorProvider` endpoint fetches
+is not. A bid the destination already holds is not re-gated by this floor: its reservation already
+cleared eligibility, so a floor raised during the hold cannot strand it.
 
 ## Public API
 

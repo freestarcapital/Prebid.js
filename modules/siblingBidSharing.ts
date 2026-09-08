@@ -68,7 +68,10 @@ events.on(EVENTS.BID_RESPONSE, (bid: any) => {
 // every auction — so it is read on each call and never cached.
 function destinationFloor(adUnitCode: string): number | null {
   try {
-    const floor = Number((config.getConfig('floors') as any)?.data?.values?.[adUnitCode]);
+    const values = (config.getConfig('floors') as any)?.data?.values;
+    // priceFloors matches its rule keys case-insensitively, so a lower-cased key is the same rule.
+    const raw = values?.[adUnitCode] ?? values?.[String(adUnitCode).toLowerCase()];
+    const floor = Number(raw);
     return Number.isFinite(floor) && floor > 0 ? floor : null;
   } catch {
     return null;
@@ -80,6 +83,14 @@ function destinationFloor(adUnitCode: string): number | null {
 function clearsDestinationFloor(bid: any, destinationAdUnitCode: string, floor: number | null): boolean {
   if (floor == null || bid?.adUnitCode === destinationAdUnitCode) return true;
   return Number(bid?.cpm) >= floor;
+}
+
+// A bid the destination already holds cleared eligibility when it was reserved. Re-gating it on a
+// floor the host rewrote inside the hold would strand it, withheld from the holder and its siblings
+// alike — the same invariant the pool hook honours for a reserved entry.
+function isHeldBy(bid: any, destinationAdUnitCode: string): boolean {
+  const entry = store.get(bid?.adId);
+  return entry?.state === 'reserved' && entry.reservedBy === destinationAdUnitCode;
 }
 
 function redistributeAcrossSiblings(
@@ -104,6 +115,14 @@ function redistributeAcrossSiblings(
   bidsReceived.forEach((b: any) => {
     if (b?.siblingGroupId && !b.isSiblingFill) addCode(b.siblingGroupId, b.adUnitCode, b.requestRegime);
   });
+
+  // Reading the floors config is not cheap, and this pass asks for the same codes repeatedly.
+  // Scoped to the invocation, so a rewrite before the next auction is still picked up.
+  const floors = new Map<string, number | null>();
+  const floorFor = (code: string) => {
+    if (!floors.has(code)) floors.set(code, destinationFloor(code));
+    return floors.get(code);
+  };
 
   const seen = new Set<string>();
   const pool: any[] = [];
@@ -139,7 +158,7 @@ function redistributeAcrossSiblings(
     codes.forEach((code) => {
       if (code === b.adUnitCode) return;
       if (!isClaimable(b, code, active, b.siblingGroupId, regimeByCode.get(code)).ok) return;
-      if (!clearsDestinationFloor(b, code, destinationFloor(code))) return;
+      if (!clearsDestinationFloor(b, code, floorFor(code))) return;
       // A shallow clone, not a copy of state: the store stays authoritative and this object
       // exists only for core's per-bidder reduce.
       add({ ...b, adUnitCode: code, sourceAdUnitCode: b.adUnitCode, isSiblingFill: true });
@@ -374,7 +393,7 @@ function claimBid(adUnitCode: string, opts: any = {}) {
   const floor = destinationFloor(adUnitCode);
   const candidates = eligible
     .filter((b: any) => (opts.floor == null ? true : Number(b.cpm) >= Number(opts.floor)))
-    .filter((b: any) => clearsDestinationFloor(b, adUnitCode, floor))
+    .filter((b: any) => isHeldBy(b, adUnitCode) || clearsDestinationFloor(b, adUnitCode, floor))
     .sort((a: any, b: any) => Number(b.cpm) - Number(a.cpm));
 
   for (const bid of candidates) {
