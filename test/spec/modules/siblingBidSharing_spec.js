@@ -251,16 +251,64 @@ describe('siblingBidSharing module', () => {
     store.deposit({ adId: 'a2', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 300_000 });
     store.reserve('a2', 'medrec2', 'gam');
 
+    const expected = {
+      available: 1, reserved: 1, rendered: 0, expired: 0, members: [], liveMembers: 1, cap: null,
+    };
     const result = getGlobal().getSiblingGroupState();
-    expect(result.groups.medrec).to.deep.equal({ available: 1, reserved: 1, rendered: 0, expired: 0 });
+    expect(result.groups.medrec).to.deep.equal(expected);
     expect(result.total).to.equal(2);
 
     result.groups.medrec.available = 99;
     result.total = 99;
 
     const again = getGlobal().getSiblingGroupState();
-    expect(again.groups.medrec).to.deep.equal({ available: 1, reserved: 1, rendered: 0, expired: 0 });
+    expect(again.groups.medrec).to.deep.equal(expected);
     expect(again.total).to.equal(2);
+  });
+
+  it('reports group members, live count, and cap from registered ad units', () => {
+    const restoreUnits = useAdUnits([
+      { code: 'medrec2', siblingGroupId: 'medrec' },
+      { code: 'medrec1', siblingGroupId: 'medrec' },
+    ]);
+    try {
+      store.deposit({ adId: 'a1', siblingGroupId: 'medrec', sourceAdUnitCode: 'medrec1', expiresAt: Date.now() + 300_000 });
+      const group = getGlobal().getSiblingGroupState().groups.medrec;
+      expect(group.members).to.deep.equal(['medrec1', 'medrec2']);
+      expect(group.liveMembers).to.equal(2);
+      expect(group.cap).to.equal(8);
+    } finally {
+      restoreUnits();
+    }
+  });
+
+  it('reports cap: null for a single-member group', () => {
+    const restoreUnits = useAdUnits([
+      { code: 'solo1', siblingGroupId: 'solo' },
+    ]);
+    try {
+      store.deposit({ adId: 'a1', siblingGroupId: 'solo', sourceAdUnitCode: 'solo1', expiresAt: Date.now() + 300_000 });
+      const group = getGlobal().getSiblingGroupState().groups.solo;
+      expect(group.liveMembers).to.equal(1);
+      expect(group.cap).to.equal(null);
+    } finally {
+      restoreUnits();
+    }
+  });
+
+  it('lists a group with registered ad units but no store entries, at zero counts', () => {
+    const restoreUnits = useAdUnits([
+      { code: 'empty2', siblingGroupId: 'empty' },
+      { code: 'empty1', siblingGroupId: 'empty' },
+    ]);
+    try {
+      const group = getGlobal().getSiblingGroupState().groups.empty;
+      expect(group).to.deep.equal({
+        available: 0, reserved: 0, rendered: 0, expired: 0, members: ['empty1', 'empty2'], liveMembers: 2, cap: 8,
+      });
+    } finally {
+      restoreUnits();
+    }
   });
 
   it('reads bidSharing config, defaulting to disabled', () => {

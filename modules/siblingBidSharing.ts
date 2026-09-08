@@ -3,7 +3,7 @@ import { addApiMethod } from '../src/prebid.ts';
 import { setupBeforeHookFnOnce } from '../src/hook.ts';
 import { getHighestCpmBidsFromBidPool, targeting } from '../src/targeting.ts';
 import { isBidUsable } from '../src/targeting/filters.ts';
-import { SiblingGroupStore } from '../libraries/siblingBidSharing/store.ts';
+import { SiblingGroupStore, type StoreEntry } from '../libraries/siblingBidSharing/store.ts';
 import { isClaimable, resolveBidderCode, type RequestRegime } from '../libraries/siblingBidSharing/eligibility.ts';
 import {
   capFor, selectEvictions, RENDERED_GRACE_MS, TARGETED_GRACE_MS,
@@ -193,6 +193,16 @@ export const SWEEP_MAX_WAIT_MS = 250;
 const sweepTimers = new Map<string, { timer: ReturnType<typeof setTimeout>; firstQueuedAt: number }>();
 const renderGraceTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
+// Shared by sweepGroup and getSiblingGroupState so the two can never disagree.
+function countLiveMembers(siblingGroupId: string, entries: StoreEntry[]): number {
+  const fromAdUnits = ((getGlobal().adUnits ?? []) as any[])
+    .filter((u: any) => u?.siblingGroupId === siblingGroupId).length;
+  // No ad unit registered (as in most tests): proxy live membership from outstanding entries.
+  return fromAdUnits || new Set(
+    entries.filter((e) => e.state === 'available' || e.state === 'reserved').map((e) => e.sourceAdUnitCode),
+  ).size;
+}
+
 export function sweepGroup(siblingGroupId: string) {
   if (!active.enabled) return;
 
@@ -201,12 +211,7 @@ export function sweepGroup(siblingGroupId: string) {
   store.claimable(siblingGroupId, now);
 
   const entries = store.membersOf(siblingGroupId);
-  const fromAdUnits = ((getGlobal().adUnits ?? []) as any[])
-    .filter((u: any) => u?.siblingGroupId === siblingGroupId).length;
-  // No ad unit registered (as in most tests): proxy live membership from outstanding entries.
-  const liveMembers = fromAdUnits || new Set(
-    entries.filter((e) => e.state === 'available' || e.state === 'reserved').map((e) => e.sourceAdUnitCode),
-  ).size;
+  const liveMembers = countLiveMembers(siblingGroupId, entries);
   const cap = capFor(liveMembers);
 
   const withCpm = entries.map((e) => ({
@@ -316,7 +321,22 @@ events.on(EVENTS.BID_WON, (bid: any) => {
 });
 
 function getSiblingGroupState() {
-  return { ...store.snapshot(), config: { ...active } };
+  const snapshot = store.snapshot();
+  const adUnits = (getGlobal().adUnits ?? []) as any[];
+  // A group with registered ad units but no store entries must still be reportable.
+  const groupIds = new Set(Object.keys(snapshot.groups));
+  adUnits.forEach((u) => { if (u?.siblingGroupId) groupIds.add(u.siblingGroupId); });
+
+  const groups: Record<string, any> = {};
+  groupIds.forEach((groupId) => {
+    const counts = snapshot.groups[groupId] ?? { available: 0, reserved: 0, rendered: 0, expired: 0 };
+    const members = adUnits.filter((u) => u?.siblingGroupId === groupId).map((u) => u.code).sort();
+    const liveMembers = countLiveMembers(groupId, store.membersOf(groupId));
+    const cap = capFor(liveMembers);
+    groups[groupId] = { ...counts, members, liveMembers, cap: cap === Infinity ? null : cap };
+  });
+
+  return { groups, total: snapshot.total, config: { ...active } };
 }
 
 declare module '../src/prebidGlobal' {

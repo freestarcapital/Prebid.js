@@ -99,7 +99,7 @@ cleared eligibility, so a floor raised during the hold cannot strand it.
 | `pbjs.release(adId, reason)` | Releases a reservation back to `available` and schedules a sweep of its group. Returns `false` if the bid was not reserved. |
 | `pbjs.consume(adId, adUnitCode)` | Marks `adId` rendered for `adUnitCode`. Returns `false` if the bid is expired, already rendered, or reserved by a different unit. |
 | `pbjs.sweepSiblingGroup(siblingGroupId)` | Schedules an immediate sweep of one group. |
-| `pbjs.getSiblingGroupState()` | Returns per-group counts by state, the total entry count, and the active `bidSharing` config. |
+| `pbjs.getSiblingGroupState()` | Returns per-group counts by state, each group's `members` (registered ad unit codes), `liveMembers` (live member count), and `cap` (`null` when uncapped), plus the total entry count and the active `bidSharing` config. |
 
 ## Retention cap
 
