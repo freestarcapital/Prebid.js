@@ -837,9 +837,244 @@ describe('siblingBidSharing module', () => {
       });
       clock.tick(SWEEP_MAX_WAIT_MS + 1);
       expect(removeBid.called).to.equal(false);
-      expect(store.get('f1')).to.not.equal(undefined);
+      expect(store.get('f1')).to.equal(undefined);
     } finally {
       removeBid.restore();
+      clock.restore();
+    }
+  });
+
+  it('schedules a sweep on an enabled deposit', () => {
+    enable();
+    const clock = sinon.useFakeTimers();
+    const removeBid = sinon.stub(auctionManager, 'removeBid').returns(true);
+    sinon.stub(auctionManager, 'findBidByAdId').callsFake((adId) => ({ adId, cpm: 1 }));
+    try {
+      for (let i = 0; i < 9; i++) {
+        store.deposit({ adId: `k${i}`, siblingGroupId: 'g7', sourceAdUnitCode: i % 2 ? 'u1' : 'u2', expiresAt: Date.now() + 60_000 });
+      }
+      events.emit(EVENTS.BID_RESPONSE, {
+        adId: 'k9', adUnitCode: 'u1', siblingGroupId: 'g7', ttl: 300, responseTimestamp: Date.now(),
+      });
+      clock.tick(SWEEP_MAX_WAIT_MS + 1);
+      expect(removeBid.called).to.equal(true);
+    } finally {
+      auctionManager.removeBid.restore();
+      auctionManager.findBidByAdId.restore();
+      clock.restore();
+    }
+  });
+
+  it('sweepGroup is a no-op when sharing is disabled', () => {
+    const removeBid = sinon.stub(auctionManager, 'removeBid').returns(true);
+    sinon.stub(auctionManager, 'findBidByAdId').callsFake((adId) => ({ adId, cpm: 1 }));
+    try {
+      for (let i = 0; i < 10; i++) {
+        store.deposit({ adId: `n${i}`, siblingGroupId: 'g8', sourceAdUnitCode: i % 2 ? 'u1' : 'u2', expiresAt: Date.now() + 60_000 });
+      }
+      sweepGroup('g8');
+      expect(removeBid.called).to.equal(false);
+      expect(store.membersOf('g8').length).to.equal(10);
+    } finally {
+      auctionManager.removeBid.restore();
+      auctionManager.findBidByAdId.restore();
+    }
+  });
+
+  it('leaves a reserved entry in place when the group is swept', () => {
+    enable();
+    const removed = [];
+    sinon.stub(auctionManager, 'removeBid').callsFake((b) => { removed.push(b.adId); return true; });
+    sinon.stub(auctionManager, 'findBidByAdId').callsFake((adId) => ({ adId, cpm: Number(adId.slice(1)) }));
+    try {
+      for (let i = 0; i < 10; i++) {
+        store.deposit({ adId: `p${i}`, siblingGroupId: 'g9', sourceAdUnitCode: i % 2 ? 'u1' : 'u2', expiresAt: Date.now() + 60_000 });
+      }
+      // p0 is the lowest cpm, so the trim would take it first if reservations were counted.
+      store.reserve('p0', 'u3', 'backfill');
+      sweepGroup('g9');
+      expect(removed).to.deep.equal(['p1']);
+      expect(store.get('p0').state).to.equal('reserved');
+    } finally {
+      auctionManager.removeBid.restore();
+      auctionManager.findBidByAdId.restore();
+    }
+  });
+
+  it('collapses repeated scheduleSweep calls inside the debounce window into one sweep', () => {
+    enable();
+    const clock = sinon.useFakeTimers();
+    const spy = sinon.spy();
+    try {
+      for (let i = 0; i < 5; i++) { scheduleSweep('g', spy); clock.tick(SWEEP_DEBOUNCE_MS - 1); }
+      clock.tick(SWEEP_DEBOUNCE_MS + 1);
+      expect(spy.calledOnce).to.equal(true);
+    } finally {
+      clock.restore();
+    }
+  });
+
+  it('cancelScheduledSweeps cancels a pending sweep', () => {
+    enable();
+    const clock = sinon.useFakeTimers();
+    const spy = sinon.spy();
+    try {
+      scheduleSweep('g', spy);
+      cancelScheduledSweeps();
+      clock.tick(SWEEP_MAX_WAIT_MS + 1);
+      expect(spy.called).to.equal(false);
+    } finally {
+      clock.restore();
+    }
+  });
+
+  it('evicts a TTL-expired entry that nothing has read since it lapsed', () => {
+    enable();
+    const removeBid = sinon.stub(auctionManager, 'removeBid').returns(true);
+    sinon.stub(auctionManager, 'findBidByAdId').callsFake((adId) => ({ adId, cpm: 1 }));
+    try {
+      store.deposit({ adId: 'x1', siblingGroupId: 'gx', sourceAdUnitCode: 'u1', expiresAt: Date.now() - 1 });
+      sweepGroup('gx');
+      expect(removeBid.calledOnce).to.equal(true);
+      expect(store.get('x1')).to.equal(undefined);
+    } finally {
+      auctionManager.removeBid.restore();
+      auctionManager.findBidByAdId.restore();
+    }
+  });
+
+  it('keeps a bid the creative can still resolve by adId right after BID_WON', () => {
+    enable();
+    const clock = sinon.useFakeTimers();
+    const removeBid = sinon.stub(auctionManager, 'removeBid').returns(true);
+    sinon.stub(auctionManager, 'findBidByAdId')
+      .callsFake((adId) => (store.get(adId) ? { adId, cpm: 1 } : undefined));
+    try {
+      store.deposit({ adId: 'w1', siblingGroupId: 'gw', sourceAdUnitCode: 'u1', expiresAt: Date.now() + 60_000 });
+      store.deposit({ adId: 'w2', siblingGroupId: 'gw', sourceAdUnitCode: 'u2', expiresAt: Date.now() + 60_000 });
+      events.emit(EVENTS.BID_WON, { adId: 'w1', adUnitCode: 'u1' });
+      clock.tick(SWEEP_MAX_WAIT_MS + 1);
+
+      expect(removeBid.called).to.equal(false);
+      expect(auctionManager.findBidByAdId('w1')).to.not.equal(undefined);
+      expect(store.get('w1').state).to.equal('rendered');
+    } finally {
+      auctionManager.removeBid.restore();
+      auctionManager.findBidByAdId.restore();
+      clock.restore();
+    }
+  });
+
+  it('evicts the rendered bid once the render grace has passed, even in a quiescent group', () => {
+    enable();
+    const clock = sinon.useFakeTimers();
+    const removeBid = sinon.stub(auctionManager, 'removeBid').returns(true);
+    sinon.stub(auctionManager, 'findBidByAdId').callsFake((adId) => ({ adId, cpm: 1 }));
+    try {
+      store.deposit({ adId: 'w1', siblingGroupId: 'gw', sourceAdUnitCode: 'u1', expiresAt: Date.now() + 60_000 });
+      events.emit(EVENTS.BID_WON, { adId: 'w1', adUnitCode: 'u1' });
+      clock.tick(SWEEP_MAX_WAIT_MS + 1);
+      expect(removeBid.called).to.equal(false);
+
+      clock.tick(RENDERED_GRACE_MS + SWEEP_MAX_WAIT_MS + 1);
+      expect(removeBid.calledOnce).to.equal(true);
+      expect(store.get('w1')).to.equal(undefined);
+    } finally {
+      auctionManager.removeBid.restore();
+      auctionManager.findBidByAdId.restore();
+      clock.restore();
+    }
+  });
+
+  it('keeps a gam-targeted bid out of the cpm trim until the targeting grace passes', () => {
+    enable();
+    const clock = sinon.useFakeTimers();
+    const removed = [];
+    sinon.stub(auctionManager, 'removeBid').callsFake((b) => { removed.push(b.adId); return true; });
+    sinon.stub(auctionManager, 'findBidByAdId').callsFake((adId) => ({ adId, cpm: adId === 't1' ? 0 : 5 }));
+    try {
+      // 2 source units -> cap 8. Nine entries, of which t1 is the cheapest.
+      store.deposit({ adId: 't1', siblingGroupId: 'gt', sourceAdUnitCode: 'u1', expiresAt: Date.now() + 60_000 });
+      for (let i = 0; i < 8; i++) {
+        store.deposit({ adId: `q${i}`, siblingGroupId: 'gt', sourceAdUnitCode: i % 2 ? 'u1' : 'u2', expiresAt: Date.now() + 60_000 });
+      }
+      store.reserve('t1', 'u2', 'gam');
+      scheduleReleaseTimeout('t1');
+      clock.tick(RESERVE_TIMEOUT_MS + 1);
+      expect(store.get('t1').state).to.equal('available');
+
+      sweepGroup('gt');
+      expect(removed).to.deep.equal([]);
+
+      clock.tick(TARGETED_GRACE_MS);
+      sweepGroup('gt');
+      expect(removed).to.deep.equal(['t1']);
+    } finally {
+      auctionManager.removeBid.restore();
+      auctionManager.findBidByAdId.restore();
+      clock.restore();
+    }
+  });
+
+  it('gives a backfill reservation no trim exemption once it is released', () => {
+    enable();
+    const clock = sinon.useFakeTimers();
+    const removed = [];
+    sinon.stub(auctionManager, 'removeBid').callsFake((b) => { removed.push(b.adId); return true; });
+    sinon.stub(auctionManager, 'findBidByAdId').callsFake((adId) => ({ adId, cpm: adId === 'b1' ? 0 : 5 }));
+    try {
+      store.deposit({ adId: 'b1', siblingGroupId: 'gb', sourceAdUnitCode: 'u1', expiresAt: Date.now() + 60_000 });
+      for (let i = 0; i < 8; i++) {
+        store.deposit({ adId: `y${i}`, siblingGroupId: 'gb', sourceAdUnitCode: i % 2 ? 'u1' : 'u2', expiresAt: Date.now() + 60_000 });
+      }
+      store.reserve('b1', 'u2', 'backfill');
+      scheduleReleaseTimeout('b1');
+      clock.tick(RESERVE_TIMEOUT_MS + 1);
+
+      sweepGroup('gb');
+      expect(removed).to.deep.equal(['b1']);
+    } finally {
+      auctionManager.removeBid.restore();
+      auctionManager.findBidByAdId.restore();
+      clock.restore();
+    }
+  });
+
+  it('exposes sweepSiblingGroup so a host can trigger a sweep', () => {
+    enable();
+    const clock = sinon.useFakeTimers();
+    const removeBid = sinon.stub(auctionManager, 'removeBid').returns(true);
+    sinon.stub(auctionManager, 'findBidByAdId').callsFake((adId) => ({ adId, cpm: Number(adId.slice(1)) }));
+    try {
+      for (let i = 0; i < 10; i++) {
+        store.deposit({ adId: `m${i}`, siblingGroupId: 'gm', sourceAdUnitCode: i % 2 ? 'u1' : 'u2', expiresAt: Date.now() + 60_000 });
+      }
+      getGlobal().sweepSiblingGroup('gm');
+      clock.tick(SWEEP_MAX_WAIT_MS + 1);
+      expect(removeBid.callCount).to.equal(2);
+    } finally {
+      auctionManager.removeBid.restore();
+      auctionManager.findBidByAdId.restore();
+      clock.restore();
+    }
+  });
+
+  it('release schedules a sweep of the group it freed', () => {
+    enable();
+    const clock = sinon.useFakeTimers();
+    const removeBid = sinon.stub(auctionManager, 'removeBid').returns(true);
+    sinon.stub(auctionManager, 'findBidByAdId').callsFake((adId) => ({ adId, cpm: Number(adId.slice(1)) }));
+    try {
+      for (let i = 0; i < 10; i++) {
+        store.deposit({ adId: `v${i}`, siblingGroupId: 'gv', sourceAdUnitCode: i % 2 ? 'u1' : 'u2', expiresAt: Date.now() + 60_000 });
+      }
+      store.reserve('v0', 'u3', 'backfill');
+      expect(getGlobal().release('v0', 'gam-loss')).to.equal(true);
+      clock.tick(SWEEP_MAX_WAIT_MS + 1);
+      expect(removeBid.callCount).to.equal(2);
+    } finally {
+      auctionManager.removeBid.restore();
+      auctionManager.findBidByAdId.restore();
       clock.restore();
     }
   });

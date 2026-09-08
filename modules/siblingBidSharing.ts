@@ -5,7 +5,9 @@ import { getHighestCpmBidsFromBidPool, targeting } from '../src/targeting.ts';
 import { isBidUsable } from '../src/targeting/filters.ts';
 import { SiblingGroupStore } from '../libraries/siblingBidSharing/store.ts';
 import { isClaimable, resolveBidderCode, type RequestRegime } from '../libraries/siblingBidSharing/eligibility.ts';
-import { capFor, selectEvictions } from '../libraries/siblingBidSharing/cap.ts';
+import {
+  capFor, selectEvictions, RENDERED_GRACE_MS, TARGETED_GRACE_MS,
+} from '../libraries/siblingBidSharing/cap.ts';
 import * as events from '../src/events.ts';
 import { EVENTS } from '../src/constants.ts';
 import { auctionManager } from '../src/auctionManager.js';
@@ -148,10 +150,15 @@ export function scheduleReleaseTimeout(adId: string) {
 
 export const SWEEP_DEBOUNCE_MS = 30;
 export const SWEEP_MAX_WAIT_MS = 250;
-const sweepTimers = new Map<string, { timer: any; firstQueuedAt: number }>();
+const sweepTimers = new Map<string, { timer: ReturnType<typeof setTimeout>; firstQueuedAt: number }>();
+const renderGraceTimers = new Map<string, ReturnType<typeof setTimeout>>();
 
 export function sweepGroup(siblingGroupId: string) {
   if (!active.enabled) return;
+
+  const now = Date.now();
+  // Marks whatever lapsed since the last read; nothing else transitions an entry to 'expired'.
+  store.claimable(siblingGroupId, now);
 
   const entries = store.membersOf(siblingGroupId);
   const fromAdUnits = ((getGlobal().adUnits ?? []) as any[])
@@ -167,7 +174,7 @@ export function sweepGroup(siblingGroupId: string) {
     cpm: auctionManager.findBidByAdId(e.adId)?.cpm ?? 0,
   }));
 
-  selectEvictions(withCpm, cap).forEach((adId) => {
+  selectEvictions(withCpm, cap, now, RENDERED_GRACE_MS, TARGETED_GRACE_MS).forEach((adId) => {
     const bid = auctionManager.findBidByAdId(adId);
     if (!bid) {
       logInfo(`[siblingBidSharing] prune adId=${adId} group=${siblingGroupId} reason=bid-gone`);
@@ -206,6 +213,8 @@ export function scheduleSweep(siblingGroupId: string, fn = sweepGroup) {
 export function cancelScheduledSweeps() {
   sweepTimers.forEach(({ timer }) => clearTimeout(timer));
   sweepTimers.clear();
+  renderGraceTimers.forEach((timer) => clearTimeout(timer));
+  renderGraceTimers.clear();
 }
 
 function reserveFromTargeting(map: any) {
@@ -254,7 +263,14 @@ events.on(EVENTS.BID_WON, (bid: any) => {
     logInfo(`[siblingBidSharing] consume adId=${bid.adId} src=${entry?.sourceAdUnitCode} dst=${destination}`);
   }
   if (entry) {
-    scheduleSweep(entry.siblingGroupId);
+    const group = entry.siblingGroupId;
+    scheduleSweep(group);
+    // A quiescent group would otherwise never sweep again, leaving the rendered entry forever.
+    clearTimeout(renderGraceTimers.get(bid.adId));
+    renderGraceTimers.set(bid.adId, setTimeout(() => {
+      renderGraceTimers.delete(bid.adId);
+      scheduleSweep(group);
+    }, RENDERED_GRACE_MS + 1));
   }
 });
 
@@ -265,10 +281,12 @@ function getSiblingGroupState() {
 declare module '../src/prebidGlobal' {
   interface PrebidJS {
     getSiblingGroupState: typeof getSiblingGroupState;
+    sweepSiblingGroup: (siblingGroupId: string) => void;
   }
 }
 
 addApiMethod('getSiblingGroupState', getSiblingGroupState, false);
+addApiMethod('sweepSiblingGroup', (siblingGroupId: string) => scheduleSweep(siblingGroupId), false);
 
 // The destination's group and regime live on its ad unit (attached in format_pbjs).
 function adUnitOf(adUnitCode: string): any {
@@ -368,6 +386,9 @@ addApiMethod('getBids', getBids, false);
 addApiMethod('claimBid', claimBid, false);
 addApiMethod('release', (adId: string, reason: any) => {
   clearReleaseTimeout(adId);
-  return store.release(adId, reason);
+  const siblingGroupId = store.get(adId)?.siblingGroupId;
+  const released = store.release(adId, reason);
+  if (released && siblingGroupId) scheduleSweep(siblingGroupId);
+  return released;
 }, false);
 addApiMethod('consume', (adId: string, code: string) => store.consume(adId, code), false);
