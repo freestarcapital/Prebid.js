@@ -30,10 +30,15 @@ lazy destinations), and a destination with none is treated as `eager` (it accept
 ```javascript
 pbjs.setConfig({
   bidSharing: {
-    enabled: true  // defaults to false
+    enabled: true,               // defaults to false
+    denylist: ['kargo', 'teads'] // bidder codes never shared cross-unit; defaults to []
   }
 });
 ```
+
+`denylist` holds unaliased bidder codes whose creatives do not survive being moved between slots
+(outstream players, bidders with their own renderer). The module ships no codes of its own, so the
+host owns the list and can change it without a Prebid build. A non-array value is treated as empty.
 
 The config is read with `init: true`, so the value in effect at the first `setConfig` call after
 module load applies immediately.
@@ -78,7 +83,7 @@ it to the siblings mid-call.
 ### Eligibility
 
 A candidate bid is claimable by a destination ad unit when all of the following hold: same
-`siblingGroupId` as the destination; no `dealId`; bidder not on the denylist (`kargo`, `teads`),
+`siblingGroupId` as the destination; no `dealId`; bidder not on the configured `denylist`,
 matched on the unaliased `adapterCode ?? bidderCode`; the eager/lazy regime rule is satisfied; not
 currently reserved by a different ad unit; not expired or already rendered; passes core's own
 `isBidUsable` filter. A bid destined for the unit it was originally requested for is never gated by

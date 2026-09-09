@@ -4,14 +4,7 @@ export type DenyReason = 'denylisted' | 'deal-excluded' | 'wrong-group' | 'regim
 export type RequestRegime = 'eager' | 'lazy';
 export interface Verdict { ok: boolean; reason?: DenyReason }
 
-interface Cfg { enabled: boolean }
-
-/**
- * Creative-portability exclusions, not commercial ones: teads is outstream video and kargo ships
- * its own renderer, so neither survives being moved between slots. Interim — replaced by the
- * per-network `isBidSharingEligible` flag when that ships.
- */
-export const BID_SHARING_DENYLIST = ['kargo', 'teads'];
+interface Cfg { enabled: boolean; denylist?: string[] }
 
 // adapterCode first, and unaliased: pubfig aliases the concurrent client leg (*FsClientAux),
 // so a raw-string check silently misses the aliased adapter.
@@ -19,9 +12,10 @@ export function resolveBidderCode(bid: any): string {
   return adapterManager.resolveAlias(bid?.adapterCode ?? bid?.bidderCode ?? '');
 }
 
-export function isDenylisted(bid: any): boolean {
+// The list is host-supplied via `bidSharing.denylist`; the module ships no bidder codes of its own.
+export function isDenylisted(bid: any, denylist: string[] = []): boolean {
   try {
-    return BID_SHARING_DENYLIST.includes(resolveBidderCode(bid));
+    return denylist.includes(resolveBidderCode(bid));
   } catch {
     return true;
   }
@@ -39,7 +33,7 @@ export function isClaimable(
     return { ok: false, reason: 'wrong-group' };
   }
   if (bid?.dealId) return { ok: false, reason: 'deal-excluded' };
-  if (isDenylisted(bid)) return { ok: false, reason: 'denylisted' };
+  if (isDenylisted(bid, cfg.denylist)) return { ok: false, reason: 'denylisted' };
   if (!regimeAllows(bid?.requestRegime, destinationRegime)) return { ok: false, reason: 'regime' };
 
   return { ok: true };

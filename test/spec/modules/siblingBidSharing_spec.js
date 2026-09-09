@@ -9,7 +9,7 @@ import { SiblingGroupStore } from 'libraries/siblingBidSharing/store.js';
 import { auctionManager } from 'src/auctionManager.js';
 import {
   store, scheduleReleaseTimeout, RESERVE_TIMEOUT_MS, GAM_RESERVE_TIMEOUT_MS, sweepGroup, scheduleSweep, cancelScheduledSweeps,
-  SWEEP_DEBOUNCE_MS, SWEEP_MAX_WAIT_MS,
+  SWEEP_DEBOUNCE_MS, SWEEP_MAX_WAIT_MS, getActiveConfig,
 } from 'modules/siblingBidSharing.js';
 import { isClaimable } from 'libraries/siblingBidSharing/eligibility.js';
 import { getHighestCpmBidsFromBidPool, targeting } from 'src/targeting.js';
@@ -312,7 +312,7 @@ describe('siblingBidSharing module', () => {
   });
 
   it('reads bidSharing config, defaulting to disabled', () => {
-    expect(getGlobal().getSiblingGroupState().config).to.deep.equal({ enabled: false });
+    expect(getGlobal().getSiblingGroupState().config).to.deep.equal({ enabled: false, denylist: [] });
   });
 
   it('picks up config set before the module subscribed', () => {
@@ -390,6 +390,22 @@ describe('siblingBidSharing module', () => {
     const clone = out.find((b) => b.adUnitCode === 'medrec2' && b.adId === 'a1');
     expect(clone).to.include({ sourceAdUnitCode: 'medrec1', isSiblingFill: true });
     expect(out.filter((b) => b.adUnitCode === 'medrec1' && b.adId === 'a2')).to.deep.equal([]);
+  });
+
+  it('withholds a configured denylist bidder from siblings and ignores a non-array value', () => {
+    config.setConfig({ bidSharing: { enabled: true, denylist: ['teads', 42] } });
+    expect(getActiveConfig().denylist).to.deep.equal(['teads']);
+    const bids = [
+      { adId: 'a1', adUnitCode: 'medrec1', siblingGroupId: 'medrec', cpm: 2, bidderCode: 'teads', adapterCode: 'teads', requestRegime: 'eager' },
+      { adId: 'a2', adUnitCode: 'medrec2', siblingGroupId: 'medrec', cpm: 1, bidderCode: 'ix', adapterCode: 'ix', requestRegime: 'lazy' },
+    ];
+    let out = getHighestCpmBidsFromBidPool(bids, getHighestCpm, undefined, false);
+    expect(out.some((b) => b.adId === 'a1' && b.adUnitCode === 'medrec2')).to.equal(false);
+
+    config.setConfig({ bidSharing: { enabled: true, denylist: 'teads' } });
+    expect(getActiveConfig().denylist).to.deep.equal([]);
+    out = getHighestCpmBidsFromBidPool(bids, getHighestCpm, undefined, false);
+    expect(out.some((b) => b.adId === 'a1' && b.adUnitCode === 'medrec2')).to.equal(true);
   });
 
   it('does nothing when disabled', () => {
@@ -1417,7 +1433,7 @@ describe('siblingBidSharing module', () => {
 });
 
 describe('isClaimable', () => {
-  const cfg = { enabled: true };
+  const cfg = { enabled: true, denylist: ['kargo', 'teads'] };
   const bid = (o = {}) => ({
     adUnitCode: 'medrec1',
     siblingGroupId: 'medrec',
@@ -1442,6 +1458,12 @@ describe('isClaimable', () => {
 
   it('allows a bidder that is not on the list', () => {
     expect(isClaimable(bid(), 'medrec2', cfg, 'medrec').ok).to.equal(true);
+  });
+
+  it('denies nothing when no denylist is configured', () => {
+    const teads = bid({ bidderCode: 'teads', adapterCode: 'teads' });
+    expect(isClaimable(teads, 'medrec2', { enabled: true }, 'medrec').ok).to.equal(true);
+    expect(isClaimable(teads, 'medrec2', { enabled: true, denylist: [] }, 'medrec').ok).to.equal(true);
   });
 
   it('matches unaliased, so the aliased client leg is not missed', () => {

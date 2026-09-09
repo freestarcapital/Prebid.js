@@ -17,6 +17,7 @@ import { wrapInBids } from '../src/utils/wrapsInBids.ts';
 
 export interface SiblingBidSharingConfig {
   enabled?: boolean;
+  denylist?: string[];
 }
 
 declare module '../src/config' {
@@ -27,14 +28,18 @@ declare module '../src/config' {
 
 export const store = new SiblingGroupStore();
 
-let active: Required<SiblingBidSharingConfig> = { enabled: false };
+let active: Required<SiblingBidSharingConfig> = { enabled: false, denylist: [] };
 
 // `init: true` is mandatory. pubfig calls setConfig at src/pbjs/base.js:804, and a subscriber
 // registered afterwards without it never sees the initial value.
 config.getConfig(
   'bidSharing',
   (cfg) => {
-    active = { enabled: cfg?.bidSharing?.enabled === true };
+    const denylist = cfg?.bidSharing?.denylist;
+    active = {
+      enabled: cfg?.bidSharing?.enabled === true,
+      denylist: Array.isArray(denylist) ? denylist.filter((code) => typeof code === 'string') : [],
+    };
   },
   { init: true },
 );
