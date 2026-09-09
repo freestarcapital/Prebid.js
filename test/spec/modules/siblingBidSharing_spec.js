@@ -214,6 +214,9 @@ describe('siblingBidSharing module', () => {
     bidderCode: 'ix',
     adapterCode: 'ix',
     cpm: 2,
+    // Core's targeting reducer compares `desirability`, which `adjustBids` mirrors from cpm on a
+    // real bid; without it every comparison ties and the own bid wins by position.
+    desirability: 2,
     requestRegime: 'eager',
     ttl: 300,
     responseTimestamp: Date.now(),
@@ -1026,6 +1029,49 @@ describe('siblingBidSharing module', () => {
       expect(store.get('a1').reservedBy).to.equal('u3');
     } finally {
       clock.restore();
+    }
+  });
+
+  it('binds every applied ad id to exactly one slot when the top bid wins the whole group', () => {
+    config.setConfig({ bidSharing: { enabled: true }, useBidCache: true });
+    const restoreUnits = useAdUnits(['u0', 'u1', 'u2', 'u3'].map((code) => ({ code, siblingGroupId: 'iai', requestRegime: 'eager' })));
+    const mk = (adId, code, cpm) => usable({
+      adId,
+      adUnitCode: code,
+      cpm,
+      desirability: cpm,
+      siblingGroupId: 'iai',
+      adserverTargeting: { fs_adid: adId, fs_pb: cpm.toFixed(2), fs_bidder: 'ix' },
+    });
+    // u0's bid out-prices every sibling, so the first reservation pass sees it win all four codes
+    // and reserves nothing else; u2's bid then wins u1 and u3 in the pass core actually applies.
+    const bids = [mk('b0', 'u0', 0.32), mk('b1', 'u1', 0.24), mk('b2', 'u2', 0.26), mk('b3', 'u3', 0.24)];
+    bids.forEach((b) => store.deposit({ adId: b.adId, siblingGroupId: 'iai', sourceAdUnitCode: b.adUnitCode, expiresAt: Date.now() + 60_000 }));
+    sinon.stub(auctionManager, 'getBidsReceived').returns(bids);
+    const applied = {};
+    const slot = (code) => ({
+      getSlotElementId: () => code,
+      getAdUnitPath: () => '/x/' + code,
+      getTargetingKeys: () => [],
+      clearTargeting: () => {},
+      getTargeting: () => [],
+      setTargeting: (k, v) => { (applied[code] ||= {})[k] = v; },
+      updateTargetingFromMap: (m) => { applied[code] = { ...(applied[code] || {}), ...m }; },
+    });
+    window.googletag = { pubads: () => ({ getSlots: () => ['u0', 'u1', 'u2', 'u3'].map(slot) }) };
+    try {
+      targeting.setTargetingForGPT(['u0', 'u1', 'u2', 'u3']);
+
+      const appliedAdIds = Object.fromEntries(Object.entries(applied).map(([code, m]) => [code, String(m.fs_adid)]));
+      expect(new Set(Object.values(appliedAdIds)).size).to.equal(Object.keys(appliedAdIds).length);
+      Object.entries(appliedAdIds).forEach(([code, adId]) => {
+        expect(store.get(adId).reservedBy, `${adId} applied to ${code}`).to.equal(code);
+      });
+      expect(appliedAdIds.u0).to.equal('b0');
+    } finally {
+      auctionManager.getBidsReceived.restore();
+      restoreUnits();
+      delete window.googletag;
     }
   });
 

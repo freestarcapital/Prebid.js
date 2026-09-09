@@ -285,21 +285,29 @@ function targetedAdIds(kv: any): string[] {
     .map(([, value]) => value as string);
 }
 
-function reserveFromTargeting(map: any) {
+function reserveFromTargeting(map: any): number {
+  let reserved = 0;
   Object.entries(map ?? {}).forEach(([code, kv]: [string, any]) => {
     targetedAdIds(kv).forEach((adId) => {
       if (store.reserve(adId, code, 'gam')) {
+        reserved += 1;
         scheduleReleaseTimeout(adId, GAM_RESERVE_TIMEOUT_MS);
         const e = store.get(adId);
         logInfo(`[siblingBidSharing] claim granted adId=${adId} group=${e?.siblingGroupId} src=${e?.sourceAdUnitCode} dst=${code} channel=gam`);
       }
     });
   });
+  return reserved;
 }
 
-// First-write-wins within one targeting pass, so one adId cannot be bound to two slots.
+// First-write-wins within one map, so one adId cannot be bound to two slots. Reserving a winner
+// narrows it to its holder, which promotes the next-best bid on the other codes; that bid is not
+// reserved yet, so the map is recomputed until a pass reserves nothing new. Each pass reserves at
+// least one adId or stops, so the loop is bounded by the number of bids in the pool.
 function reserveTargetedBids(fn: any, adUnit: any) {
-  if (active.enabled) reserveFromTargeting(targeting.getAllTargeting(adUnit));
+  if (active.enabled) {
+    while (reserveFromTargeting(targeting.getAllTargeting(adUnit)) > 0) { /* next pass */ }
+  }
   return fn.call(this, adUnit);
 }
 

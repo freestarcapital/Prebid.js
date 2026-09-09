@@ -59,7 +59,10 @@ caller's own usable bids, and `claimBid` returns the highest-CPM own-unit candid
    sibling ad unit code in its group, so GAM line-item targeting can consider it for any member.
 3. Reservation happens twice — a pre-pass hook on `setTargetingForGPT` (before GPT's own key-value
    read), and again on `targetingDone` against the map core actually applied. First write wins, so
-   one `adId` cannot end up reserved for two slots in the same pass. The ad id is read from
+   one `adId` cannot end up reserved for two slots in the same pass. The pre-pass repeats until a
+   pass reserves nothing new: reserving a winner narrows it to its holder, which promotes the
+   next-best bid on the other codes, and that bid must be bound before core applies the map or it
+   would reach several slots at once. The ad id is read from
    whichever targeting key ends with `adid` (`hb_adid`, or `fs_adid` and any other prefix the
    publisher configures through `bidderSettings`), skipping send-all-bids keys such as
    `hb_adid_<bidder>` and values the store does not know.
