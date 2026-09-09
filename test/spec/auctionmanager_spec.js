@@ -1160,6 +1160,31 @@ describe('auctionmanager.js', function () {
     });
   });
 
+  describe('removeBid', () => {
+    afterEach(() => {
+      auctionManager.clearAllAuctions();
+    });
+
+    it('evicts a single bid from its auction', () => {
+      const adUnits = [{
+        code: ADUNIT_CODE,
+        adUnitId: ADUNIT_CODE,
+        bids: [{ bidder: BIDDER_CODE }]
+      }];
+      const auction = auctionManager.createAuction({ adUnits });
+      const bid = { adId: 'a1', auctionId: auction.getAuctionId(), cpm: 1 };
+      auction.addBidReceived(bid);
+      expect(auction.getBidsReceived().some((b) => b.adId === 'a1')).to.equal(true);
+
+      expect(auctionManager.removeBid(bid)).to.equal(true);
+      expect(auction.getBidsReceived().some((b) => b.adId === 'a1')).to.equal(false);
+    });
+
+    it('returns false for a bid whose auction is unknown', () => {
+      expect(auctionManager.removeBid({ adId: 'x', auctionId: 'nope' })).to.equal(false);
+    });
+  });
+
   describe('addBidResponse #1', function () {
     let createAuctionStub;
     let adUnits;

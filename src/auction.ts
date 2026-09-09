@@ -489,6 +489,7 @@ export function newAuction({ adUnits, adUnitCodes, callback, cbTimeout, labels, 
 
   return {
     addBidReceived,
+    removeBidReceived: (bid) => _bidsReceived.delete(bid),
     addBidRejected,
     addNoBid,
     callBids,
